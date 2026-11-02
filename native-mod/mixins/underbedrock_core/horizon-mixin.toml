@@ -1,6 +1,6 @@
 [mod]
 id = "underbedrock_core"
-version = "0.2.0"
+version = "0.0.1"
 priority = 100
 
 # The revision it was made and tested on. The mod hooks only Horizon's native

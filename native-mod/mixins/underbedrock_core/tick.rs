@@ -1,14 +1,15 @@
-// The dig itself, and the Abyss's own inhabitants. The engine keeps a
-// player's dig in its own state — the block the attack key is held on and the
-// ticks it has been held for — swapped in for that player's tick, and cleared
-// the moment they let go or look away. On bedrock or voidshell, with the
-// void-alloy pickaxe in hand, the mod's dig time decides when the block goes;
-// the action bar shows how far the dig is. The abyss bedrock at the world's
-// bottom is left alone: nothing digs it.
+// The dig itself, and the Abyss's own inhabitants — one function, as a mixin
+// helper file must hold exactly one. The engine keeps a player's dig in its
+// own state — the block the attack key is held on and the ticks it has been
+// held for — swapped in for that player's tick, and cleared the moment they
+// let go or look away. On bedrock or voidshell, with the void-alloy pickaxe in
+// hand, the mod's dig time decides when the block goes; the action bar shows
+// how far the dig is. The abyss bedrock at the world's bottom is left alone:
+// nothing digs it.
 //
-// While a player is down in the Abyss, the mod also keeps it inhabited: every
-// so many ticks it looks for a dark pocket near the player and spawns one of
-// the Abyss's kinds there, up to a cap of them per player.
+// While a player is down in the Abyss and not digging, the mod also keeps it
+// inhabited: every so many ticks it looks for a dark pocket near the player
+// and spawns one of the Abyss's kinds there, up to a cap of them per player.
 fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
     use crate::game::underbedrock_core as m;
     use horizon_client::text::Text;
@@ -41,7 +42,24 @@ fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
         if m::bar_shown(uuid, false) {
             game.native_action_bar(uuid, Text::literal(""));
         }
-        underbedrock_core_spawn(game, &player);
+        // Not digging: down in the Abyss, on the mod's rhythm, one look for a
+        // pocket to spawn into. The plan reads the world through the closure;
+        // the spawn itself is the engine's own, finalized as a natural one.
+        let at = player.position;
+        if at[1] < m::SPAWN_BELOW_Y && m::spawn_due(uuid) {
+            let dimension = player.dimension.clone();
+            let near = game
+                .native_mobs(&dimension)
+                .into_iter()
+                .filter(|mob| m::counts_towards_cap(&mob.kind, mob.pos, at))
+                .count();
+            let seed = uuid as u64 ^ (at[0] as i64 as u64).wrapping_mul(0x2545_F491);
+            let plan = m::spawn_plan(seed, at, near, |cell| game.native_block(cell) == m::AIR);
+            if let Some((kind, spot)) = plan {
+                let spawn = crate::game::native_mobs::NativeSpawn::default();
+                game.native_spawn_mob(&dimension, kind, spot, &spawn);
+            }
+        }
         return;
     };
     let dig_ticks = m::dig_ticks(|| game.native_setting(m::ID, "dig_ticks"));
@@ -86,48 +104,5 @@ fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
     }
     if m::dig_drops(target, || game.native_setting(m::ID, "drop_bedrock")) {
         game.native_give_items(m::dig_drop(target), 1);
-    }
-}
-
-// One look for a place to spawn, on the mod's rhythm: only down in the Abyss,
-// only up to the cap, only into air over a solid floor.
-fn underbedrock_core_spawn(
-    game: &mut crate::game::Game<'_>,
-    player: &crate::game::native_hooks::NativeServerPlayer,
-) {
-    use crate::game::underbedrock_core as m;
-    let at = player.position;
-    if at[1] >= m::SPAWN_BELOW_Y || !m::spawn_due(player.uuid) {
-        return;
-    }
-    let dimension = player.dimension.clone();
-    let near = game
-        .native_mobs(&dimension)
-        .into_iter()
-        .filter(|mob| m::counts_towards_cap(&mob.kind, mob.pos, at))
-        .count();
-    if near >= m::MOB_CAP {
-        return;
-    }
-    let seed = player.uuid as u64 ^ (at[0] as i64 as u64).wrapping_mul(0x2545_F491);
-    for attempt in 0..m::SPAWN_ATTEMPTS {
-        let [dx, dy, dz] = m::candidate_offset(seed, attempt);
-        let spot = [at[0] + dx as f64, (at[1] + dy as f64).floor(), at[2] + dz as f64];
-        let feet = [spot[0] as i32, spot[1] as i32, spot[2] as i32];
-        // A pocket: air where the mob would stand, air over its head, and a
-        // floor under it that is not the world's own bottom air.
-        let open = game.native_block(feet) == m::AIR && game.native_block([feet[0], feet[1] + 1, feet[2]]) == m::AIR;
-        let floored = game.native_block([feet[0], feet[1] - 1, feet[2]]) != m::AIR;
-        if !(open && floored) {
-            continue;
-        }
-        let kind = m::pick_kind(seed.wrapping_add(attempt as u64));
-        let spawn = crate::game::native_mobs::NativeSpawn::default();
-        if game
-            .native_spawn_mob(&dimension, kind, [spot[0], spot[1], spot[2]], &spawn)
-            .is_some()
-        {
-            return;
-        }
     }
 }

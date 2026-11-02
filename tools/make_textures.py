@@ -2,16 +2,18 @@
 """Pixel-art textures of the Underbedrock mod (16x16 PNG, no external assets).
 
 Everything is drawn from a fixed seed, so the same script always gives the same
-bytes. Run: python3 tools/make_textures.py
+bytes, and the PNGs are written by hand (no Pillow needed).
+Run: python3 tools/make_textures.py
 
 The palette is the Abyss: near-black blue stone, and void crystals in it that
 glow cold blue.
 """
 import random
 import shutil
+import struct
+import zlib
 from pathlib import Path
 
-from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1] / "content-mod" / "assets" / "underbedrock" / "textures"
 S = 16
@@ -69,16 +71,29 @@ def blob(px, rng, cx, cy, r, colors, tries=26):
             put(px, x, y, rng.choice(colors))
 
 
-def save(px, name):
-    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    for y in range(S):
-        for x in range(S):
-            if px[y][x] is not None:
-                img.putpixel((x, y), px[y][x])
-    path = ROOT / name
+def _chunk(tag, data):
+    body = tag + data
+    return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
+
+
+def write_png(path, rows):
+    """A truecolour RGBA PNG, written by hand: no Pillow anywhere."""
+    width, height = len(rows[0]), len(rows)
+    raw = b"".join(
+        b"\x00" + b"".join(bytes(px) if px is not None else b"\x00\x00\x00\x00" for px in row)
+        for row in rows
+    )
+    png = b"\x89PNG\r\n\x1a\n"
+    png += _chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+    png += _chunk(b"IDAT", zlib.compress(raw, 9))
+    png += _chunk(b"IEND", b"")
     path.parent.mkdir(parents=True, exist_ok=True)
-    img.save(path)
-    print(f"wrote {path.name}")
+    path.write_bytes(png)
+
+
+def save(px, name):
+    write_png(ROOT / name, px)
+    print(f"wrote {name}")
 
 
 # --- blocks -----------------------------------------------------------------
@@ -281,22 +296,18 @@ def pack_icon():
     """The pack's icon: a blue crystal in the dark stone, 64x64."""
     rng = random.Random(101)
     big = 64
-    img = Image.new("RGBA", (big, big), (0, 0, 0, 255))
-    for y in range(big):
-        for x in range(big):
-            c = rng.choice([VOID_DARK, VOID_MID, VOID_DARK, VOID_EDGE])
-            img.putpixel((x, y), c)
+    rows = [[rng.choice([VOID_DARK, VOID_MID, VOID_DARK, VOID_EDGE]) for _ in range(big)]
+            for _ in range(big)]
     # A diamond of crystal light in the middle.
     cx = cy = big // 2
     for y in range(big):
         for x in range(big):
             d = abs(x - cx) + abs(y - cy)
             if d < 14:
-                c = BLUE_WHITE if d < 4 else BLUE_BRIGHT if d < 8 else BLUE_MID if d < 11 else BLUE_DEEP
-                img.putpixel((x, y), c)
+                rows[y][x] = (BLUE_WHITE if d < 4 else BLUE_BRIGHT if d < 8
+                              else BLUE_MID if d < 11 else BLUE_DEEP)
     path = ROOT.parent.parent.parent.parent / "datapack" / "underbedrock_world" / "pack.png"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    img.save(path)
+    write_png(path, rows)
     print(f"wrote {path.name}")
 
 

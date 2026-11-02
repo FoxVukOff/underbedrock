@@ -80,7 +80,7 @@ fn main() {
         fails,
         "the row is the mod's",
         mods.first().is_some_and(|m| m.id == "underbedrock_core"
-            && m.title == "Under Bedrock 0.2.0"
+            && m.title == "Under Bedrock 0.0.1"
             && m.description.contains("void-alloy pickaxe")
             && m.keys.is_empty())
     );

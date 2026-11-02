@@ -12,7 +12,7 @@ use std::collections::{HashMap, HashSet};
 /// The mod's id (its settings folder), name and version.
 pub const ID: &str = "underbedrock_core";
 pub const NAME: &str = "Under Bedrock";
-pub const VERSION: &str = "0.2.0";
+pub const VERSION: &str = "0.0.1";
 pub const DESCRIPTION: &str = "The void-alloy pickaxe digs bedrock and the voidshell gate under it: hold it on the block and the block goes, into the dark world the mod's datapack makes below, where its own creatures live. /abyss lists the commands.";
 
 /// The pickaxe that digs bedrock, and what it digs: the bedrock floor and the
@@ -304,6 +304,34 @@ pub fn counts_towards_cap(kind: &str, pos: [f64; 3], player: [f64; 3]) -> bool {
         && (pos[2] - player[2]).abs() <= MOB_RANGE
 }
 
+/// One look for a place to spawn: `near` mobs of the mod's are within reach
+/// already, and `air` says whether a cell is open (the caller reads its
+/// world). The first attempt with air at the feet and the head, and a floor
+/// under the feet, wins: its kind and spot. None when the cap is full or no
+/// attempt finds a pocket.
+pub fn spawn_plan(
+    seed: u64,
+    at: [f64; 3],
+    near: usize,
+    air: impl Fn([i32; 3]) -> bool,
+) -> Option<(&'static str, [f64; 3])> {
+    if near >= MOB_CAP {
+        return None;
+    }
+    for attempt in 0..SPAWN_ATTEMPTS {
+        let [dx, dy, dz] = candidate_offset(seed, attempt);
+        let spot = [at[0] + dx as f64, (at[1] + dy as f64).floor(), at[2] + dz as f64];
+        let feet = [spot[0] as i32, spot[1] as i32, spot[2] as i32];
+        // A pocket: air where the mob would stand, air over its head, and a
+        // floor under it that is not the world's own bottom air.
+        if !(air(feet) && air([feet[0], feet[1] + 1, feet[2]]) && !air([feet[0], feet[1] - 1, feet[2]])) {
+            continue;
+        }
+        return Some((pick_kind(seed.wrapping_add(attempt as u64)), spot));
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -388,6 +416,33 @@ mod tests {
             }
         }
         assert_ne!(candidate_offset(3, 0), candidate_offset(3, 1));
+    }
+
+    #[test]
+    fn a_spawn_plan_needs_a_pocket_and_room_under_the_cap() {
+        let at = [0.5, -200.0, 0.5];
+        // Everything open: no floor under any feet, so no plan.
+        assert_eq!(spawn_plan(7, at, 0, |_| true), None);
+        // At the cap: no plan even with a pocket.
+        let floor_of = |seed: u64| {
+            let [dx, dy, dz] = candidate_offset(seed, 0);
+            [
+                (at[0] + dx as f64) as i32,
+                (at[1] + dy as f64).floor() as i32 - 1,
+                (at[2] + dz as f64) as i32,
+            ]
+        };
+        let floor = floor_of(7);
+        let pocket = move |cell: [i32; 3]| cell != floor;
+        assert_eq!(spawn_plan(7, at, MOB_CAP, pocket), None);
+        // With room and a floor: the first attempt's kind and spot.
+        let (kind, spot) = spawn_plan(7, at, MOB_CAP - 1, pocket).expect("a plan");
+        assert_eq!(kind, pick_kind(7));
+        let [dx, dy, dz] = candidate_offset(7, 0);
+        assert_eq!(
+            spot,
+            [at[0] + dx as f64, (at[1] + dy as f64).floor(), at[2] + dz as f64]
+        );
     }
 
     #[test]

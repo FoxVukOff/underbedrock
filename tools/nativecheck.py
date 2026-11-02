@@ -127,6 +127,19 @@ def check(path):
         target = injection.get('target', f'hook {injection.get("hook")}')
         print(f'      {injection["kind"]} {target.split("::")[-1]} <- {injection["helper"]}'
               f' ({len(injection.get("bindings", []))} bindings)')
+    # horizon-mixins compiles a helper file only if it holds exactly one
+    # private function (E_INVALID_HELPER otherwise): check that here, where a
+    # failure costs a second, not a launcher build.
+    for injection in injections:
+        helper = injection.get('helper')
+        if not helper:
+            continue
+        source = files[f'{prefix}{helper}'].decode()
+        tops = [l for l in source.splitlines() if l.startswith('fn ')]
+        pubs = [l for l in source.splitlines() if l.startswith('pub fn ')]
+        if len(tops) != 1 or pubs:
+            return fail(f'{helper}: a mixin helper file must hold exactly one private '
+                        f'function (found {len(tops)} top-level, {len(pubs)} pub)')
     for name, data in sorted(files.items()):
         print(f'    {name} ({len(data)} bytes)')
     return 0

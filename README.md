@@ -185,7 +185,8 @@ python tools/pack_release.py
 which writes `release/`: the `.hmod`, the `.hnmod`, the data pack zip
 (`pack.mcmeta` at its root) and an `underbedrock-install.zip` bundle with an
 `INSTALL.txt`. Regenerating textures or worldgen data (`make_textures.py`,
-`make_content.py`, both Python as well) is only needed when editing them.
+`make_content.py`, both plain Python as well — no Pillow, no Rust) is only needed
+when editing them.
 
 Rust enters only the checks, all of them runnable without a Horizon install:
 
@@ -216,7 +217,7 @@ datapack/underbedrock_world the tall world: dimension type, noise settings and a
                             density functions, material rule, carver overrides
 native-mod/                 the native mod: mixins/underbedrock_core/ holds runtime.rs
                             (logic and tests) and one helper file per hook point
-tools/make_textures.py      draws every texture (Pillow)
+tools/make_textures.py      draws every texture (pure Python, writes its own PNGs)
 tools/make_content.py       generates content-mod/ and datapack/ from one place
 tools/pack_release.py       packs release/ with nothing but Python
 tools/modbuild/             checks and packs the content mod with Horizon's own parser
