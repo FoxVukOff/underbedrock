@@ -193,9 +193,10 @@ The distributable files need **Python 3.11+ only** — no Rust:
 python tools/pack_release.py
 ```
 
-which writes `release/`: the `.hmod`, the `.hnmod`, the data pack zip
-(`pack.mcmeta` at its root) and an `underbedrock-install.zip` bundle with an
-`INSTALL.txt`. Regenerating textures or worldgen data (`make_textures.py`,
+which writes `release/`: the `.hmod`, the `.hnmod` and the data pack zip
+(`pack.mcmeta` at its root) — the three files GitHub Releases carries.
+`python tools/pack_release.py --install` adds a downloadable bundle of the
+three with an `INSTALL.txt`; it is a transport archive, not repo content. Regenerating textures or worldgen data (`make_textures.py`,
 `make_content.py`, both plain Python as well — no Pillow, no Rust) is only needed
 when editing them.
 

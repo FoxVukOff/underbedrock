@@ -42,7 +42,7 @@ write(MOD / "horizon-mod.toml", f'''id = "{ID}"
 name = "Underbedrock"
 version = "0.0.1"
 description = "A dark world under the bedrock floor: voidstone caverns lit by blue crystals, voidshell gates, and a void-alloy pickaxe that digs bedrock."
-authors = ["you"]
+authors = ["FoxVukOff"]
 # A content mod: blocks, items and mob effects from data/ and assets/, no code (API 0.2).
 api = "0.2"
 side = "both"

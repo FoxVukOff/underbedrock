@@ -3,11 +3,15 @@
 
     python tools/pack_release.py
 
-Делает четыре файла:
+Делает три файла (их и выкладывают в Releases; в репозитории бинарников сверх
+этого быть не должно):
     release/underbedrock.hmod          контент-мод (zip: horizon-mod.toml первым, затем assets/ и data/)
     release/underbedrock_core.hnmod    нативный мод (тем же packager'ом, что и в native-mod/tools)
     release/underbedrock_world.zip     датапак мира, pack.mcmeta в корне архива: кладётся в datapacks/ как есть
-    release/underbedrock-install.zip   все три плюс INSTALL.txt одной скачиваемой пачкой
+
+С `--install` сверх того собирает release/underbedrock-install.zip — все три
+плюс INSTALL.txt одной скачиваемой пачкой:_transport-архив, в репозиторий его
+не коммитят_.
 
 Нужен только Python 3.11+ (tomllib). Раст не обязателен: он нужен лишь проверкам
 (cargo test в native-mod, stubcheck), но не самим файлам мода. Исходники блоков,
@@ -91,7 +95,8 @@ def pack_install(parts):
 def main():
     RELEASE.mkdir(exist_ok=True)
     parts = [pack_hmod(), pack_hnmod(), pack_datapack()]
-    parts.append(pack_install(parts))
+    if '--install' in sys.argv[1:]:
+        parts.append(pack_install(parts))
     for part in parts:
         digest = hashlib.sha256(part.read_bytes()).hexdigest()
         print(f'{part.relative_to(ROOT)}  {part.stat().st_size} bytes  sha256 {digest[:16]}')
