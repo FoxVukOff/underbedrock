@@ -6,7 +6,7 @@ the same path rules, the same manifest checks, the same agreement between `horiz
 and the bundle's `horizon-mixin.toml`. The Rust original sits behind the crate's `index` feature,
 which pulls naga; this runs anywhere.
 
-    python3 tools/nativecheck.py dist/underbedrock_core.hnmod
+    python3 tools/nativecheck.py release/underbedrock_core.hnmod
 """
 import json
 import re

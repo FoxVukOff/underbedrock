@@ -6,9 +6,9 @@
 #
 # What it makes:
 #   content-mod/ and datapack/   the generated sources and data (textures, blocks, recipes, worldgen)
-#   dist/underbedrock.hmod       the content mod, packed by Horizon's own rules
-#   dist/underbedrock_core.hnmod the native mod, source-only, as the launcher wants it
-#   dist/underbedrock_world.zip  the world datapack, ready to drop into a world's datapacks
+#   release/underbedrock.hmod       the content mod, packed by Horizon's own rules
+#   release/underbedrock_core.hnmod the native mod, source-only, as the launcher wants it
+#   release/underbedrock_world.zip  the world datapack, ready to drop into a world's datapacks
 set -e
 cd "$(dirname "$0")/.."
 
@@ -17,7 +17,7 @@ python3 tools/make_textures.py
 python3 tools/make_content.py
 
 echo "== the content mod, checked and packed by Horizon's own parser =="
-cargo run --manifest-path tools/modbuild/Cargo.toml --quiet -- content-mod dist/underbedrock.hmod
+cargo run --manifest-path tools/modbuild/Cargo.toml --quiet -- content-mod release/underbedrock.hmod
 
 echo "== the native mod: tests, style, lint =="
 cd native-mod
@@ -26,10 +26,10 @@ cargo fmt -- --check
 cargo clippy --quiet --all-targets -- -D warnings
 python3 tools/package.py
 cd ..
-cp native-mod/target/underbedrock_core-*.hnmod dist/underbedrock_core.hnmod
+cp native-mod/target/underbedrock_core-*.hnmod release/underbedrock_core.hnmod
 
 echo "== the native mod's bundle, read the way Horizon's registry reads it =="
-python3 tools/nativecheck.py dist/underbedrock_core.hnmod
+python3 tools/nativecheck.py release/underbedrock_core.hnmod
 
 echo "== the native mod's sources, compiled and run against a stub of the game =="
 cd tools/stubcheck
@@ -43,7 +43,7 @@ python3 - <<'PY'
 import zipfile
 from pathlib import Path
 root = Path('datapack/underbedrock_world')
-out = Path('dist/underbedrock_world.zip')
+out = Path('release/underbedrock_world.zip')
 out.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(out, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
     for path in sorted(root.rglob('*')):
@@ -53,4 +53,4 @@ print(f"wrote {out} ({out.stat().st_size} bytes)")
 PY
 
 echo "== all built =="
-ls -l dist/
+ls -l release/

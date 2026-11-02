@@ -7,7 +7,7 @@
 
 Мод состоит из трёх частей, которые ставятся вместе:
 
-| Файл в `dist/` | Что это | Куда класть |
+| Файл в `release/` | Что это | Куда класть |
 | --- | --- | --- |
 | `underbedrock.hmod` | контент-мод: блоки, предметы, рецепты, лут, руда, вкладка, языки | `horizon-mods/` |
 | `underbedrock_core.hnmod` | нативный мод: ломание бедрока, прогресс, команды `/etherium` | `horizon-native-mods/` |
@@ -51,12 +51,12 @@
 игра не имеет папки `horizon-mods` и играет как ваниль.
 
 ### 1. Контент-мод
-Скопируйте `dist/underbedrock.hmod` в папку `horizon-mods/` вашей игры (инстанса
+Скопируйте `release/underbedrock.hmod` в папку `horizon-mods/` вашей игры (инстанса
 лаунчера; папку можно создать самому). Включите мод: **Настройки → Моды → Under Bedrock**,
 или строкой `mod.underbedrock:true` в файле `horizon-mods.txt` рядом.
 
 ### 2. Нативный мод
-Скопируйте `dist/underbedrock_core.hnmod` в папку `horizon-native-mods/` и включите
+Скопируйте `release/underbedrock_core.hnmod` в папку `horizon-native-mods/` и включите
 тем же способом. При первом включении лаунчер **соберёт свою сборку игры** с этим модом:
 нужен интернет (скачивается Rust-тулчейн и исходники Horizon, один раз, несколько минут).
 Мод использует только официальные hook points (`hooks: 126`), поэтому собирается на любой
@@ -71,7 +71,7 @@ Horizon, где hook points версии 126 или новее; лаунчер �
 до того, как мир сгенерирует чанки. Два способа:
 
 **Способ А (проще).** Создайте новый мир, выйдите в меню. Распакуйте
-`dist/underbedrock_world.zip` (или скопируйте папку `datapack/underbedrock_world`)
+`release/underbedrock_world.zip` (или скопируйте папку `datapack/underbedrock_world`)
 в `saves/<имя мира>/datapacks/`. Датапаки-папки (`file/…`) включаются игрой сами —
 в `datapacks.json` их можно не прописывать. Зайдите в мир: он высокий.
 
@@ -137,6 +137,38 @@ Under Bedrock's world is below the bedrock floor.` — всё встало. Ес
 
 ---
 
+## Сборка у себя (Windows и любые ОС)
+
+Готовые файлы можно не искать: мод собирается из этого репозитория одним Питоном,
+Раст не нужен совсем (он нужен только проверкам).
+
+1. Поставьте Python 3.11 или новее (с python.org; при установке отметьте
+   «Add Python to PATH»). Больше ничего не требуется.
+2. В PowerShell или терминале:
+
+   ```
+   git clone <адрес этого репозитория>
+   cd underbedrock
+   python tools/pack_release.py
+   ```
+
+   (если `python` не находится — `py tools/pack_release.py`)
+3. В папке `release/` появятся те же четыре файла: `underbedrock.hmod`,
+   `underbedrock_core.hnmod`, `underbedrock_world.zip` и пачка
+   `underbedrock-install.zip` с `INSTALL.txt`. Дальше — установка по шагам выше.
+
+Проверки (по желанию, нужен Rust 1.85+):
+
+```
+cd native-mod && cargo test                      # логика нативного мода
+cd ../tools/stubcheck && cargo run -- on && cargo run -- off   # исходники мода против сигнатур Horizon, 34 сценария x2
+cd ../.. && python tools/nativecheck.py release/underbedrock_core.hnmod
+```
+
+Полный цикл (текстуры и контент генерируются заново, контент-мод пакуется парсером
+самой Horizon, все проверки) — `sh tools/build_all.sh`; на Windows это Git Bash,
+и в первый раз он скачает зависимости Раста.
+
 ## Исходники и пересборка
 
 ```
@@ -153,12 +185,13 @@ tools/modbuild/         пакует и проверяет контент-мод
 tools/nativecheck.py    читает .hnmod теми же правилами, что реестр Horizon
 tools/stubcheck/        компилирует исходники нативного мода против точных сигнатур
                         Horizon и прогоняет 34 сценария в двух конфигурациях
-tools/build_all.sh      всё вышеперечисленное одним запуском
+tools/pack_release.py   собирает release/ одним Питоном, без Раста (ваш вариант на Windows)
+tools/build_all.sh      всё вышеперечисленное одним запуском (Раст + Horizon-парсер)
 ```
 
 Пересборка (Rust 1.95, python3 с Pillow): `sh tools/build_all.sh`. Прогон проверок
 по отдельности: `cd native-mod && cargo test`, `cd tools/stubcheck && cargo run -- on`
-и `-- off`, `python3 tools/nativecheck.py dist/underbedrock_core.hnmod`.
+и `-- off`, `python3 tools/nativecheck.py release/underbedrock_core.hnmod`.
 
 Версии, на которых мод сделан и проверен: Horizon `ea55997` (26.3, hook points v126,
 NATIVE_HOOKS_API 153), horizon-mixins `ddd9700`. Форматы `.hmod`, `.hnmod`, датапака
