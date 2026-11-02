@@ -1,11 +1,15 @@
 {
   "block.underbedrock.voidstone": "Voidstone",
   "block.underbedrock.voidstone_bricks": "Voidstone Bricks",
-  "block.underbedrock.etherium_ore": "Etherium Ore",
-  "block.underbedrock.etherium_block": "Block of Etherium",
-  "block.underbedrock.ether_crystal": "Ether Crystal",
-  "item.underbedrock.raw_etherium": "Raw Etherium",
-  "item.underbedrock.etherium_ingot": "Enchanted Alloy Ingot",
-  "item.underbedrock.etherium_pickaxe": "Enchanted Alloy Pickaxe",
+  "block.underbedrock.void_gravel": "Void Gravel",
+  "block.underbedrock.void_crystal_ore": "Void Crystal Ore",
+  "block.underbedrock.void_crystal_block": "Block of Void Crystal",
+  "block.underbedrock.crystal_lamp": "Crystal Lamp",
+  "block.underbedrock.crystal_sprout": "Crystal Sprout",
+  "block.underbedrock.voidshell": "Voidshell",
+  "block.underbedrock.abyss_bedrock": "Abyss Bedrock",
+  "item.underbedrock.void_crystal": "Void Crystal",
+  "item.underbedrock.void_alloy": "Void Alloy Ingot",
+  "item.underbedrock.void_alloy_pickaxe": "Void Alloy Pickaxe",
   "itemGroup.underbedrock": "Underbedrock"
 }

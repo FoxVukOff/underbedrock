@@ -1,9 +1,9 @@
-// /etherium: the pickaxe, how deep the world goes, the dig time and the drop.
+// /abyss: the pickaxe, how deep the world goes, the dig time and the drop.
 fn underbedrock_core_performed(game: &mut crate::game::Game<'_>, command: &str, ran: &mut bool) {
     use crate::game::underbedrock_core as m;
     use horizon_client::text::Text;
     let mut words = command.split_whitespace();
-    if words.next() != Some("etherium") || !game.native_on(m::ID) {
+    if words.next() != Some("abyss") || !game.native_on(m::ID) {
         return;
     }
     *ran = true;
@@ -11,7 +11,7 @@ fn underbedrock_core_performed(game: &mut crate::game::Game<'_>, command: &str, 
         None => m::HELP.to_owned(),
         Some("give") => {
             if game.native_give_items(m::PICKAXE, 1) > 0 {
-                "An etherium pickaxe: in the inventory, or at the player's feet.".to_owned()
+                "A void-alloy pickaxe: in the inventory, or at the player's feet.".to_owned()
             } else {
                 "The pickaxe didn't fit: is a world open?".to_owned()
             }
@@ -32,7 +32,7 @@ fn underbedrock_core_performed(game: &mut crate::game::Game<'_>, command: &str, 
             game.native_set_setting(m::ID, "drop_bedrock", if next { "true" } else { "false" });
             m::drop_label(next)
         }
-        Some(other) => format!("There is no /etherium {other}. {}", m::HELP),
+        Some(other) => format!("There is no /abyss {other}. {}", m::HELP),
     };
     game.native_feedback(Text::literal(line));
 }

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    " V ",
+    "VCV",
+    " V "
+  ],
+  "key": {
+    "V": "underbedrock:voidstone",
+    "C": "underbedrock:void_crystal"
+  },
+  "result": {
+    "id": "underbedrock:crystal_lamp"
+  }
+}

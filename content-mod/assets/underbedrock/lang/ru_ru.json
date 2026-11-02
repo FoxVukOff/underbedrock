@@ -1,11 +1,15 @@
 {
   "block.underbedrock.voidstone": "Пустотный камень",
   "block.underbedrock.voidstone_bricks": "Пустотный кирпич",
-  "block.underbedrock.etherium_ore": "Эфириумовая руда",
-  "block.underbedrock.etherium_block": "Эфириумовый блок",
-  "block.underbedrock.ether_crystal": "Эфирный кристалл",
-  "item.underbedrock.raw_etherium": "Необработанный эфириум",
-  "item.underbedrock.etherium_ingot": "Слиток зачарованного сплава",
-  "item.underbedrock.etherium_pickaxe": "Кирка из зачарованного сплава",
-  "itemGroup.underbedrock": "Подбедрок"
+  "block.underbedrock.void_gravel": "Пустотный гравий",
+  "block.underbedrock.void_crystal_ore": "Руда пустотного кристалла",
+  "block.underbedrock.void_crystal_block": "Блок пустотного кристалла",
+  "block.underbedrock.crystal_lamp": "Кристальный светильник",
+  "block.underbedrock.crystal_sprout": "Кристальный росток",
+  "block.underbedrock.voidshell": "Панцирь пустоты",
+  "block.underbedrock.abyss_bedrock": "Бедрок бездны",
+  "item.underbedrock.void_crystal": "Пустотный кристалл",
+  "item.underbedrock.void_alloy": "Слиток пустотного сплава",
+  "item.underbedrock.void_alloy_pickaxe": "Кирка из пустотного сплава",
+  "itemGroup.underbedrock": "Под бедроком"
 }

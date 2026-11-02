@@ -1,6 +1,6 @@
 [mod]
 id = "underbedrock_core"
-version = "0.1.0"
+version = "0.2.0"
 priority = 100
 
 # The revision it was made and tested on. The mod hooks only Horizon's native
@@ -63,7 +63,7 @@ bindings = [
   { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
 ]
 
-# /etherium in the server's command tree.
+# /abyss in the server's command tree.
 [[injection]]
 id = "commands"
 kind = "HEAD"

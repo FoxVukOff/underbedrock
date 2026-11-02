@@ -1,0 +1,10 @@
+{
+  "template": "minecraft:glowstone",
+  "properties": {
+    "hardness": 1.8,
+    "explosion_resistance": 1.8,
+    "light": 15,
+    "sounds": "minecraft:glass"
+  },
+  "item": true
+}

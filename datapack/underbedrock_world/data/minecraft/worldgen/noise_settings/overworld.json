@@ -5,6 +5,40 @@
   },
   "default_block": "minecraft:stone",
   "default_fluid": "minecraft:water",
+  "aquifers": {
+    "barrier": 1.0,
+    "exclusion": {
+      "type": "minecraft:min",
+      "left": {
+        "type": "minecraft:sub",
+        "left": -0.225,
+        "right": "minecraft:overworld/erosion"
+      },
+      "right": {
+        "type": "minecraft:max",
+        "left": {
+          "type": "minecraft:sub",
+          "left": "minecraft:overworld/depth",
+          "right": 0.9
+        },
+        "right": 0.0
+      }
+    },
+    "fluid_level_floodedness": {
+      "type": "minecraft:noise",
+      "noise": "underbedrock:floodedness",
+      "xz_scale": 0.67,
+      "y_scale": 0.71
+    },
+    "fluid_level_spread": {
+      "type": "minecraft:noise",
+      "noise": "underbedrock:spread",
+      "xz_scale": 1.0,
+      "y_scale": 0.71
+    },
+    "lava": 0.0,
+    "surface_level": "minecraft:overworld/chunk_surface_level"
+  },
   "noise_router": {
     "chunk_surface_level": "minecraft:overworld/chunk_surface_level",
     "continents": "minecraft:overworld/continents",

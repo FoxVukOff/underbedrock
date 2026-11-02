@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:max",
+  "left": {
+    "type": "minecraft:sub",
+    "left": "underbedrock:cheese",
+    "right": 0.25
+  },
+  "right": {
+    "type": "minecraft:sub",
+    "left": 0.09,
+    "right": {
+      "type": "minecraft:abs",
+      "input": "underbedrock:tunnels"
+    }
+  }
+}

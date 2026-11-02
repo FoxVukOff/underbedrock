@@ -43,9 +43,123 @@ def states(value, path, key_path, out):
             states(child, path, f'{key_path}[{i}].', out)
 
 
+AQUIFER_KEYS = ("barrier", "exclusion", "fluid_level_floodedness",
+                "fluid_level_spread", "lava", "surface_level")
+BUILTIN_DENSITIES = ("minecraft:overworld/", "minecraft:y")
+BUILTIN_RULES = ("minecraft:overworld",)
+
+
+def structural_checks(fails):
+    """The invariants the Abyss's worldgen depends on (see make_content.py)."""
+    pack = ROOT / 'datapack' / 'underbedrock_world' / 'data'
+
+    settings = json.loads((pack / 'minecraft/worldgen/noise_settings/overworld.json').read_text())
+    aquifers = settings.get('aquifers')
+    if not isinstance(aquifers, dict):
+        fails.append('noise_settings: no "aquifers" object: without it Horizon\'s global '
+                     'fluid picker floods every cave below y -54 with lava')
+    else:
+        missing = [k for k in AQUIFER_KEYS if k not in aquifers]
+        if missing:
+            fails.append(f'noise_settings aquifers: missing {missing}')
+        if aquifers.get('lava') != 0.0:
+            fails.append('noise_settings aquifers: lava must be the constant 0.0 '
+                         '(no lava pocket anywhere)')
+    final = json.loads((pack / 'underbedrock/worldgen/density_function/final_density.json').read_text())
+    if final.get('max_exclusive') != -54.0:
+        fails.append('final_density: the solid underground must start at y -54 '
+                     '(the lava sea line)')
+    if not isinstance(final.get('when_in_range'), (int, float)) or final['when_in_range'] <= 0:
+        fails.append('final_density: below y -54 the density must be a positive constant '
+                     '(solid rock; the caves are carved by the material rule, so no fluid '
+                     'is ever placed down there)')
+
+    surface = json.loads((pack / 'underbedrock/worldgen/material_rule/surface.json').read_text())
+    text = json.dumps(surface)
+    for anchor, what in (('-64', 'the bedrock transition band'),
+                         ('-564', 'the abyss bedrock floor'),
+                         ('-65', 'the voidshell gate'),
+                         ('-72', 'the carved world')):
+        if f'"absolute": {anchor}' not in text:
+            fails.append(f'surface rule: no window anchored at {anchor} ({what})')
+    if '"minecraft:bedrock"' not in text or '"underbedrock:abyss_bedrock"' not in text \
+            or '"underbedrock:voidshell"' not in text or '"underbedrock:voidstone"' not in text:
+        fails.append('surface rule: a depth block (bedrock/abyss_bedrock/voidshell/voidstone) is missing')
+    # A vertical gradient is true at every depth below its band: before any
+    # block rule under one, a y_above condition must narrow it to a window, or
+    # the block paints the whole world below the band (the old "infinite
+    # bedrock" bug).
+    def narrowed(node):
+        if isinstance(node, dict):
+            if node.get('type') == 'minecraft:condition':
+                if node.get('if_true', {}).get('type') == 'minecraft:y_above':
+                    return True
+                return narrowed(node.get('then_run'))
+            if node.get('type') == 'minecraft:sequence':
+                return all(narrowed(child) for child in node.get('sequence', []))
+            if node.get('type') == 'minecraft:block':
+                return False
+        return True
+    def find_gradients(node, where):
+        if isinstance(node, dict):
+            if node.get('type') == 'minecraft:condition' \
+                    and node.get('if_true', {}).get('type') == 'minecraft:vertical_gradient' \
+                    and not narrowed(node.get('then_run')):
+                fails.append(f'{where}: a vertical_gradient condition reaches a block rule '
+                             f'with no y_above window: it would paint every depth below its band')
+            for value in node.values():
+                find_gradients(value, where)
+        elif isinstance(node, list):
+            for child in node:
+                find_gradients(child, where)
+    find_gradients(surface, 'surface rule')
+
+    for name in ('cave', 'cave_extra_underground', 'canyon'):
+        carver = json.loads((pack / f'minecraft/worldgen/carver/{name}.json').read_text())
+        if carver.get('probability') != 0.0:
+            fails.append(f'carver {name}: probability must be 0 (a carver tunnel below '
+                         f'y -54 would be filled with the engine\'s deep lava sea)')
+
+    # Every density function and material rule reference resolves.
+    df = pack / 'underbedrock/worldgen/density_function'
+    have_df = {f'underbedrock:{p.stem}' for p in df.glob('*.json')}
+    have_noise = {f'underbedrock:{p.stem}' for p in (pack / 'underbedrock/worldgen/noise').glob('*.json')}
+    have_rule = {f'underbedrock:{p.stem}' for p in (pack / 'underbedrock/worldgen/material_rule').glob('*.json')}
+
+    def refs(node, where):
+        if isinstance(node, dict):
+            if node.get('type') == 'minecraft:noise' and isinstance(node.get('noise'), str):
+                name = node['noise']
+                if name.startswith('underbedrock:') and name not in have_noise:
+                    fails.append(f'{where}: noise {name} has no file')
+            for key, value in node.items():
+                if key in ('noise', 'random_name') or key in STATE_KEYS or key in BLOCK_KEYS:
+                    continue
+                if isinstance(value, str) and value.startswith('underbedrock:'):
+                    pool = have_df if key in ('input', 'left', 'right', 'when_in_range',
+                                              'when_out_of_range', 'argument') else have_rule
+                    if value not in pool and value not in have_rule:
+                        fails.append(f'{where}: reference {value} has no file')
+                else:
+                    refs(value, where)
+        elif isinstance(node, list):
+            for child in node:
+                refs(child, where)
+    for path in sorted(df.glob('*.json')):
+        refs(json.loads(path.read_text()), path.name)
+    refs(surface, 'surface rule')
+    for base in (ROOT / 'content-mod' / 'data', ROOT / 'datapack'):
+        for path in sorted(base.rglob('*.json')):
+            text = path.read_text()
+            if 'minecraft:lava' in text:
+                fails.append(f'{path.relative_to(ROOT)}: mentions minecraft:lava '
+                             f'(the Abyss must have none)')
+
+
 def main():
     known = mod_blocks()
     fails, checked = [], 0
+    structural_checks(fails)
     for base in (ROOT / 'content-mod' / 'data', ROOT / 'datapack'):
         for path, doc in walk(base):
             found = []

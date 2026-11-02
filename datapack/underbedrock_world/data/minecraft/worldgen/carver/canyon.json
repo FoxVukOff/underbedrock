@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:canyon",
+  "probability": 0.0,
+  "y": {
+    "type": "minecraft:constant",
+    "value": -55
+  },
+  "vertical_rotation": {
+    "type": "minecraft:constant",
+    "value": 0.0
+  },
+  "shape": {
+    "distance_factor": {
+      "type": "minecraft:constant",
+      "value": 1.0
+    },
+    "thickness": {
+      "type": "minecraft:constant",
+      "value": 1.0
+    },
+    "width_smoothness": 1,
+    "horizontal_radius_factor": {
+      "type": "minecraft:constant",
+      "value": 1.0
+    },
+    "vertical_radius_default_factor": 0.5,
+    "vertical_radius_center_factor": 4.0,
+    "y_scale": {
+      "type": "minecraft:constant",
+      "value": 1.0
+    }
+  }
+}

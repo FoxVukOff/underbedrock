@@ -31,13 +31,13 @@ INSTALL_TXT = """Under Bedrock (Horizon 26.3) — install. Full guide: the mod's
 3. underbedrock_world.zip   -> saves/<NEW world>/datapacks/ as it is, pack.mcmeta is at the zip's root; world datapacks enable themselves
 
 Create the world AFTER the data pack lands: older chunks keep the old floor with void below it.
-In game: /etherium depth  ->  "y -576 .. 319". Hold the attack key on bedrock with the alloy pickaxe, ~3 s.
+In game: /abyss depth  ->  "y -576 .. 319". Hold the attack key on bedrock (or the voidshell under it) with the void-alloy pickaxe, ~3 s. The abyss bedrock at the very bottom breaks for nobody.
 
 --- RU ---
 1. underbedrock.hmod        -> в horizon-mods/        (включить: Настройки -> Моды -> Under Bedrock)
 2. underbedrock_core.hnmod  -> в horizon-native-mods/ (включить там же)
 3. underbedrock_world.zip   -> как есть в saves/<НОВЫЙ мир>/datapacks/ (pack.mcmeta в корне архива)
-Мир создавать ПОСЛЕ датапака. Проверка: /etherium depth -> "y -576 .. 319". Держать ЛКМ на бедроке ~3 c.
+Мир создавать ПОСЛЕ датапака. Проверка: /abyss depth -> "y -576 .. 319". Держать ЛКМ на бедроке (или на панцире пустоты под ним) с киркой из пустотного сплава, ~3 c. Бедрок бездны на самом дне не ломается ничем.
 """
 
 

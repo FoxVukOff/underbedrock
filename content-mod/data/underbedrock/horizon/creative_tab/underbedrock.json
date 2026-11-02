@@ -1,14 +1,18 @@
 {
   "title": "itemGroup.underbedrock",
-  "icon": "underbedrock:etherium_pickaxe",
+  "icon": "underbedrock:void_alloy_pickaxe",
   "items": [
-    "underbedrock:etherium_pickaxe",
-    "underbedrock:etherium_block",
-    "underbedrock:etherium_ingot",
-    "underbedrock:raw_etherium",
-    "underbedrock:etherium_ore",
-    "underbedrock:ether_crystal",
+    "underbedrock:void_alloy_pickaxe",
+    "underbedrock:void_alloy",
+    "underbedrock:void_crystal",
+    "underbedrock:void_crystal_ore",
+    "underbedrock:void_crystal_block",
+    "underbedrock:crystal_lamp",
+    "underbedrock:crystal_sprout",
     "underbedrock:voidstone",
-    "underbedrock:voidstone_bricks"
+    "underbedrock:voidstone_bricks",
+    "underbedrock:void_gravel",
+    "underbedrock:voidshell",
+    "underbedrock:abyss_bedrock"
   ]
 }

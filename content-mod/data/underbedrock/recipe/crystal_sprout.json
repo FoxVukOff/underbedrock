@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "underbedrock:void_crystal",
+    "minecraft:bone_meal"
+  ],
+  "result": {
+    "id": "underbedrock:crystal_sprout"
+  }
+}

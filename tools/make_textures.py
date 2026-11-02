@@ -3,8 +3,12 @@
 
 Everything is drawn from a fixed seed, so the same script always gives the same
 bytes. Run: python3 tools/make_textures.py
+
+The palette is the Abyss: near-black blue stone, and void crystals in it that
+glow cold blue.
 """
 import random
+import shutil
 from pathlib import Path
 
 from PIL import Image
@@ -12,24 +16,32 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1] / "content-mod" / "assets" / "underbedrock" / "textures"
 S = 16
 
-# The mod's palette: a cold void stone and the teal "enchanted alloy" in it.
-VOID_DARK = (25, 25, 35, 255)
-VOID_MID = (36, 36, 50, 255)
-VOID_LIGHT = (52, 52, 70, 255)
-VOID_EDGE = (17, 17, 25, 255)
+# The mod's palette: a cold void stone and the blue crystal light in it.
+VOID_DARK = (18, 18, 26, 255)
+VOID_MID = (28, 28, 40, 255)
+VOID_LIGHT = (44, 46, 64, 255)
+VOID_EDGE = (12, 12, 18, 255)
 
-ETHER_DEEP = (12, 74, 78, 255)
-ETHER_MID = (26, 150, 152, 255)
-ETHER_BRIGHT = (94, 235, 224, 255)
-ETHER_WHITE = (198, 255, 250, 255)
-ETHER_VIOLET = (86, 62, 148, 255)
-ETHER_VIOLET_LIGHT = (146, 116, 214, 255)
+BLUE_DEEP = (16, 60, 120, 255)
+BLUE_MID = (40, 120, 220, 255)
+BLUE_BRIGHT = (110, 190, 255, 255)
+BLUE_WHITE = (205, 240, 255, 255)
 
-STEEL_DARK = (52, 56, 66, 255)
-STEEL_MID = (96, 100, 112, 255)
-STEEL_LIGHT = (146, 150, 162, 255)
-WOOD_DARK = (74, 52, 30, 255)
-WOOD_MID = (110, 78, 44, 255)
+SHELL_DARK = (10, 10, 16, 255)
+SHELL_MID = (18, 18, 28, 255)
+SHELL_VEIN = (28, 76, 150, 255)
+
+ABYSS_DARK = (8, 8, 10, 255)
+ABYSS_MID = (16, 16, 22, 255)
+ABYSS_BLUE = (18, 36, 72, 255)
+
+GRAVEL_A = (30, 30, 42, 255)
+GRAVEL_B = (44, 44, 58, 255)
+GRAVEL_C = (22, 22, 32, 255)
+GRAVEL_D = (56, 58, 76, 255)
+
+WOOD_MID = (70, 58, 88, 255)
+WOOD_DARK = (48, 40, 62, 255)
 
 
 def canvas():
@@ -66,7 +78,7 @@ def save(px, name):
     path = ROOT / name
     path.parent.mkdir(parents=True, exist_ok=True)
     img.save(path)
-    print(f"wrote {path.relative_to(ROOT.parents[3])}")
+    print(f"wrote {path.name}")
 
 
 # --- blocks -----------------------------------------------------------------
@@ -76,230 +88,231 @@ def voidstone(seed=11):
     rng = random.Random(seed)
     px = canvas()
     noise_fill(px, rng, [VOID_MID] * 6 + [VOID_DARK] * 3 + [VOID_LIGHT] * 2)
-    # A few darker cracks and lighter grains, as deepslate's stripes.
     for _ in range(7):
         x, y = rng.randrange(S), rng.randrange(S)
         for _ in range(rng.randint(2, 5)):
             put(px, x, y, VOID_EDGE if rng.random() < 0.6 else VOID_LIGHT)
             x += rng.choice((-1, 0, 1))
             y += rng.choice((0, 1))
-    # Faint violet veins: this stone is not quite stone.
-    for _ in range(3):
-        x, y = rng.randrange(S), rng.randrange(S)
-        for _ in range(rng.randint(2, 4)):
-            put(px, x, y, ETHER_VIOLET)
-            x += 1
-            y += rng.choice((-1, 0, 1))
+    # Faint blue grains: this stone is not quite stone.
+    for _ in range(4):
+        put(px, rng.randrange(S), rng.randrange(S), BLUE_DEEP)
     save(px, "block/voidstone.png")
 
 
 def voidstone_bricks(seed=29):
     rng = random.Random(seed)
     px = canvas()
-    noise_fill(px, rng, [VOID_MID] * 5 + [VOID_DARK] * 3 + [VOID_LIGHT] * 2)
-    # Two courses of bricks, offset, with dark mortar.
-    for row, offset in ((0, 0), (1, 4)):
-        y0 = row * 8
-        for y in (y0, y0 + 7):
-            for x in range(S):
+    noise_fill(px, rng, [VOID_MID] * 5 + [VOID_LIGHT] * 2 + [VOID_DARK])
+    for y in range(S):
+        for x in range(S):
+            if y in (3, 7, 11, 15):
                 put(px, x, y, VOID_EDGE)
-        for x in ((offset + 7) % S, (offset + 15) % S):
-            for y in range(y0, y0 + 8):
+            elif (x + (0 if y < 7 else 4 if y < 11 else 8 if y < 15 else 12)) % 8 == 7:
                 put(px, x, y, VOID_EDGE)
-    for _ in range(20):
-        put(px, rng.randrange(S), rng.randrange(S), rng.choice([VOID_LIGHT, VOID_DARK]))
+    for _ in range(10):
+        put(px, rng.randrange(S), rng.randrange(S), VOID_LIGHT)
     save(px, "block/voidstone_bricks.png")
 
 
-def etherium_ore(seed=41):
-    """Etherium in the void stone: teal crystals with a bright core."""
+def void_gravel(seed=37):
     rng = random.Random(seed)
     px = canvas()
-    noise_fill(px, rng, [VOID_MID] * 6 + [VOID_DARK] * 3 + [VOID_LIGHT] * 2)
+    noise_fill(px, rng, [GRAVEL_A] * 4 + [GRAVEL_B] * 3 + [GRAVEL_C] * 3 + [GRAVEL_D])
+    for _ in range(6):
+        blob(px, rng, rng.randrange(2, 14), rng.randrange(2, 14), 1, [GRAVEL_D, GRAVEL_B], tries=6)
+    for _ in range(3):
+        put(px, rng.randrange(S), rng.randrange(S), BLUE_DEEP)
+    save(px, "block/void_gravel.png")
+
+
+def void_crystal_ore(seed=41):
+    px = canvas()
+    voidstone_into(px, 41)
+    rng = random.Random(seed)
     for cx, cy in ((4, 4), (11, 6), (6, 11), (12, 12)):
-        blob(px, rng, cx, cy, 2, [ETHER_DEEP, ETHER_MID, ETHER_MID])
-        put(px, cx, cy, ETHER_BRIGHT)
-        put(px, cx + rng.choice((-1, 1)), cy + rng.choice((-1, 0)), ETHER_WHITE)
-    save(px, "block/etherium_ore.png")
+        blob(px, rng, cx, cy, 1, [BLUE_MID, BLUE_BRIGHT, BLUE_DEEP], tries=10)
+        put(px, cx, cy, BLUE_WHITE)
+    save(px, "block/void_crystal_ore.png")
 
 
-def etherium_block(seed=53):
-    """The alloy's block: dark metal plates with a teal, faintly lit seam."""
+def voidstone_into(px, seed):
+    rng = random.Random(seed)
+    noise_fill(px, rng, [VOID_MID] * 6 + [VOID_DARK] * 3 + [VOID_LIGHT] * 2)
+    for _ in range(6):
+        x, y = rng.randrange(S), rng.randrange(S)
+        for _ in range(rng.randint(2, 4)):
+            put(px, x, y, VOID_EDGE)
+            x += rng.choice((-1, 0, 1))
+            y += rng.choice((0, 1))
+
+
+def void_crystal_block(seed=53):
     rng = random.Random(seed)
     px = canvas()
-    noise_fill(px, rng, [ETHER_DEEP] * 5 + [(16, 92, 96, 255)] * 3 + [ETHER_MID])
+    noise_fill(px, rng, [BLUE_MID] * 5 + [BLUE_DEEP] * 3 + [BLUE_BRIGHT] * 2)
+    # Facets: bright diagonal lines, deep seams.
     for i in range(S):
-        put(px, i, 0, ETHER_VIOLET)
-        put(px, 0, i, ETHER_VIOLET)
-        put(px, i, S - 1, (8, 48, 52, 255))
-        put(px, S - 1, i, (8, 48, 52, 255))
-    # A bevelled centre and two bright corners, as netherite block's sheen.
-    for x in range(3, 13):
-        for y in range(3, 13):
-            if (x + y) % 7 == 0:
-                put(px, x, y, ETHER_BRIGHT)
-    for x, y in ((4, 4), (11, 5), (5, 11), (11, 11)):
-        put(px, x, y, ETHER_WHITE)
-    for _ in range(10):
-        put(px, rng.randrange(2, 14), rng.randrange(2, 14), ETHER_VIOLET_LIGHT)
-    save(px, "block/etherium_block.png")
+        put(px, i, (i + 2) % S, BLUE_BRIGHT)
+        put(px, i, (i + 9) % S, BLUE_DEEP)
+    for _ in range(6):
+        put(px, rng.randrange(S), rng.randrange(S), BLUE_WHITE)
+    save(px, "block/void_crystal_block.png")
 
 
-def ether_crystal(seed=67):
-    """A cluster of glowing crystals in the rock: the world's only light."""
+def crystal_lamp(seed=61):
     rng = random.Random(seed)
     px = canvas()
-    noise_fill(px, rng, [VOID_DARK] * 6 + [VOID_MID] * 3 + [VOID_EDGE])
-    spikes = [((3, 13), (4, 5)), ((8, 14), (8, 3)), ((12, 12), (12, 6)), ((6, 9), (2, 7))]
-    for (bx, by), (tx, ty) in spikes:
-        # A tapered shard from its base to its tip.
-        steps = max(abs(bx - tx), abs(by - ty))
-        for i in range(steps + 1):
-            t = i / max(steps, 1)
-            x = round(bx + (tx - bx) * t)
-            y = round(by + (ty - by) * t)
-            width = 2 if t < 0.6 else 1
-            for dx in range(width):
-                put(px, x + dx, y, ETHER_MID if t < 0.75 else ETHER_BRIGHT)
-            if t < 0.4:
-                put(px, x - 1, y, ETHER_DEEP)
-        put(px, tx, ty, ETHER_WHITE)
+    noise_fill(px, rng, [BLUE_BRIGHT] * 6 + [BLUE_WHITE] * 3 + [BLUE_MID] * 2)
+    # A lattice of deep lines, as glowstone's crust but cold.
+    for i in range(0, S, 4):
+        for t in range(S):
+            put(px, (i + t) % S, t, BLUE_MID)
+            put(px, t, (i + t) % S, BLUE_DEEP if t % 2 else BLUE_MID)
+    for _ in range(8):
+        put(px, rng.randrange(S), rng.randrange(S), BLUE_WHITE)
+    save(px, "block/crystal_lamp.png")
+
+
+def crystal_sprout(seed=71):
+    px = canvas()
+    stem = (36, 84, 108, 255)
+    for y in range(10, 16):
+        put(px, 8, y, stem)
+    put(px, 7, 12, stem)
+    put(px, 9, 13, stem)
+    # A small crystal fan on top.
+    for x, y, c in ((8, 9, BLUE_MID), (8, 8, BLUE_BRIGHT), (8, 7, BLUE_WHITE),
+                    (7, 9, BLUE_MID), (7, 8, BLUE_BRIGHT), (6, 8, BLUE_DEEP),
+                    (9, 9, BLUE_MID), (9, 8, BLUE_BRIGHT), (10, 8, BLUE_DEEP),
+                    (8, 6, BLUE_BRIGHT), (7, 5, BLUE_DEEP), (9, 5, BLUE_DEEP)):
+        put(px, x, y, c)
+    save(px, "block/crystal_sprout.png")
+
+
+def voidshell(seed=73):
+    """The gate block: black shell with cold veins, denser than obsidian."""
+    rng = random.Random(seed)
+    px = canvas()
+    noise_fill(px, rng, [SHELL_DARK] * 6 + [SHELL_MID] * 3)
+    for _ in range(5):
+        x, y = rng.randrange(S), rng.randrange(S)
+        for _ in range(rng.randint(3, 6)):
+            put(px, x, y, SHELL_VEIN)
+            x += rng.choice((-1, 0, 1))
+            y += rng.choice((-1, 0, 1))
+    for _ in range(4):
+        put(px, rng.randrange(S), rng.randrange(S), BLUE_DEEP)
+    save(px, "block/voidshell.png")
+
+
+def abyss_bedrock(seed=79):
+    """The world's bottom: bedrock gone dark, with dead-blue mottling."""
+    rng = random.Random(seed)
+    px = canvas()
+    noise_fill(px, rng, [ABYSS_DARK] * 5 + [ABYSS_MID] * 3 + [ABYSS_BLUE])
     for _ in range(8):
         x, y = rng.randrange(S), rng.randrange(S)
-        if px[y][x] in (VOID_DARK, VOID_MID, VOID_EDGE) and rng.random() < 0.5:
-            put(px, x, y, ETHER_DEEP)
-    save(px, "block/ether_crystal.png")
+        for _ in range(rng.randint(2, 4)):
+            put(px, x, y, ABYSS_MID if rng.random() < 0.7 else ABYSS_BLUE)
+            x += rng.choice((-1, 0, 1))
+            y += rng.choice((-1, 0, 1))
+    save(px, "block/abyss_bedrock.png")
 
 
 # --- items ------------------------------------------------------------------
 
-def raw_etherium(seed=83):
-    """Raw ore chunks, as raw iron's: dull teal nuggets with bright facets."""
-    rng = random.Random(seed)
+def void_crystal(seed=83):
     px = canvas()
-    for cx, cy, r in ((5, 5, 3), (11, 7, 3), (7, 11, 3)):
-        for _ in range(r * r * 3):
-            x = cx + rng.randint(-r, r)
-            y = cy + rng.randint(-r, r)
-            d = (x - cx) ** 2 + (y - cy) ** 2
-            if d <= r * r:
-                shade = ETHER_WHITE if d <= 1 else ETHER_BRIGHT if rng.random() < 0.3 else ETHER_MID
-                if d >= r * r - 1:
-                    shade = ETHER_DEEP
-                put(px, x, y, shade)
-    save(px, "item/raw_etherium.png")
+    for x, y, c in ((8, 2, BLUE_WHITE), (7, 3, BLUE_BRIGHT), (8, 3, BLUE_BRIGHT),
+                    (9, 3, BLUE_MID), (7, 4, BLUE_BRIGHT), (8, 4, BLUE_MID),
+                    (9, 4, BLUE_MID), (6, 5, BLUE_MID), (7, 5, BLUE_MID),
+                    (8, 5, BLUE_DEEP), (9, 5, BLUE_MID), (10, 5, BLUE_DEEP),
+                    (6, 6, BLUE_MID), (7, 6, BLUE_DEEP), (8, 6, BLUE_MID),
+                    (9, 6, BLUE_DEEP), (10, 6, BLUE_MID), (7, 7, BLUE_DEEP),
+                    (8, 7, BLUE_DEEP), (9, 7, BLUE_DEEP), (8, 8, BLUE_DEEP)):
+        put(px, x, y, c)
+    save(px, "item/void_crystal.png")
 
 
-def etherium_ingot(seed=97):
-    """An ingot of the enchanted alloy: violet metal, a lit teal top face."""
+def void_alloy(seed=89):
     px = canvas()
-    rows = [
-        "..TTTTTT....",
-        ".TttttttT...",
-        "TtBBWWBBtT..",
-        "TtBWWWWBtT..",
-        "TtBBBBBBtT..",
-        ".TMMMMMMT...",
-        "..TTTTTT....",
-    ]
-    colors = {
-        "T": ETHER_VIOLET,
-        "t": ETHER_VIOLET_LIGHT,
-        "B": ETHER_MID,
-        "W": ETHER_BRIGHT,
-        "M": ETHER_DEEP,
+    for y, row in enumerate(range(6, 11)):
+        for x in range(3, 13):
+            c = BLUE_WHITE if y == 0 else BLUE_BRIGHT if y == 1 else \
+                (60, 66, 92, 255) if y == 2 else (44, 48, 68, 255) if y == 3 else (32, 34, 50, 255)
+            put(px, x, row, c)
+    put(px, 4, 6, BLUE_WHITE)
+    put(px, 11, 8, BLUE_DEEP)
+    save(px, "item/void_alloy.png")
+
+
+def void_alloy_pickaxe(seed=97):
+    """A proper pickaxe: a full-width head with two prongs, a straight haft.
+
+    The head is a band across the top with a short left prong and a longer
+    right one hanging down; the haft runs from under the head's right centre
+    to the bottom-left corner, two pixels wide, as vanilla tools do.
+    """
+    px = canvas()
+    M, H, Sd = BLUE_MID, BLUE_WHITE, BLUE_DEEP
+    W, Wd = WOOD_MID, WOOD_DARK
+    head = {
+        1: [(5, M), (6, M), (7, M), (8, M), (9, M), (10, M), (11, Sd)],
+        2: [(4, Sd), (5, M), (6, H), (7, M), (8, M), (9, M), (10, M), (11, M), (12, Sd)],
+        3: [(4, Sd), (5, M), (6, M), (7, M), (8, M), (9, H), (10, M), (11, M), (12, M), (13, Sd)],
+        4: [(4, Sd), (5, Sd), (11, M), (12, M), (13, M)],
+        5: [(12, M), (13, M)],
+        6: [(12, M), (13, Sd)],
+        7: [(12, Sd), (13, Sd)],
     }
-    for y, row in enumerate(rows):
-        for x, ch in enumerate(row):
-            if ch != ".":
-                put(px, x + 2, y + 5, colors[ch])
-    put(px, 6, 7, ETHER_WHITE)
-    put(px, 9, 8, ETHER_WHITE)
-    put(px, 4, 6, ETHER_WHITE)
-    save(px, "item/etherium_ingot.png")
-
-
-def etherium_pickaxe(seed=113):
-    """The pickaxe: a dark haft, an alloy head with a lit edge and a violet gleam."""
-    rng = random.Random(seed)
-    px = canvas()
-    head_edge = ETHER_BRIGHT
-    head_mid = ETHER_MID
-    head_dark = ETHER_DEEP
-    gleam = ETHER_WHITE
-
-    # The head: an arc across the top, its two tips pointing down.
-    arc = [
-        (2, 5), (3, 4), (4, 3), (5, 2), (6, 2), (7, 2), (8, 2), (9, 3), (10, 4), (11, 5),
-    ]
-    for x, y in arc:
-        put(px, x, y, head_edge)
-        put(px, x, y + 1, head_mid)
-        put(px, x, y + 2, head_dark)
-    for x, y in ((2, 6), (11, 6)):
-        put(px, x, y + 1, head_dark)
-    # The socket the haft goes into.
-    for x in (6, 7):
-        for y in (4, 5, 6):
-            put(px, x, y, head_mid if y < 6 else head_dark)
-    put(px, 6, 3, gleam)
-    put(px, 9, 3, gleam)
-
-    # The haft: a two-pixel diagonal down to the bottom right.
-    for i in range(8):
-        x, y = 7 + i, 6 + i
-        put(px, x, y, WOOD_MID)
-        put(px, x + 1, y, WOOD_DARK)
-        put(px, x, y + 1, WOOD_DARK)
-    put(px, 14, 13, WOOD_DARK)
-    put(px, 7, 6, STEEL_MID)
-    # A violet wrap where the head meets the haft, and a spark on the edge.
-    put(px, 8, 8, ETHER_VIOLET_LIGHT)
-    put(px, 9, 9, ETHER_VIOLET)
-    for _ in range(4):
-        x = rng.randrange(3, 11)
-        y = rng.randrange(2, 6)
-        if px[y][x] is None:
-            put(px, x, y, ETHER_VIOLET_LIGHT)
-    save(px, "item/etherium_pickaxe.png")
+    for y, row in head.items():
+        for x, c in row:
+            put(px, x, y, c)
+    haft = [(10, 4), (9, 5), (10, 5), (8, 6), (9, 6), (7, 7), (8, 7), (6, 8), (7, 8),
+            (5, 9), (6, 9), (4, 10), (5, 10), (3, 11), (4, 11), (2, 12), (3, 12),
+            (2, 13), (3, 13), (2, 14)]
+    for i, (x, y) in enumerate(haft):
+        put(px, x, y, W if i % 3 else Wd)
+    save(px, "item/void_alloy_pickaxe.png")
 
 
 def pack_icon():
-    """The data pack's 64x64 icon: a bedrock floor with the world under it."""
-    size = 64
-    img = Image.new("RGBA", (size, size), (8, 8, 12, 255))
-    rng = random.Random(7)
-    for y in range(size):
-        for x in range(size):
-            if y < 14:
-                img.putpixel((x, y), (30, 30, 42, 255))
-            elif y < 24:
-                c = rng.choice([(52, 52, 58, 255), (74, 74, 82, 255), (40, 40, 46, 255)])
+    """The pack's icon: a blue crystal in the dark stone, 64x64."""
+    rng = random.Random(101)
+    big = 64
+    img = Image.new("RGBA", (big, big), (0, 0, 0, 255))
+    for y in range(big):
+        for x in range(big):
+            c = rng.choice([VOID_DARK, VOID_MID, VOID_DARK, VOID_EDGE])
+            img.putpixel((x, y), c)
+    # A diamond of crystal light in the middle.
+    cx = cy = big // 2
+    for y in range(big):
+        for x in range(big):
+            d = abs(x - cx) + abs(y - cy)
+            if d < 14:
+                c = BLUE_WHITE if d < 4 else BLUE_BRIGHT if d < 8 else BLUE_MID if d < 11 else BLUE_DEEP
                 img.putpixel((x, y), c)
-            else:
-                c = rng.choice([VOID_DARK, VOID_MID, VOID_MID, VOID_LIGHT])
-                img.putpixel((x, y), c)
-    for _ in range(70):
-        x, y = rng.randrange(size), rng.randrange(26, size)
-        img.putpixel((x, y), rng.choice([ETHER_MID, ETHER_BRIGHT, ETHER_DEEP]))
-    for cx, cy in ((18, 40), (44, 50)):
-        for dx in range(-3, 4):
-            for dy in range(-3, 4):
-                if dx * dx + dy * dy <= 9:
-                    img.putpixel((cx + dx, cy + dy), ETHER_BRIGHT)
-    out = Path(__file__).resolve().parents[1] / "datapack" / "underbedrock_world" / "pack.png"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    img.save(out)
-    print(f"wrote {out}")
+    path = ROOT.parent.parent.parent.parent / "datapack" / "underbedrock_world" / "pack.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(path)
+    print(f"wrote {path.name}")
 
 
 if __name__ == "__main__":
+    shutil.rmtree(ROOT, ignore_errors=True)
     voidstone()
     voidstone_bricks()
-    etherium_ore()
-    etherium_block()
-    ether_crystal()
-    raw_etherium()
-    etherium_ingot()
-    etherium_pickaxe()
+    void_gravel()
+    void_crystal_ore()
+    void_crystal_block()
+    crystal_lamp()
+    crystal_sprout()
+    voidshell()
+    abyss_bedrock()
+    void_crystal()
+    void_alloy()
+    void_alloy_pickaxe()
     pack_icon()
+    print("wrote the mod's textures")

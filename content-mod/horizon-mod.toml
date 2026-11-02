@@ -1,7 +1,7 @@
 id = "underbedrock"
 name = "Underbedrock"
-version = "0.1.0"
-description = "A world under the bedrock floor: voidstone caverns, etherium ore, and an enchanted-alloy pickaxe that breaks bedrock."
+version = "0.2.0"
+description = "A dark world under the bedrock floor: voidstone caverns lit by blue crystals, voidshell gates, and a void-alloy pickaxe that digs bedrock."
 authors = ["you"]
 # A content mod: blocks, items and mob effects from data/ and assets/, no code (API 0.2).
 api = "0.2"

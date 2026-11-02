@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "underbedrock:block/crystal_sprout"
+  }
+}

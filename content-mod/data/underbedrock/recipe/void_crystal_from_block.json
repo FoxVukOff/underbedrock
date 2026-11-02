@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "underbedrock:void_crystal_block"
+  ],
+  "result": {
+    "id": "underbedrock:void_crystal",
+    "count": 9
+  }
+}

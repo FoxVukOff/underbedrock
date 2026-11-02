@@ -2,8 +2,8 @@
   "values": [
     "underbedrock:voidstone",
     "underbedrock:voidstone_bricks",
-    "underbedrock:etherium_ore",
-    "underbedrock:etherium_block",
-    "underbedrock:ether_crystal"
+    "underbedrock:void_crystal_ore",
+    "underbedrock:void_crystal_block",
+    "underbedrock:crystal_lamp"
   ]
 }

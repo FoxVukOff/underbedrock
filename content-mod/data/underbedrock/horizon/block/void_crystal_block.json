@@ -1,0 +1,11 @@
+{
+  "template": "minecraft:diamond_block",
+  "properties": {
+    "hardness": 5.0,
+    "explosion_resistance": 6.0,
+    "requires_tool": true,
+    "light": 6,
+    "sounds": "minecraft:metal"
+  },
+  "item": true
+}

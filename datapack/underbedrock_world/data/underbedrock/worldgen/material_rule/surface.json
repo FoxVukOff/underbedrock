@@ -5,23 +5,6 @@
       "type": "minecraft:condition",
       "if_true": {
         "type": "minecraft:vertical_gradient",
-        "random_name": "underbedrock:bottom_bedrock",
-        "true_at_and_below": {
-          "absolute": -576
-        },
-        "false_at_and_above": {
-          "absolute": -571
-        }
-      },
-      "then_run": {
-        "type": "minecraft:block",
-        "result_state": "minecraft:bedrock"
-      }
-    },
-    {
-      "type": "minecraft:condition",
-      "if_true": {
-        "type": "minecraft:vertical_gradient",
         "random_name": "underbedrock:floor_bedrock",
         "true_at_and_below": {
           "absolute": -64
@@ -31,8 +14,19 @@
         }
       },
       "then_run": {
-        "type": "minecraft:block",
-        "result_state": "minecraft:bedrock"
+        "type": "minecraft:condition",
+        "if_true": {
+          "type": "minecraft:y_above",
+          "anchor": {
+            "absolute": -64
+          },
+          "surface_depth_multiplier": 0,
+          "add_stone_depth": false
+        },
+        "then_run": {
+          "type": "minecraft:block",
+          "result_state": "minecraft:bedrock"
+        }
       }
     },
     {
@@ -42,13 +36,129 @@
         "invert": {
           "type": "minecraft:y_above",
           "anchor": {
-            "absolute": -64
+            "absolute": -55
           },
           "surface_depth_multiplier": 0,
           "add_stone_depth": false
         }
       },
-      "then_run": "underbedrock:underbedrock"
+      "then_run": {
+        "type": "minecraft:sequence",
+        "sequence": [
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:not",
+              "invert": {
+                "type": "minecraft:y_above",
+                "anchor": {
+                  "absolute": -564
+                },
+                "surface_depth_multiplier": 0,
+                "add_stone_depth": false
+              }
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": "underbedrock:abyss_bedrock"
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:not",
+              "invert": {
+                "type": "minecraft:y_above",
+                "anchor": {
+                  "absolute": -72
+                },
+                "surface_depth_multiplier": 0,
+                "add_stone_depth": false
+              }
+            },
+            "then_run": {
+              "type": "minecraft:sequence",
+              "sequence": [
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:not",
+                    "invert": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -139
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    }
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -420
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    },
+                    "then_run": {
+                      "type": "minecraft:condition",
+                      "if_true": {
+                        "type": "minecraft:noise_threshold",
+                        "noise": "underbedrock:carve_big",
+                        "min_threshold": 0.0,
+                        "max_threshold": 1000000.0,
+                        "is_3d": true
+                      },
+                      "then_run": {
+                        "type": "minecraft:block",
+                        "result_state": "minecraft:air"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "noise": "underbedrock:carve",
+                    "min_threshold": 0.0,
+                    "max_threshold": 1000000.0,
+                    "is_3d": true
+                  },
+                  "then_run": {
+                    "type": "minecraft:block",
+                    "result_state": "minecraft:air"
+                  }
+                },
+                {
+                  "type": "minecraft:block",
+                  "result_state": "underbedrock:voidstone"
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:not",
+              "invert": {
+                "type": "minecraft:y_above",
+                "anchor": {
+                  "absolute": -65
+                },
+                "surface_depth_multiplier": 0,
+                "add_stone_depth": false
+              }
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": "underbedrock:voidshell"
+            }
+          }
+        ]
+      }
     },
     "minecraft:overworld"
   ]

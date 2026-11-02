@@ -1,0 +1,32 @@
+{
+  "type": "minecraft:cave",
+  "probability": 0.0,
+  "y": {
+    "type": "minecraft:constant",
+    "value": -55
+  },
+  "count": {
+    "type": "minecraft:constant",
+    "value": 0
+  },
+  "thickness": {
+    "type": "minecraft:constant",
+    "value": 1.0
+  },
+  "floor_level": {
+    "type": "minecraft:constant",
+    "value": 0.0
+  },
+  "horizontal_radius_multiplier": {
+    "type": "minecraft:constant",
+    "value": 1.0
+  },
+  "vertical_radius_multiplier": {
+    "type": "minecraft:constant",
+    "value": 1.0
+  },
+  "room_vertical_radius_multiplier": {
+    "type": "minecraft:constant",
+    "value": 1.0
+  }
+}

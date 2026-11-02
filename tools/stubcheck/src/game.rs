@@ -54,6 +54,35 @@ pub mod native_world_edit {
     }
 }
 
+/// Mobs for server mods (`game/native_mobs.rs`, API 37): the shapes
+/// `native_spawn_mob` and `native_mobs` take and give.
+pub mod native_mobs {
+    /// A living mob, as a native mod reads it.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct NativeMob {
+        pub id: u32,
+        pub dimension: String,
+        /// `minecraft:zombie`.
+        pub kind: String,
+        pub pos: [f64; 3],
+        pub yaw: f32,
+        pub health: f32,
+        pub max_health: f32,
+    }
+
+    /// What a mob starts with; the default is a plain mob.
+    #[derive(Clone, Debug, Default, PartialEq)]
+    pub struct NativeSpawn {
+        pub name: Option<String>,
+        pub health: Option<f32>,
+        pub no_ai: bool,
+        pub invisible: bool,
+        pub silent: bool,
+        pub invulnerable: bool,
+        pub no_gravity: bool,
+    }
+}
+
 /// The hook points' types and the hooks the mod binds to
 /// (`game/native_hooks.rs`).
 pub mod native_hooks {
@@ -165,6 +194,9 @@ pub struct Game<'a> {
     pub told: Vec<(u128, String)>,
     pub feedback: Vec<String>,
     pub edits: Vec<native_world_edit::NativeBlockEdit>,
+    /// The living mobs of the level in place, and the spawns the mod made.
+    pub mobs: Vec<native_mobs::NativeMob>,
+    pub spawned: Vec<(String, [f64; 3])>,
     pub marker: std::marker::PhantomData<&'a ()>,
 }
 
@@ -196,6 +228,8 @@ impl<'a> Game<'a> {
             told: Vec::new(),
             feedback: Vec::new(),
             edits: Vec::new(),
+            mobs: Vec::new(),
+            spawned: Vec::new(),
             marker: std::marker::PhantomData,
         }
     }
@@ -252,6 +286,41 @@ impl Game<'_> {
     /// The block at `pos`, by name.
     pub fn native_block(&self, pos: [i32; 3]) -> String {
         self.block_at(pos)
+    }
+
+    /// The living mobs of the level in place, `dimension`.
+    pub fn native_mobs(&self, dimension: &str) -> Vec<native_mobs::NativeMob> {
+        if !self.level_open || self.acting.as_ref().is_none_or(|p| p.dimension != dimension) {
+            return Vec::new();
+        }
+        self.mobs.clone()
+    }
+
+    /// Spawns a mob of `kind` at `pos`, as a natural spawn is finalized.
+    pub fn native_spawn_mob(
+        &mut self,
+        dimension: &str,
+        kind: &str,
+        pos: [f64; 3],
+        options: &native_mobs::NativeSpawn,
+    ) -> Option<u32> {
+        let acting = self.acting.as_ref()?;
+        let _ = options;
+        if !self.level_open || dimension != acting.dimension {
+            return None;
+        }
+        let id = self.mobs.len() as u32 + 1;
+        self.mobs.push(native_mobs::NativeMob {
+            id,
+            dimension: dimension.to_owned(),
+            kind: kind.to_owned(),
+            pos,
+            yaw: 0.0,
+            health: 20.0,
+            max_health: 20.0,
+        });
+        self.spawned.push((kind.to_owned(), pos));
+        Some(id)
     }
 
     /// The block a state is a state of.

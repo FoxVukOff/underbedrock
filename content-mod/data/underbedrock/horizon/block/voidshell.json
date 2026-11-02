@@ -1,0 +1,9 @@
+{
+  "template": "minecraft:obsidian",
+  "properties": {
+    "hardness": -1.0,
+    "explosion_resistance": 1200.0,
+    "sounds": "minecraft:deepslate"
+  },
+  "item": true
+}

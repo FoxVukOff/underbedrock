@@ -54,7 +54,7 @@ fn main() {
     let tall = mode != "off";
     let air_at_zero = tall;
     // The dig time and the drop the run starts with, and what they become
-    // after the settings page's first button and `/etherium dig`.
+    // after the settings page's first button and `/abyss dig`.
     let (first_dig, second_dig, third_dig) = if tall { (60, 100, 200) } else { (20, 40, 60) };
     let first_drop = tall;
     let mut fails = 0u32;
@@ -80,8 +80,8 @@ fn main() {
         fails,
         "the row is the mod's",
         mods.first().is_some_and(|m| m.id == "underbedrock_core"
-            && m.title == "Under Bedrock 0.1.0"
-            && m.description.contains("etherium pickaxe")
+            && m.title == "Under Bedrock 0.2.0"
+            && m.description.contains("void-alloy pickaxe")
             && m.keys.is_empty())
     );
     let mut commands = Vec::new();
@@ -89,8 +89,8 @@ fn main() {
     let usages: Vec<&str> = commands.iter().map(|c| c.usage.as_str()).collect();
     check!(
         fails,
-        "five usages of /etherium, every player's",
-        usages == ["etherium", "etherium give", "etherium depth", "etherium dig", "etherium drop"]
+        "five usages of /abyss, every player's",
+        usages == ["abyss", "abyss give", "abyss depth", "abyss dig", "abyss drop"]
             && commands.iter().all(|c| c.level == 0)
     );
 
@@ -102,7 +102,7 @@ fn main() {
     check!(
         fails,
         "the page shows the dig time and the drop",
-        buttons == [format!("Bedrock break time: {:.1} s", first_dig as f32 / 20.0),
+        buttons == [format!("Break time: {:.1} s (bedrock, voidshell)", first_dig as f32 / 20.0),
                     format!("Bedrock drops: {}", if first_drop { "ON" } else { "OFF" })]
     );
 
@@ -123,7 +123,7 @@ fn main() {
     game.start_dig(bedrock, first_dig * 4);
     game.native_player_tick();
     check!(fails, "an empty hand digs no bedrock", game.block_at(bedrock) == "minecraft:bedrock");
-    game.held = Some(("underbedrock:etherium_pickaxe".into(), 1, true));
+    game.held = Some(("underbedrock:void_alloy_pickaxe".into(), 1, true));
     game.start_dig(stone, first_dig * 4);
     game.native_player_tick();
     check!(fails, "stone is the engine's to break", game.block_at(stone) == "minecraft:stone");
@@ -199,7 +199,7 @@ fn main() {
     check!(
         fails,
         "a click cycles the dig time and flips the drop",
-        buttons == [format!("Bedrock break time: {:.1} s", second_dig as f32 / 20.0),
+        buttons == [format!("Break time: {:.1} s (bedrock, voidshell)", second_dig as f32 / 20.0),
                     format!("Bedrock drops: {}", if first_drop { "OFF" } else { "ON" })]
             && game.setting_file("underbedrock_core", "dig_ticks").as_deref()
                 == Some(second_dig.to_string().as_str())
@@ -221,53 +221,106 @@ fn main() {
         game.given.len() == given_before + usize::from(!first_drop)
     );
 
-    // /etherium, and a command that isn't the mod's.
+    // /abyss, and a command that isn't the mod's.
     let player = game.acting.clone().expect("a player");
     let feedback = |game: &Game, from: usize| game.feedback[from..].join(" | ");
     let mut ran = false;
     game.native_perform_command(&player, "give", &mut ran);
     check!(fails, "another mod's command is left alone", !ran && game.feedback.is_empty());
     let mark = game.feedback.len();
-    game.native_perform_command(&player, "etherium", &mut ran);
-    check!(fails, "/etherium lists the commands", ran && feedback(&game, mark).contains("/etherium give"));
+    game.native_perform_command(&player, "abyss", &mut ran);
+    check!(fails, "/abyss lists the commands", ran && feedback(&game, mark).contains("/abyss give"));
     let mark = game.feedback.len();
-    game.native_perform_command(&player, "etherium give", &mut ran);
+    game.native_perform_command(&player, "abyss give", &mut ran);
     check!(
         fails,
-        "/etherium give gives the pickaxe",
-        ran && game.given.last().is_some_and(|(item, count)| item == "underbedrock:etherium_pickaxe" && *count == 1)
-            && feedback(&game, mark).contains("etherium pickaxe")
+        "/abyss give gives the pickaxe",
+        ran && game.given.last().is_some_and(|(item, count)| item == "underbedrock:void_alloy_pickaxe" && *count == 1)
+            && feedback(&game, mark).contains("void-alloy pickaxe")
     );
     let mark = game.feedback.len();
-    game.native_perform_command(&player, "etherium depth", &mut ran);
+    game.native_perform_command(&player, "abyss depth", &mut ran);
     let depth = feedback(&game, mark);
     check!(
         fails,
-        "/etherium depth says how deep the world goes",
+        "/abyss depth says how deep the world goes",
         ran && depth.contains(&format!("y {} .. {}", game.shape.0, game.shape.0 + game.shape.1 - 1))
             && depth.contains(if tall { "below the bedrock floor" } else { "NOT tall" })
     );
     let mark = game.feedback.len();
-    game.native_perform_command(&player, "etherium dig", &mut ran);
+    game.native_perform_command(&player, "abyss dig", &mut ran);
     check!(
         fails,
-        "/etherium dig cycles the dig time",
+        "/abyss dig cycles the dig time",
         ran && feedback(&game, mark).contains(&format!("{:.1} s", third_dig as f32 / 20.0))
             && game.setting_file("underbedrock_core", "dig_ticks").as_deref()
                 == Some(third_dig.to_string().as_str())
     );
     let mark = game.feedback.len();
-    game.native_perform_command(&player, "etherium drop", &mut ran);
+    game.native_perform_command(&player, "abyss drop", &mut ran);
     check!(
         fails,
-        "/etherium drop flips the drop back",
+        "/abyss drop flips the drop back",
         ran && feedback(&game, mark).contains(if first_drop { "ON" } else { "OFF" })
             && game.setting_file("underbedrock_core", "drop_bedrock").as_deref()
                 == Some(if first_drop { "true" } else { "false" })
     );
     let mark = game.feedback.len();
-    game.native_perform_command(&player, "etherium fly", &mut ran);
-    check!(fails, "an unknown subcommand says so", ran && feedback(&game, mark).contains("no /etherium fly"));
+    game.native_perform_command(&player, "abyss fly", &mut ran);
+    check!(fails, "an unknown subcommand says so", ran && feedback(&game, mark).contains("no /abyss fly"));
+
+    // The Abyss keeps its own company: deep enough, with a pocket to stand
+    // in, the mod spawns one of its kinds; at the cap, or up top, it doesn't.
+    let deep: [f64; 3] = [0.5, -200.0, 0.5];
+    game.acting.as_mut().expect("a player").position = deep;
+    for _ in 0..60 {
+        game.native_player_tick();
+    }
+    check!(fails, "no pocket in the rock, no spawn", game.spawned.is_empty());
+    let seed = 7u64 ^ (deep[0] as i64 as u64).wrapping_mul(0x2545_F491);
+    let [dx, dy, dz] = game::underbedrock_core::candidate_offset(seed, 0);
+    // The same cells the mod's tick looks at: the offset added to the
+    // player's fractional position, then truncated.
+    let feet = [
+        (deep[0] + dx as f64) as i32,
+        (deep[1] + dy as f64).floor() as i32,
+        (deep[2] + dz as f64) as i32,
+    ];
+    game.blocks.insert([feet[0], feet[1] - 1, feet[2]], "underbedrock:voidstone".into());
+    for _ in 0..60 {
+        game.native_player_tick();
+    }
+    let kind = game::underbedrock_core::pick_kind(seed);
+    check!(
+        fails,
+        "a pocket in the Abyss gets one of its kinds",
+        game.spawned.len() == 1 && game.spawned[0].0 == kind && game.mobs.len() == 1
+    );
+    // At the cap the mod stops spawning.
+    while game.mobs.len() < game::underbedrock_core::MOB_CAP {
+        let n = game.mobs.len() as u32;
+        game.mobs.push(game::native_mobs::NativeMob {
+            id: 100 + n,
+            dimension: "minecraft:overworld".into(),
+            kind: game::underbedrock_core::SPAWN_KINDS[0].into(),
+            pos: [deep[0] + 5.0, -210.0, deep[2]],
+            yaw: 0.0,
+            health: 20.0,
+            max_health: 20.0,
+        });
+    }
+    let spawns = game.spawned.len();
+    for _ in 0..60 {
+        game.native_player_tick();
+    }
+    check!(fails, "at the cap the Abyss stays as it is", game.spawned.len() == spawns);
+    // Back at the surface, the engine's own spawning is the only one.
+    game.mobs.clear();
+    game.acting.as_mut().expect("a player").position = [0.5, -60.0, 0.5];
+    for _ in 0..60 {
+        game.native_player_tick();
+    }
+    check!(fails, "the surface is the engine's to populate", game.spawned.len() == spawns);
 
     // A disabled mod does nothing at all.
     game.disabled.push("underbedrock_core".into());
@@ -276,7 +329,7 @@ fn main() {
     let (bars, told, feedbacks) = (game.bars.len(), game.told.len(), game.feedback.len());
     game.native_player_tick();
     let mut ran = false;
-    game.native_perform_command(&player, "etherium give", &mut ran);
+    game.native_perform_command(&player, "abyss give", &mut ran);
     check!(
         fails,
         "a disabled mod digs nothing and runs no command",

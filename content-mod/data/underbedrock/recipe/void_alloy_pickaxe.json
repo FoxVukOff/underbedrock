@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "void_alloy_pickaxe",
+  "pattern": [
+    "AAA",
+    " S ",
+    " S "
+  ],
+  "key": {
+    "A": "underbedrock:void_alloy",
+    "S": "minecraft:stick"
+  },
+  "result": {
+    "id": "underbedrock:void_alloy_pickaxe"
+  }
+}

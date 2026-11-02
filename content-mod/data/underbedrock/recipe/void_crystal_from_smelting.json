@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "ingredient": "underbedrock:void_crystal_ore",
+  "result": {
+    "id": "underbedrock:void_crystal"
+  },
+  "experience": 1.2,
+  "cookingtime": 200
+}

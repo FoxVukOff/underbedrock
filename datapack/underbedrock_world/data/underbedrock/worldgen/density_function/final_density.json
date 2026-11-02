@@ -2,7 +2,7 @@
   "type": "minecraft:range_choice",
   "input": "minecraft:y",
   "min_inclusive": -1000000.0,
-  "max_exclusive": -64.0,
-  "when_in_range": "underbedrock:layer",
+  "max_exclusive": -54.0,
+  "when_in_range": 1.0,
   "when_out_of_range": "minecraft:overworld/final_density"
 }

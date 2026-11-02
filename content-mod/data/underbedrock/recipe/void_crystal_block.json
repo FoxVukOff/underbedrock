@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "CCC",
+    "CCC",
+    "CCC"
+  ],
+  "key": {
+    "C": "underbedrock:void_crystal"
+  },
+  "result": {
+    "id": "underbedrock:void_crystal_block"
+  }
+}

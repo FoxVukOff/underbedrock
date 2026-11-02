@@ -2,8 +2,9 @@
 
 **A world below the bedrock floor, for Horizon (Minecraft 26.3).**
 The bedrock at the bottom of the Overworld is no longer the end of the world:
-an enchanted-alloy pickaxe digs through it, and half a kilometre of new world
-waits underneath — new stone, new ore, new crystals, caves of their own.
+a void-alloy pickaxe digs through it and through the voidshell gate under it,
+and half a kilometre of dark world waits underneath — voidstone caverns lit by
+blue crystals, ores, gravel, glowing sprouts, and creatures of their own.
 
 Under Bedrock ships as three parts that only work together: a content mod
 (`.hmod`), a native mod (`.hnmod`) and a world data pack. **Prebuilt files for
@@ -16,29 +17,41 @@ carries sources only.
 
 **A taller Overworld.** The data pack replaces the Overworld's dimension type
 and noise settings: the world runs from y −576 to y 319, 896 blocks of height.
-The bedrock floor stays where vanilla puts it, at y −64…−60 — except now there
-is a world under it.
+The surface, the oceans and the caves above y −54 are vanilla's own.
 
-**The Underbedrock.** Below the floor lies voidstone: a dark rock with its own
-caves, etherium and ether-crystal veins, and diamond and iron ore inside it.
-Blocks: Voidstone, Voidstone Bricks, Etherium Ore, Block of Etherium,
-Ether Crystal.
+**The way down, layer by layer.** Deepslate, then a thin jagged bedrock
+transition (y −64…−59), then **Voidshell** (y −72…−65): a black gate block the
+engine itself never breaks — only the void-alloy pickaxe digs it, exactly the
+way it digs bedrock. Under the gate lies **the Abyss**: voidstone with carved
+caves (air, never lava), from y −73 down to y −564. The world's bottom
+(y −565…−576) is **Abyss Bedrock**, a second bedrock kind that nothing breaks,
+pickaxe included: nobody falls out of the world.
 
-**Etherium.** A new ore in two places: sparse veins in ordinary deepslate and
-stone (y −60…−16), so the pickaxe is craftable long before anyone touches
-bedrock — and rich veins down below (etherium y −540…−96, crystals
-y −520…−90). The ore drops Raw Etherium; smelting or blasting turns it into
-Enchanted Alloy Ingots.
+**The Abyss's blocks.** Voidstone, Voidstone Bricks, Void Gravel, Void Crystal
+Ore, Block of Void Crystal, Crystal Lamp (full light), Crystal Sprout (a
+glowing cave plant), Voidshell, Abyss Bedrock — all with hand-drawn 16×16
+textures in a cold blue-on-black palette.
 
-**The Enchanted Alloy Pickaxe.** 2800 durability, mining speed 14, enchantment
-glint, three ingots and two blaze rods to craft. It is the only tool that takes
-bedrock: hold the attack key on a bedrock block and a progress bar fills over
-the hotbar — three seconds by default — then the block goes and, if enabled,
-drops itself as an item.
+**Void crystal.** The ore sits in two places: sparse veins in ordinary
+deepslate and stone (y −60…−16), so the pickaxe is craftable long before
+anyone touches bedrock — and rich veins down below, with crystal lamps and
+coal, iron and diamond ore in the voidstone besides. Smelting or blasting the
+ore gives crystals; a crystal and an iron ingot make a **Void Alloy Ingot**.
 
-**The rest.** Hand-drawn 16×16 textures, English and Russian languages,
-recipes (smelting, blasting, pickaxe, alloy block both ways, voidstone bricks),
-loot tables and an “Underbedrock” creative tab.
+**The Void Alloy Pickaxe.** 2800 durability, mining speed 14, enchantment
+glint, three alloy ingots and two sticks to craft. It is the only tool that
+takes bedrock and voidshell: hold the attack key on the block and a progress
+bar fills over the hotbar — three seconds by default — then the block goes
+and, if enabled, drops itself. Only the player who holds the pickaxe digs;
+everyone else, and every other tool, gets an unbreakable block.
+
+**Inhabitants.** While a player is below y −80, the native mod keeps the Abyss
+populated: bats, skeletons, spiders and zombies spawn in dark pockets nearby,
+up to ten per player, on the game's own spawn rules (peaceful stays quiet).
+
+**The rest.** English and Russian languages, recipes (smelting, blasting,
+alloy, pickaxe, crystal block both ways, bricks, lamp, sprout), loot tables
+and an “Underbedrock” creative tab.
 
 ---
 
@@ -68,41 +81,45 @@ builds on any Horizon whose hook points are that version or newer.
 
 **The data pack needs a new world.** A world's height is fixed when it loads,
 so the pack must be in place before chunks generate: create the world after
-dropping the zip in, or accept that chunks generated earlier keep the old floor
-with void below it.
+dropping the zip in, or accept that chunks generated earlier keep the old
+floor with void below it.
 
-In game, `/etherium depth` answers
-`This world: y -576 .. 319 (896 blocks). Under Bedrock's world is below the bedrock floor.`
+In game, `/abyss depth` answers
+`This world: y -576 .. 319 (896 blocks). Under Bedrock's Abyss is below the bedrock floor.`
 A world without the pack is reported once, in chat, as `NOT tall`.
 
 ---
 
 ## Playing
 
-1. Mine down to deepslate (y −60…−16) and find **Etherium Ore** — teal veins
-   with violet sparks. Any pickaxe that can mine deepslate takes it.
-2. Smelt the raw etherium, craft the pickaxe: three ingots across the top,
-   two blaze rods below.
+1. Mine down to deepslate (y −60…−16) and find **Void Crystal Ore** — blue
+   crystals in dark stone, faintly lit. Any pickaxe that can mine deepslate
+   takes it.
+2. Smelt the ore into crystals, alloy them with iron, craft the pickaxe:
+   three ingots across the top, two sticks below.
 3. Reach the bedrock floor (y −64) and **hold** the left mouse button on a
    bedrock block with the pickaxe in hand. The action bar counts the dig:
    `Bedrock [##########----------] 50%`. Letting go resets it.
-4. The bedrock disappears, drops into the inventory (when the drop is on), and
-   the Underbedrock opens below: voidstone, ores, crystal clusters. Bring
-   torches — nothing down there knows the sun.
+4. The bedrock disappears — and under it the voidshell gate waits for the same
+   treatment (`Voidshell [#####---------------] 25%`). Behind the gate the
+   Abyss opens: dark voidstone caverns, blue crystal veins, glowing lamps.
+   The creatures down there are the engine's own kinds; bring a sword.
+5. At the very bottom, Abyss Bedrock stops the world. It does not break, for
+   anyone, with anything — that is the point of it.
 
 ### Commands
 
 | Command | Effect |
 | --- | --- |
-| `/etherium` | lists the commands |
-| `/etherium give` | gives an Enchanted Alloy Pickaxe |
-| `/etherium depth` | the world's height, and whether the data pack is in place |
-| `/etherium dig` | cycles the bedrock dig time (1 / 2 / 3 / 5 / 10 s) |
-| `/etherium drop` | toggles whether broken bedrock drops as an item |
+| `/abyss` | lists the commands |
+| `/abyss give` | gives a Void Alloy Pickaxe |
+| `/abyss depth` | the world's height, and whether the data pack is in place |
+| `/abyss dig` | cycles the bedrock/voidshell dig time (1 / 2 / 3 / 5 / 10 s) |
+| `/abyss drop` | toggles whether broken bedrock drops as an item |
 
 ### Mod settings
 
-**Options → Mods → Under Bedrock** has two buttons: the bedrock dig time
+**Options → Mods → Under Bedrock** has two buttons: the dig time
 (1 / 2 / 3 / 5 / 10 seconds) and the bedrock drop (ON / OFF). They are kept in
 `horizon-mods/.horizon-mod-data/underbedrock_core/`.
 
@@ -113,27 +130,47 @@ A world without the pack is reported once, in chat, as `NOT tall`.
 **Why three parts.** Horizon reads dimension types, noise settings, density
 functions and material rules only from data packs, so the tall world lives in
 `underbedrock_world`: `dimension_type/overworld.json` (min_y −576, height 896),
-the Overworld's `noise_settings`, five density functions and two material rules
-that shell the new depth in voidstone with caves. Everything a content mod may
-carry — blocks, items, recipes, loot, languages, the creative tab and the ore
-features (configured and placed features plus biome modifiers, both for the
-deepslate veins and the under-bedrock ones) — lives in the `.hmod`. And bedrock
-is unbreakable by design (hardness −1), which is engine territory: the native
-mod handles the dig.
+the Overworld's `noise_settings` with an `aquifers` configuration, three
+density functions and one material rule that builds every depth band.
+Everything a content mod may carry — blocks, items, recipes, loot, languages,
+the creative tab and the ore features (configured and placed features plus
+biome modifiers, both for the deepslate veins and the Abyss's) — lives in the
+`.hmod`. And bedrock is unbreakable by design (hardness −1), which is engine
+territory: the native mod handles the dig.
+
+**No lava, and dry caves.** Horizon's global fluid picker fills every cave
+below y −54 with lava unless the noise settings carry an `aquifers` object;
+with one, its lava function decides — ours is a flat zero, and the density
+under y −54 is plain solid rock, so no fluid cell exists down there at all.
+The Abyss's caves are carved by the material rule (a cheese-and-tunnels noise
+threshold, plus wide caverns in the middle depths) out of that solid, after
+the fill. The pack also replaces the three Overworld carvers with ones that
+never start: a carver tunnel below y −54 would be filled with the engine's
+deep lava sea. The surface keeps vanilla's density caves, oceans and rivers
+through the aquifer's floodedness noise.
 
 **The dig.** The native mod binds six hook points: the mod list row, its
-settings page and click, the player tick, and `/etherium`'s registration and
+settings page and click, the player tick, and `/abyss`'s registration and
 performance. Each player tick it reads the engine's own dig state — the block
 the attack key is held on and the ticks it has been held for, which the engine
-counts even on unbreakable blocks — and, when that block is bedrock and the
-held item is the alloy pickaxe, reports the progress on the action bar. At the
-configured dig time the bedrock is removed through `native_set_block` with the
-air state id (verified at runtime), with a named-block `native_edit_blocks`
-bulk edit as a fallback, and the drop is given through `native_give_items`.
+counts even on unbreakable blocks — and, when that block is bedrock or
+voidshell and the held item is the void-alloy pickaxe, reports the progress on
+the action bar. At the configured dig time the block is removed through
+`native_set_block` with the air state id (verified at runtime), with a
+named-block `native_edit_blocks` bulk edit as a fallback, and the drop is
+given through `native_give_items`. Abyss bedrock is simply never a dig target.
 No internals are mixin-patched; the one private field the mod reads
 (`Game::mining`, the dig state) is reached as a same-crate descendant module,
 and a future rename of it fails the mod's build loudly rather than misbehaving
 quietly.
+
+**The inhabitants.** The same player tick keeps a rhythm: every three seconds
+per player, below y −80, it counts the mod's kinds within 40 blocks
+(`native_mobs`), and under the cap of ten tries four deterministic spots in a
+ring around the player; a spot with air at the feet and head and a solid floor
+gets one of the four kinds through `native_spawn_mob` (API 37), finalized as a
+natural spawn and saved with the chunk. Peaceful difficulty refuses the
+monsters, as the engine does for any natural spawn.
 
 ---
 
@@ -153,12 +190,14 @@ which writes `release/`: the `.hmod`, the `.hnmod`, the data pack zip
 Rust enters only the checks, all of them runnable without a Horizon install:
 
 ```sh
-cd native-mod && cargo test                     # the dig logic, 9 tests
+cd native-mod && cargo test                     # the dig and spawn logic, 15 tests
 cd ../tools/stubcheck && cargo run -- on && cargo run -- off
                                                 # the mod's own sources compiled against
-                                                # Horizon's exact signatures, 34 scenarios twice
+                                                # Horizon's exact signatures, 38 scenarios twice
 cd ../.. && python tools/nativecheck.py release/underbedrock_core.hnmod
                                                 # the bundle read by the registry's own rules
+python tools/check_worldgen.py                  # worldgen JSONs vs Horizon's decoder,
+                                                # plus the no-lava / no-infinite-band invariants
 ```
 
 The full pipeline — textures, content, Horizon's own content parser and packer
@@ -173,8 +212,8 @@ sh tools/build_all.sh
 
 ```
 content-mod/                the content mod: blocks, items, recipes, loot, languages, textures
-datapack/underbedrock_world the tall world: dimension type, noise settings, density
-                            functions, material rules, cave noise
+datapack/underbedrock_world the tall world: dimension type, noise settings and aquifers,
+                            density functions, material rule, carver overrides
 native-mod/                 the native mod: mixins/underbedrock_core/ holds runtime.rs
                             (logic and tests) and one helper file per hook point
 tools/make_textures.py      draws every texture (Pillow)
@@ -184,6 +223,7 @@ tools/modbuild/             checks and packs the content mod with Horizon's own 
 tools/nativecheck.py        reads a .hnmod by the registry's own rules
 tools/stubcheck/            compiles the native sources against Horizon's signatures
                             and runs them on a stub world
+tools/check_worldgen.py     the worldgen JSONs vs Horizon's decoder and the mod's invariants
 tools/build_all.sh          everything above, in order
 ```
 
@@ -195,13 +235,16 @@ verified against that revision's sources.
 
 ## Known limitations
 
-- The bedrock dig is a survival/adventure mechanic; in creative mode bedrock
-  breaks instantly, as vanilla does.
+- The bedrock and voidshell dig is a survival/adventure mechanic; in creative
+  mode bedrock breaks instantly, as vanilla does.
 - While the dig runs, the player hears the ordinary mining sound the engine
   sends; there is no separate break sound or particle burst — Horizon exposes
   no hook point for them.
-- Breaking bedrock costs the pickaxe no durability (no hook point damages a
-  held stack); ordinary mining wears it as usual.
+- Breaking bedrock or voidshell costs the pickaxe no durability (no hook point
+  damages a held stack); ordinary mining wears it as usual.
+- The Abyss's inhabitants are vanilla mob kinds spawned by the native mod
+  (Horizon content mods cannot register new living entity types); they spawn
+  only near a player in the Abyss, not as part of world generation.
 - Worlds created before the data pack was installed keep their old height in
   already-generated chunks.
 - The native mod reads one private engine field (the player's dig state); see
