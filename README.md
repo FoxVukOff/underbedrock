@@ -7,9 +7,8 @@ and half a kilometre of dark world waits underneath — voidstone caverns lit by
 blue crystals, ores, gravel, glowing sprouts, and creatures of their own.
 
 Under Bedrock ships as three parts that only work together: a content mod
-(`.hmod`), a native mod (`.hnmod`) and a world data pack. **Prebuilt files for
-all three are on the [Releases](../../releases/latest) page** — the repository
-carries sources only.
+(`.hmod`), a native mod (`.hnmod`) and a world data pack. The prebuilt files
+for all three live in this repository's `release/` folder.
 
 ---
 
@@ -63,7 +62,7 @@ and an “Underbedrock” creative tab.
 Requires **Horizon 26.3**. Mods are off by default in Horizon: a fresh install
 has no mod folders and plays exactly like vanilla.
 
-Download the three files from the [latest release](../../releases/latest):
+Take the three prebuilt files from this repository's `release/` folder:
 
 | File | Goes into | Notes |
 | --- | --- | --- |
@@ -194,9 +193,10 @@ python tools/pack_release.py
 ```
 
 which writes `release/`: the `.hmod`, the `.hnmod` and the data pack zip
-(`pack.mcmeta` at its root) — the three files GitHub Releases carries.
-`python tools/pack_release.py --install` adds a downloadable bundle of the
-three with an `INSTALL.txt`; it is a transport archive, not repo content. Regenerating textures or worldgen data (`make_textures.py`,
+(`pack.mcmeta` at its root) — the three prebuilt files the repository carries.
+`python tools/pack_release.py --install` adds a bundle of the three with an
+`INSTALL.txt` (a transport archive for handing the mod to a player; it stays
+out of the repository). Regenerating textures or worldgen data (`make_textures.py`,
 `make_content.py`, both plain Python as well — no Pillow, no Rust) is only needed
 when editing them.
 

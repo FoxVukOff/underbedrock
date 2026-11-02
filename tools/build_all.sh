@@ -44,7 +44,7 @@ cargo run --quiet -- on
 cargo run --quiet -- off
 cd ../..
 
-echo "== the distributable set: hmod, hnmod, datapack zip (pack.mcmeta at its root), install bundle =="
+echo "== the distributable set: hmod, hnmod, datapack zip (pack.mcmeta at its root) =="
 python3 tools/pack_release.py
 
 echo "== all built =="

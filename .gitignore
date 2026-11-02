@@ -1,5 +1,5 @@
-# Build outputs and local artifacts. The distributable files live in GitHub
-# Releases; the repository carries sources only.
+# Build outputs and local artifacts. The three prebuilt files in release/
+# are repository content; only the transport install bundle stays out.
 target/
-release/
 __pycache__/
+release/underbedrock-install.zip
