@@ -22,6 +22,25 @@ struct Mining {
     ticks: u32,
 }
 
+/// `horizon_core::geometry::Vec3`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Vec3 {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+}
+
+/// An entity Horizon keeps without simulating (`game/commands.rs`'
+/// `OtherEntity`): a display, a marker, an interaction. The mod's creatures
+/// are the displays among them.
+pub struct OtherEntity {
+    pub id: u32,
+    pub kind: String,
+    pub position: Vec3,
+    pub yaw: f32,
+    pub pitch: f32,
+}
+
 /// A server mod's bulk block edit (`game/native_world_edit.rs`).
 pub mod native_world_edit {
     /// Which of a column's heights a run's `y` counts from.
@@ -54,32 +73,18 @@ pub mod native_world_edit {
     }
 }
 
-/// Mobs for server mods (`game/native_mobs.rs`, API 37): the shapes
-/// `native_spawn_mob` and `native_mobs` take and give.
-pub mod native_mobs {
-    /// A living mob, as a native mod reads it.
-    #[derive(Clone, Debug, PartialEq)]
-    pub struct NativeMob {
-        pub id: u32,
-        pub dimension: String,
-        /// `minecraft:zombie`.
-        pub kind: String,
-        pub pos: [f64; 3],
-        pub yaw: f32,
-        pub health: f32,
-        pub max_health: f32,
-    }
-
-    /// What a mob starts with; the default is a plain mob.
-    #[derive(Clone, Debug, Default, PartialEq)]
-    pub struct NativeSpawn {
-        pub name: Option<String>,
-        pub health: Option<f32>,
-        pub no_ai: bool,
-        pub invisible: bool,
-        pub silent: bool,
-        pub invulnerable: bool,
-        pub no_gravity: bool,
+/// Entities Horizon keeps without simulating, for server mods
+/// (`game/native_entities.rs`, API 59): the shape `native_set_display` takes.
+pub mod native_entities {
+    /// A display's transformation and interpolation.
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    pub struct NativeDisplay {
+        pub translation: [f32; 3],
+        pub left_rotation: [f32; 4],
+        pub scale: [f32; 3],
+        pub right_rotation: [f32; 4],
+        pub interpolation: i32,
+        pub teleport: i32,
     }
 }
 
@@ -194,9 +199,15 @@ pub struct Game<'a> {
     pub told: Vec<(u128, String)>,
     pub feedback: Vec<String>,
     pub edits: Vec<native_world_edit::NativeBlockEdit>,
-    /// The living mobs of the level in place, and the spawns the mod made.
-    pub mobs: Vec<native_mobs::NativeMob>,
-    pub spawned: Vec<(String, [f64; 3])>,
+    /// The entities Horizon keeps without simulating (the mod's creature
+    /// displays are among them), the id it hands out next, and the record of
+    /// what the mod did to them, for the harness to assert on.
+    pub others: Vec<OtherEntity>,
+    pub next_entity: u32,
+    pub summoned: Vec<(String, [f64; 3], String)>,
+    pub moved: Vec<(u32, [f64; 3])>,
+    pub posed: Vec<(u32, [f32; 3])>,
+    pub removed_entities: Vec<u32>,
     pub marker: std::marker::PhantomData<&'a ()>,
 }
 
@@ -228,8 +239,12 @@ impl<'a> Game<'a> {
             told: Vec::new(),
             feedback: Vec::new(),
             edits: Vec::new(),
-            mobs: Vec::new(),
-            spawned: Vec::new(),
+            others: Vec::new(),
+            next_entity: 1,
+            summoned: Vec::new(),
+            moved: Vec::new(),
+            posed: Vec::new(),
+            removed_entities: Vec::new(),
             marker: std::marker::PhantomData,
         }
     }
@@ -288,39 +303,106 @@ impl Game<'_> {
         self.block_at(pos)
     }
 
-    /// The living mobs of the level in place, `dimension`.
-    pub fn native_mobs(&self, dimension: &str) -> Vec<native_mobs::NativeMob> {
-        if !self.level_open || self.acting.as_ref().is_none_or(|p| p.dimension != dimension) {
-            return Vec::new();
-        }
-        self.mobs.clone()
+    /// The level in place is `dimension` and simulates.
+    fn entity_level(&self, dimension: &str) -> bool {
+        self.level_open && self.acting.as_ref().is_some_and(|p| p.dimension == dimension)
     }
 
-    /// Spawns a mob of `kind` at `pos`, as a natural spawn is finalized.
-    pub fn native_spawn_mob(
+    /// Spawns an entity of `kind` at `pos` from its compound, as `/summon`
+    /// does: its id. The stub keeps the compound's payload (the item or block
+    /// a display shows) for the harness.
+    pub fn native_summon(
         &mut self,
         dimension: &str,
         kind: &str,
         pos: [f64; 3],
-        options: &native_mobs::NativeSpawn,
+        nbt: horizon_world::nbt::Compound,
     ) -> Option<u32> {
-        let acting = self.acting.as_ref()?;
-        let _ = options;
-        if !self.level_open || dimension != acting.dimension {
+        if !self.entity_level(dimension) || !pos.iter().all(|v| v.is_finite()) {
             return None;
         }
-        let id = self.mobs.len() as u32 + 1;
-        self.mobs.push(native_mobs::NativeMob {
+        use horizon_world::nbt::Tag;
+        let shown = |key: &str, inner: &str| {
+            nbt.get(key).and_then(|t| match t {
+                Tag::Compound(c) => c.get(inner),
+                _ => None,
+            })
+        };
+        let payload = match shown("item", "id").or_else(|| shown("block_state", "Name")) {
+            Some(Tag::String(s)) => s.clone(),
+            _ => String::new(),
+        };
+        let id = self.next_entity;
+        self.next_entity += 1;
+        self.others.push(OtherEntity {
             id,
-            dimension: dimension.to_owned(),
             kind: kind.to_owned(),
-            pos,
+            position: Vec3 { x: pos[0], y: pos[1], z: pos[2] },
             yaw: 0.0,
-            health: 20.0,
-            max_health: 20.0,
+            pitch: 0.0,
         });
-        self.spawned.push((kind.to_owned(), pos));
+        self.summoned.push((kind.to_owned(), pos, payload));
         Some(id)
+    }
+
+    /// Moves an entity Horizon keeps without simulating to `pos`.
+    pub fn native_move_entity(
+        &mut self,
+        dimension: &str,
+        id: u32,
+        pos: [f64; 3],
+        yaw: f32,
+        pitch: f32,
+    ) -> bool {
+        if !self.entity_level(dimension) {
+            return false;
+        }
+        let Some(o) = self.others.iter_mut().find(|o| o.id == id) else {
+            return false;
+        };
+        o.position = Vec3 { x: pos[0], y: pos[1], z: pos[2] };
+        o.yaw = yaw;
+        o.pitch = pitch;
+        self.moved.push((id, pos));
+        true
+    }
+
+    /// Sets a display's transformation and interpolation.
+    pub fn native_set_display(
+        &mut self,
+        dimension: &str,
+        id: u32,
+        display: &native_entities::NativeDisplay,
+    ) -> bool {
+        if !self.entity_level(dimension) {
+            return false;
+        }
+        let is_display = self.others.iter().any(|o| {
+            o.id == id
+                && matches!(
+                    o.kind.as_str(),
+                    "minecraft:block_display" | "minecraft:item_display" | "minecraft:text_display"
+                )
+        });
+        if !is_display {
+            return false;
+        }
+        self.posed.push((id, display.scale));
+        true
+    }
+
+    /// Removes an entity Horizon keeps without simulating, as `/kill` does.
+    pub fn native_remove_entity(&mut self, dimension: &str, id: u32) -> bool {
+        if !self.entity_level(dimension) {
+            return false;
+        }
+        let before = self.others.len();
+        self.others.retain(|o| o.id != id);
+        let gone = self.others.len() < before;
+        if gone {
+            self.removed_entities.push(id);
+        }
+        gone
     }
 
     /// The block a state is a state of.

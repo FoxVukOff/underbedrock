@@ -1,7 +1,7 @@
 // Under Bedrock's native half: the void-alloy pickaxe digs the bedrock floor
 // and the voidshell gate under it open, so the player gets into the Abyss the
-// mod's datapack makes below; and the Abyss gets its own inhabitants, spawned
-// where a player is deep enough. This file is both the mod's Cargo library
+// mod's datapack makes below; and the Abyss gets its own creatures, summoned
+// and driven by the mod itself where a player is deep enough. This file is both the mod's Cargo library
 // (its tests) and the module the bundle adds to the game
 // (`crate::game::underbedrock_core`). It holds the mod's logic and state and
 // no Horizon in it: the helpers beside it do the Game work and call in here.
@@ -41,26 +41,90 @@ const BAR_WIDTH: usize = 20;
 /// `/abyss`'s answer.
 pub const HELP: &str = "Under Bedrock: /abyss give (the pickaxe), /abyss depth (how deep this world goes), /abyss dig (the break time), /abyss drop (whether bedrock drops).";
 
-// --- the Abyss's own inhabitants -------------------------------------------
+// --- the Abyss's own creatures ---------------------------------------------
+// The Abyss is inhabited by the mod's OWN creatures: no vanilla mob is spawned
+// down there. Each creature is a display entity, an entity Horizon keeps
+// without simulating (docs/native-mods.md, "Entities"): the mod summons it
+// once into a dark pocket and drives it from the tick helper itself — an
+// `item_display` showing the mod's void crystal item (a wisp, and the bigger
+// watcher), or a `block_display` showing its crystal lamp (a lantern that
+// hangs in the dark). The engine saves them with their chunks and syncs them
+// to the clients; the paths, the posing and the life cycle are the mod's.
 
-/// The kinds the mod spawns under the bedrock floor: a bat for ambient life,
-/// and the three cave monsters, so the dark reads as a world and not a hole.
-pub const SPAWN_KINDS: [&str; 4] = [
-    "minecraft:bat",
-    "minecraft:skeleton",
-    "minecraft:spider",
-    "minecraft:zombie",
-];
+/// What a wisp's or watcher's display shows: the mod's own void crystal item.
+pub const WISP_ITEM: &str = "underbedrock:void_crystal";
+/// What a lantern's display shows: the mod's own crystal lamp block.
+pub const LANTERN_BLOCK: &str = "underbedrock:crystal_lamp";
+/// The display entity kinds the creatures ride.
+pub const ITEM_DISPLAY: &str = "minecraft:item_display";
+pub const BLOCK_DISPLAY: &str = "minecraft:block_display";
+
 /// A player below this y is in the Abyss, and gets its company.
 pub const SPAWN_BELOW_Y: f64 = -80.0;
-/// The most of the mod's mobs within reach of one player at a time.
-pub const MOB_CAP: usize = 10;
-/// The mobs are looked for this many blocks around the player.
-pub const MOB_RANGE: f64 = 40.0;
-/// How often a player's tick looks for a place to spawn one, in ticks.
+/// The most of the mod's creatures within reach of one player at a time.
+pub const CREATURE_CAP: usize = 10;
+/// Creatures are looked for this many blocks around the player.
+pub const CREATURE_RANGE: f64 = 40.0;
+/// A creature whose player gets this far from its anchor is let go.
+pub const CREATURE_CULL: f64 = 96.0;
+/// How often a player's tick looks for a place to summon one, in ticks.
 pub const SPAWN_EVERY: u32 = 60;
-/// The spawn attempts of one look.
+/// The summon attempts of one look.
 pub const SPAWN_ATTEMPTS: u32 = 4;
+/// A creature's path advances this much of a turn per tick, and its pose is
+/// sent again every this many ticks (each client eases between the poses).
+pub const PHASE_STEP: f32 = 0.05;
+pub const POSE_EVERY: u32 = 8;
+/// A watcher closes on a player that comes within this many blocks, and
+/// keeps this many.
+pub const WATCHER_NEAR: f64 = 16.0;
+pub const WATCHER_KEEP: f64 = 4.0;
+
+/// The kinds of creature the Abyss gets.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Creature {
+    /// A small crystal light that circles and bobs where it was summoned.
+    Wisp,
+    /// The mod's crystal lamp, hanging in the dark with a slow sway.
+    Lantern,
+    /// A bigger crystal that closes on a player who comes near, keeps its
+    /// distance, and watches them.
+    Watcher,
+}
+
+impl Creature {
+    /// The display entity kind that carries it.
+    pub fn display(self) -> &'static str {
+        match self {
+            Self::Lantern => BLOCK_DISPLAY,
+            Self::Wisp | Self::Watcher => ITEM_DISPLAY,
+        }
+    }
+    /// The item or block its display shows: the mod's own.
+    pub fn shows(self) -> &'static str {
+        match self {
+            Self::Lantern => LANTERN_BLOCK,
+            Self::Wisp | Self::Watcher => WISP_ITEM,
+        }
+    }
+    /// The scale its display is posed at.
+    pub fn scale(self) -> f32 {
+        match self {
+            Self::Wisp => 0.9,
+            Self::Lantern => 0.55,
+            Self::Watcher => 1.5,
+        }
+    }
+    /// The creature a display of `display_kind` is: a watcher found again
+    /// after a restart comes back a wisp (it drifts the same, only smaller).
+    pub fn of(display_kind: &str) -> Option<Self> {
+        match display_kind {
+            BLOCK_DISPLAY => Some(Self::Lantern),
+            ITEM_DISPLAY => Some(Self::Wisp),
+            _ => None,
+        }
+    }
+}
 
 /// What the pickaxe digs: the bedrock floor, or the voidshell gate under it.
 /// The abyss bedrock, and everything else, is left to the engine.
@@ -285,51 +349,239 @@ pub fn candidate_offset(seed: u64, attempt: u32) -> [i32; 3] {
     [dx, dy, dz]
 }
 
-/// The kind the `seed`'s spawn is: bats a little oftener than each monster.
-pub fn pick_kind(seed: u64) -> &'static str {
+/// The creature the `seed`'s summon is: wisps the oftenest, then watchers,
+/// and a lantern here and there.
+pub fn pick_creature(seed: u64) -> Creature {
     match mix(seed ^ 0xAB55_5EED) % 10 {
-        0..=3 => SPAWN_KINDS[0],
-        4..=6 => SPAWN_KINDS[1],
-        7..=8 => SPAWN_KINDS[2],
-        _ => SPAWN_KINDS[3],
+        0..=4 => Creature::Wisp,
+        5..=7 => Creature::Watcher,
+        _ => Creature::Lantern,
     }
 }
 
-/// Whether a mob of the mod's kinds is near enough to count against the cap:
-/// within [`MOB_RANGE`] blocks in x and z, and under the bedrock floor.
-pub fn counts_towards_cap(kind: &str, pos: [f64; 3], player: [f64; 3]) -> bool {
-    SPAWN_KINDS.contains(&kind)
-        && pos[1] < SPAWN_BELOW_Y
-        && (pos[0] - player[0]).abs() <= MOB_RANGE
-        && (pos[2] - player[2]).abs() <= MOB_RANGE
+/// Whether a display entity is one of the mod's creatures: a display kind,
+/// under the bedrock floor (nothing up top is the mod's).
+pub fn is_ours(display_kind: &str, pos: [f64; 3]) -> bool {
+    Creature::of(display_kind).is_some() && pos[1] < SPAWN_BELOW_Y
 }
 
-/// One look for a place to spawn: `near` mobs of the mod's are within reach
-/// already, and `air` says whether a cell is open (the caller reads its
+/// Whether a creature is near enough to the player to count against the cap.
+pub fn counts_towards_cap(pos: [f64; 3], player: [f64; 3]) -> bool {
+    (pos[0] - player[0]).abs() <= CREATURE_RANGE && (pos[2] - player[2]).abs() <= CREATURE_RANGE
+}
+
+/// One look for a place to summon: `near` creatures of the mod's are within
+/// reach already, and `air` says whether a cell is open (the caller reads its
 /// world). The first attempt with air at the feet and the head, and a floor
-/// under the feet, wins: its kind and spot. None when the cap is full or no
-/// attempt finds a pocket.
+/// under the feet, wins: its creature and spot. None when the cap is full or
+/// no attempt finds a pocket.
 pub fn spawn_plan(
     seed: u64,
     at: [f64; 3],
     near: usize,
     air: impl Fn([i32; 3]) -> bool,
-) -> Option<(&'static str, [f64; 3])> {
-    if near >= MOB_CAP {
+) -> Option<(Creature, [f64; 3])> {
+    if near >= CREATURE_CAP {
         return None;
     }
     for attempt in 0..SPAWN_ATTEMPTS {
         let [dx, dy, dz] = candidate_offset(seed, attempt);
-        let spot = [at[0] + dx as f64, (at[1] + dy as f64).floor(), at[2] + dz as f64];
+        let spot = [
+            at[0] + dx as f64,
+            (at[1] + dy as f64).floor(),
+            at[2] + dz as f64,
+        ];
         let feet = [spot[0] as i32, spot[1] as i32, spot[2] as i32];
         // A pocket: air where the mob would stand, air over its head, and a
         // floor under it that is not the world's own bottom air.
-        if !(air(feet) && air([feet[0], feet[1] + 1, feet[2]]) && !air([feet[0], feet[1] - 1, feet[2]])) {
+        if !(air(feet)
+            && air([feet[0], feet[1] + 1, feet[2]])
+            && !air([feet[0], feet[1] - 1, feet[2]]))
+        {
             continue;
         }
-        return Some((pick_kind(seed.wrapping_add(attempt as u64)), spot));
+        return Some((pick_creature(seed.wrapping_add(attempt as u64)), spot));
     }
     None
+}
+
+/// Where a creature is at `phase` of its path around `anchor`: a wisp circles
+/// and bobs, a lantern hangs with a slow sway, a watcher circles tighter and
+/// faster. All three stay in the air their pocket gave them.
+pub fn drift(kind: Creature, anchor: [f64; 3], phase: f32) -> [f64; 3] {
+    let (radius, spin, bob, lift) = match kind {
+        Creature::Wisp => (2.5f32, 0.7, 0.6, 1.0),
+        Creature::Lantern => (0.35, 0.25, 0.25, 1.8),
+        Creature::Watcher => (1.4, 1.1, 0.4, 1.2),
+    };
+    let turn = phase * spin;
+    [
+        anchor[0] + (radius * turn.sin()) as f64,
+        anchor[1] + lift + (bob * (turn * 1.7).sin()) as f64,
+        anchor[2] + (radius * turn.cos()) as f64,
+    ]
+}
+
+/// Where a watcher's anchor goes this tick: a player within [`WATCHER_NEAR`]
+/// blocks is closed on, a twentieth of the remaining way each tick, until the
+/// watcher hangs [`WATCHER_KEEP`] and a half blocks off them; a player
+/// further away (or right on top of it) leaves it where it is.
+pub fn watcher_anchor(anchor: [f64; 3], player: [f64; 3]) -> [f64; 3] {
+    let eye = [player[0], player[1] + 1.0, player[2]];
+    let away = [anchor[0] - eye[0], anchor[1] - eye[1], anchor[2] - eye[2]];
+    let dist = (away[0] * away[0] + away[1] * away[1] + away[2] * away[2]).sqrt();
+    if !(1.0e-6..=WATCHER_NEAR).contains(&dist) {
+        return anchor;
+    }
+    let keep = (WATCHER_KEEP + 0.5) as f32;
+    let want = [
+        eye[0] + away[0] / dist * keep as f64,
+        eye[1] + away[1] / dist * keep as f64,
+        eye[2] + away[2] / dist * keep as f64,
+    ];
+    [
+        anchor[0] + (want[0] - anchor[0]) * 0.05,
+        anchor[1] + (want[1] - anchor[1]) * 0.05,
+        anchor[2] + (want[2] - anchor[2]) * 0.05,
+    ]
+}
+
+/// The yaw that looks from `from` at `to`, in the engine's degrees: 0 south,
+/// -90 east.
+pub fn face_yaw(from: [f64; 3], to: [f64; 3]) -> f32 {
+    (-(to[0] - from[0]) as f32)
+        .atan2((to[2] - from[2]) as f32)
+        .to_degrees()
+}
+
+/// A display's rotation of `angle` radians about the y axis, as the engine's
+/// quaternion wants it (`[x, y, z, w]`).
+pub fn spin_y(angle: f32) -> [f32; 4] {
+    [0.0, (angle * 0.5).sin(), 0.0, (angle * 0.5).cos()]
+}
+
+/// One creature the mod drives: its display's engine id, what it is, where it
+/// circles, how far round its path it is, whose company it keeps (it is let
+/// go when that player walks away), and the ticks until its pose is sent
+/// again.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CreatureState {
+    pub id: u32,
+    pub kind: Creature,
+    pub anchor: [f64; 3],
+    pub phase: f32,
+    pub owner: u128,
+    pub pose_in: u32,
+}
+
+/// What one step of the creatures asks the engine to do.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct CreatureStep {
+    /// `native_remove_entity`: let go, their player walked away.
+    pub cull: Vec<u32>,
+    /// `native_move_entity`: the id, where to, facing which yaw.
+    pub moves: Vec<(u32, [f64; 3], f32)>,
+    /// `native_set_display`: the id, the kind (for its scale) and the spin.
+    pub poses: Vec<(u32, Creature, f32)>,
+}
+
+thread_local! {
+    /// The creatures the mod drives, in the world in place.
+    static CREATURES: RefCell<Vec<CreatureState>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Empties the creature list: a world closed, or the harness runs again.
+pub fn clear_creatures() {
+    CREATURES.with(|creatures| creatures.borrow_mut().clear());
+}
+
+/// How many creatures the mod drives.
+pub fn creatures_len() -> usize {
+    CREATURES.with(|creatures| creatures.borrow().len())
+}
+
+/// Adds a creature the caller just summoned at `anchor`, for `owner`.
+pub fn add_creature(id: u32, kind: Creature, anchor: [f64; 3], owner: u128) {
+    CREATURES.with(|creatures| {
+        let mut creatures = creatures.borrow_mut();
+        creatures.retain(|creature| creature.id != id);
+        creatures.push(CreatureState {
+            id,
+            kind,
+            anchor,
+            phase: 0.0,
+            owner,
+            pose_in: 0,
+        });
+    });
+}
+
+/// One tick of the creatures, given the displays the engine has in the Abyss
+/// (`live`: the id, the display kind and the position of each) and the player
+/// whose tick this is. The engine's list is the truth: a state whose display
+/// is gone drops off (a world reloaded, a `/kill`), and a display the list
+/// doesn't know is adopted (the engine saved it with its chunk in an earlier
+/// session; a watcher comes back a wisp). The rest take a step of their path
+/// — watchers easing toward the player — and one whose own player is beyond
+/// [`CREATURE_CULL`] of its anchor is let go. Each player's tick steps every
+/// creature once, so a LAN game's creatures run a little faster the more
+/// players are down there; one player's is exact.
+pub fn step_creatures(
+    player: [f64; 3],
+    owner: u128,
+    live: &[(u32, &str, [f64; 3])],
+) -> CreatureStep {
+    let mut step = CreatureStep::default();
+    CREATURES.with(|cell| {
+        let mut creatures = cell.borrow_mut();
+        creatures.retain(|creature| live.iter().any(|(id, _, _)| *id == creature.id));
+        for (id, display_kind, pos) in live {
+            if creatures.iter().any(|creature| creature.id == *id) {
+                continue;
+            }
+            let Some(kind) = Creature::of(display_kind) else {
+                continue;
+            };
+            creatures.push(CreatureState {
+                id: *id,
+                kind,
+                anchor: *pos,
+                phase: *id as f32 * 0.7,
+                owner,
+                pose_in: 0,
+            });
+        }
+        creatures.retain_mut(|creature| {
+            if creature.owner == owner {
+                let away = [
+                    player[0] - creature.anchor[0],
+                    player[2] - creature.anchor[2],
+                ];
+                if (away[0] * away[0] + away[1] * away[1]).sqrt() > CREATURE_CULL {
+                    step.cull.push(creature.id);
+                    return false;
+                }
+            }
+            if creature.kind == Creature::Watcher {
+                creature.anchor = watcher_anchor(creature.anchor, player);
+            }
+            creature.phase += PHASE_STEP;
+            let pos = drift(creature.kind, creature.anchor, creature.phase);
+            let yaw = match creature.kind {
+                Creature::Watcher => face_yaw(pos, player),
+                _ => (creature.phase * 30.0).rem_euclid(360.0),
+            };
+            step.moves.push((creature.id, pos, yaw));
+            if creature.pose_in == 0 {
+                step.poses
+                    .push((creature.id, creature.kind, creature.phase));
+                creature.pose_in = POSE_EVERY;
+            }
+            creature.pose_in -= 1;
+            true
+        });
+    });
+    step
 }
 
 #[cfg(test)]
@@ -434,53 +686,152 @@ mod tests {
         };
         let floor = floor_of(7);
         let pocket = move |cell: [i32; 3]| cell != floor;
-        assert_eq!(spawn_plan(7, at, MOB_CAP, pocket), None);
-        // With room and a floor: the first attempt's kind and spot.
-        let (kind, spot) = spawn_plan(7, at, MOB_CAP - 1, pocket).expect("a plan");
-        assert_eq!(kind, pick_kind(7));
+        assert_eq!(spawn_plan(7, at, CREATURE_CAP, pocket), None);
+        // With room and a floor: the first attempt's creature and spot.
+        let (creature, spot) = spawn_plan(7, at, CREATURE_CAP - 1, pocket).expect("a plan");
+        assert_eq!(creature, pick_creature(7));
         let [dx, dy, dz] = candidate_offset(7, 0);
         assert_eq!(
             spot,
-            [at[0] + dx as f64, (at[1] + dy as f64).floor(), at[2] + dz as f64]
+            [
+                at[0] + dx as f64,
+                (at[1] + dy as f64).floor(),
+                at[2] + dz as f64
+            ]
         );
     }
 
     #[test]
-    fn spawned_kinds_are_the_mods() {
-        for seed in 0..40u64 {
-            assert!(SPAWN_KINDS.contains(&pick_kind(seed)));
+    fn picked_creatures_are_the_mods_own() {
+        let mut seen = [0u32; 3];
+        for seed in 0..400u64 {
+            match pick_creature(seed) {
+                Creature::Wisp => seen[0] += 1,
+                Creature::Watcher => seen[1] += 1,
+                Creature::Lantern => seen[2] += 1,
+            }
+        }
+        assert!(seen.iter().all(|count| *count > 0), "{seen:?}");
+        // A wisp and a watcher show the mod's item; a lantern its block.
+        assert_eq!(Creature::Wisp.shows(), WISP_ITEM);
+        assert_eq!(Creature::Watcher.display(), ITEM_DISPLAY);
+        assert_eq!(Creature::Lantern.shows(), LANTERN_BLOCK);
+        assert_eq!(Creature::Lantern.display(), BLOCK_DISPLAY);
+        assert_eq!(Creature::of(BLOCK_DISPLAY), Some(Creature::Lantern));
+        assert_eq!(Creature::of(ITEM_DISPLAY), Some(Creature::Wisp));
+        assert_eq!(Creature::of("minecraft:text_display"), None);
+    }
+
+    #[test]
+    fn the_cap_counts_the_mods_creatures_near_the_player() {
+        let player = [0.0, -200.0, 0.0];
+        assert!(is_ours(ITEM_DISPLAY, [10.0, -210.0, 0.0]));
+        assert!(is_ours(BLOCK_DISPLAY, [-30.0, -90.0, 20.0]));
+        // Above the floor, or not a display the mod rides: not the mod's.
+        assert!(!is_ours(ITEM_DISPLAY, [10.0, -70.0, 0.0]));
+        assert!(!is_ours("minecraft:text_display", [10.0, -210.0, 0.0]));
+        assert!(!is_ours("minecraft:marker", [10.0, -210.0, 0.0]));
+        // Near enough to count against the cap, and too far.
+        assert!(counts_towards_cap([10.0, -210.0, 0.0], player));
+        assert!(!counts_towards_cap([60.0, -210.0, 0.0], player));
+    }
+
+    #[test]
+    fn creatures_drift_on_their_paths_around_their_anchors() {
+        let anchor = [100.0, -200.0, 100.0];
+        for kind in [Creature::Wisp, Creature::Lantern, Creature::Watcher] {
+            let mut phase = 0.0;
+            for _ in 0..2000 {
+                let pos = drift(kind, anchor, phase);
+                let out = (pos[0] - anchor[0]).abs().max((pos[2] - anchor[2]).abs());
+                assert!(out <= 2.6, "{kind:?} drifts {out} blocks out");
+                let up = pos[1] - anchor[1];
+                assert!(up > 0.0 && up < 2.6, "{kind:?} bobs out of its air: {up}");
+                phase += PHASE_STEP;
+            }
         }
     }
 
     #[test]
-    fn the_cap_counts_the_mods_mobs_near_the_player() {
+    fn a_watcher_closes_and_keeps_its_distance() {
         let player = [0.0, -200.0, 0.0];
-        assert!(counts_towards_cap(
-            "minecraft:bat",
-            [10.0, -210.0, 0.0],
-            player
-        ));
-        assert!(counts_towards_cap(
-            "minecraft:zombie",
-            [-30.0, -90.0, 20.0],
-            player
-        ));
-        // Too far, too high, or not the mod's kind: not counted.
-        assert!(!counts_towards_cap(
-            "minecraft:bat",
-            [60.0, -210.0, 0.0],
-            player
-        ));
-        assert!(!counts_towards_cap(
-            "minecraft:bat",
-            [10.0, -70.0, 0.0],
-            player
-        ));
-        assert!(!counts_towards_cap(
-            "minecraft:cow",
-            [10.0, -210.0, 0.0],
-            player
-        ));
+        // From just inside its notice: it eases toward the player and stops
+        // off them.
+        let start = [10.0, -199.0, 0.0];
+        let mut anchor = start;
+        for _ in 0..400 {
+            anchor = watcher_anchor(anchor, player);
+        }
+        let eye = [player[0], player[1] + 1.0, player[2]];
+        let dist = ((anchor[0] - eye[0]).powi(2)
+            + (anchor[1] - eye[1]).powi(2)
+            + (anchor[2] - eye[2]).powi(2))
+        .sqrt();
+        assert!(
+            dist < 6.0 && dist > WATCHER_KEEP - 0.5,
+            "it ends {dist} out"
+        );
+        assert_ne!(anchor, start);
+        // From far away: it holds where it is.
+        let far = [200.0, -199.0, 0.0];
+        assert_eq!(watcher_anchor(far, player), far);
+        // Right on the player: no jump, no division by nothing.
+        let on = [0.0, -199.0, 0.0];
+        assert_eq!(watcher_anchor(on, player), on);
+    }
+
+    #[test]
+    fn the_yaw_and_spin_helpers_point_where_they_say() {
+        // 0 is south (+z), -90 east, as the engine's yaw is.
+        assert_eq!(face_yaw([0.0; 3], [0.0, 0.0, 5.0]).round(), 0.0);
+        assert_eq!(face_yaw([0.0; 3], [5.0, 0.0, 0.0]).round(), -90.0);
+        assert_eq!(face_yaw([0.0; 3], [-5.0, 0.0, 0.0]).round(), 90.0);
+        // No turn is the identity, and every spin is a unit quaternion.
+        assert_eq!(spin_y(0.0), [0.0, 0.0, 0.0, 1.0]);
+        for angle in [0.3f32, 1.0, -2.5, 12.0] {
+            let [x, y, z, w] = spin_y(angle);
+            let norm = (x * x + y * y + z * z + w * w).sqrt();
+            assert!((norm - 1.0).abs() < 1.0e-5, "spin_y({angle}) norm {norm}");
+        }
+    }
+
+    #[test]
+    fn the_creature_list_follows_the_engine() {
+        clear_creatures();
+        let player = [0.0, -200.0, 0.0];
+        let owner = 0x0BED_0007;
+        // A display the list doesn't know is adopted and driven at once...
+        let step = step_creatures(player, owner, &[(11, ITEM_DISPLAY, [3.0, -201.0, 3.0])]);
+        assert_eq!(creatures_len(), 1);
+        assert_eq!(step.moves.len(), 1);
+        assert_eq!(step.moves[0].0, 11);
+        assert_eq!(step.poses.len(), 1, "a fresh creature poses at once");
+        assert!(step.cull.is_empty());
+        // ...its pose comes again on the mod's rhythm...
+        let mut poses = 0;
+        for _ in 0..POSE_EVERY {
+            let step = step_creatures(player, owner, &[(11, ITEM_DISPLAY, [3.0, -201.0, 3.0])]);
+            poses += step.poses.len();
+            assert_eq!(step.moves.len(), 1);
+        }
+        assert_eq!(poses, 1);
+        // ...one the engine no longer has drops off the list...
+        let step = step_creatures(player, owner, &[]);
+        assert_eq!(creatures_len(), 0);
+        assert!(step.moves.is_empty() && step.poses.is_empty() && step.cull.is_empty());
+        // ...and one whose own player walks away is let go.
+        add_creature(12, Creature::Wisp, [0.0, -200.0, 0.0], owner);
+        let far = [500.0, -200.0, 0.0];
+        let step = step_creatures(far, owner, &[(12, ITEM_DISPLAY, [0.0, -200.0, 0.0])]);
+        assert_eq!(step.cull, [12]);
+        assert_eq!(creatures_len(), 0);
+        assert!(step.moves.is_empty());
+        // Another player's creature is left alone by this player's tick.
+        add_creature(13, Creature::Wisp, [0.0, -200.0, 0.0], owner);
+        let step = step_creatures(far, owner + 1, &[(13, ITEM_DISPLAY, [0.0, -200.0, 0.0])]);
+        assert!(step.cull.is_empty());
+        assert_eq!(creatures_len(), 1);
+        clear_creatures();
     }
 
     #[test]

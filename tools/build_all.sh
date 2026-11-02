@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds and checks everything Under Bedrock ships, in order. Run from the
-# mod's root folder; a Rust 1.95 toolchain and python3 with Pillow are needed.
+# mod's root folder; a Rust 1.95 toolchain and python3 (no packages) are needed.
 #
 #   sh tools/build_all.sh
 #
@@ -18,6 +18,9 @@ python3 tools/make_content.py
 
 echo "== worldgen states, in the format Horizon's decoder reads =="
 python3 tools/check_worldgen.py
+
+echo "== the content declarations, the way Horizon's mod loader reads them =="
+python3 tools/check_content.py
 
 echo "== the content mod, checked and packed by Horizon's own parser =="
 cargo run --manifest-path tools/modbuild/Cargo.toml --quiet -- content-mod release/underbedrock.hmod

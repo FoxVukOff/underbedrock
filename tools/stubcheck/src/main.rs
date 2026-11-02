@@ -34,6 +34,32 @@ pub mod registry {
     pub struct BlockStateId(pub u32);
 }
 
+/// `horizon_world::nbt` (the compounds `native_summon` takes): the shapes the
+/// mod's sources touch, with the real names.
+pub mod nbt {
+    pub type JavaString = String;
+    pub type Compound = std::collections::BTreeMap<JavaString, Tag>;
+
+    #[derive(Clone, Debug, PartialEq)]
+    pub enum Tag {
+        Int(i32),
+        String(JavaString),
+        Compound(Compound),
+    }
+
+    impl Tag {
+        pub fn compound(entries: impl IntoIterator<Item = (impl Into<JavaString>, Tag)>) -> Self {
+            Self::Compound(entries.into_iter().map(|(k, v)| (k.into(), v)).collect())
+        }
+        pub fn get(&self, key: &str) -> Option<&Tag> {
+            match self {
+                Self::Compound(map) => map.get(key),
+                _ => None,
+            }
+        }
+    }
+}
+
 pub mod game;
 
 use game::Game;
@@ -269,16 +295,18 @@ fn main() {
     game.native_perform_command(&player, "abyss fly", &mut ran);
     check!(fails, "an unknown subcommand says so", ran && feedback(&game, mark).contains("no /abyss fly"));
 
-    // The Abyss keeps its own company: deep enough, with a pocket to stand
-    // in, the mod spawns one of its kinds; at the cap, or up top, it doesn't.
+    // The Abyss keeps its own company, with the mod's OWN creatures: deep
+    // enough, with a pocket to hang in, the mod summons one of its displays;
+    // at the cap, or up top, it doesn't. No vanilla mob is ever spawned.
+    use game::underbedrock_core as m;
     let deep: [f64; 3] = [0.5, -200.0, 0.5];
     game.acting.as_mut().expect("a player").position = deep;
     for _ in 0..60 {
         game.native_player_tick();
     }
-    check!(fails, "no pocket in the rock, no spawn", game.spawned.is_empty());
+    check!(fails, "no pocket in the rock, no creature", game.summoned.is_empty());
     let seed = 7u64 ^ (deep[0] as i64 as u64).wrapping_mul(0x2545_F491);
-    let [dx, dy, dz] = game::underbedrock_core::candidate_offset(seed, 0);
+    let [dx, dy, dz] = m::candidate_offset(seed, 0);
     // The same cells the mod's tick looks at: the offset added to the
     // player's fractional position, then truncated.
     let feet = [
@@ -290,37 +318,81 @@ fn main() {
     for _ in 0..60 {
         game.native_player_tick();
     }
-    let kind = game::underbedrock_core::pick_kind(seed);
+    let creature = m::pick_creature(seed);
     check!(
         fails,
-        "a pocket in the Abyss gets one of its kinds",
-        game.spawned.len() == 1 && game.spawned[0].0 == kind && game.mobs.len() == 1
+        "a pocket in the Abyss gets one of the mod's own creatures",
+        game.summoned.len() == 1
+            && game.summoned[0].0 == creature.display()
+            && game.summoned[0].2 == creature.shows()
+            && game.others.len() == 1
     );
-    // At the cap the mod stops spawning.
-    while game.mobs.len() < game::underbedrock_core::MOB_CAP {
-        let n = game.mobs.len() as u32;
-        game.mobs.push(game::native_mobs::NativeMob {
+    // The creature is the mod's to drive: every deep tick moves it, and its
+    // pose (with its own scale) goes out on the mod's rhythm.
+    let (moves, poses) = (game.moved.len(), game.posed.len());
+    game.native_player_tick();
+    check!(
+        fails,
+        "the mod moves its creature, and poses it at its own scale",
+        game.moved.len() == moves + 1
+            && game.posed.len() >= poses
+            && game.posed.first().is_none_or(|(_, scale)| scale[0] == creature.scale())
+    );
+    // At the cap the mod stops summoning.
+    while game.others.len() < m::CREATURE_CAP {
+        let n = game.others.len() as u32;
+        game.others.push(game::OtherEntity {
             id: 100 + n,
-            dimension: "minecraft:overworld".into(),
-            kind: game::underbedrock_core::SPAWN_KINDS[0].into(),
-            pos: [deep[0] + 5.0, -210.0, deep[2]],
+            kind: m::ITEM_DISPLAY.into(),
+            position: game::Vec3 { x: deep[0] + 5.0, y: -210.0, z: deep[2] },
             yaw: 0.0,
-            health: 20.0,
-            max_health: 20.0,
+            pitch: 0.0,
         });
     }
-    let spawns = game.spawned.len();
+    let summoned = game.summoned.len();
     for _ in 0..60 {
         game.native_player_tick();
     }
-    check!(fails, "at the cap the Abyss stays as it is", game.spawned.len() == spawns);
-    // Back at the surface, the engine's own spawning is the only one.
-    game.mobs.clear();
+    check!(fails, "at the cap the Abyss stays as it is", game.summoned.len() == summoned);
+    // A player who walks away lets the mod's creatures go: every one of them,
+    // summoned or adopted, is out of the engine's list on the next deep tick.
+    game.acting.as_mut().expect("a player").position = [500.5, -200.0, 0.5];
+    game.native_player_tick();
+    check!(
+        fails,
+        "walking away lets every creature go",
+        game.others.is_empty() && game.removed_entities.len() == m::CREATURE_CAP
+    );
+    // What a world saved and a restart lost: the engine has a display the
+    // mod's list doesn't know; the next deep tick adopts it and drives it.
+    game.acting.as_mut().expect("a player").position = deep;
+    game.others.push(game::OtherEntity {
+        id: 999,
+        kind: m::BLOCK_DISPLAY.into(),
+        position: game::Vec3 { x: deep[0] + 3.0, y: -201.0, z: deep[2] },
+        yaw: 0.0,
+        pitch: 0.0,
+    });
+    game.moved.clear();
+    game.native_player_tick();
+    check!(
+        fails,
+        "a display a world saved is adopted and driven",
+        game.moved.iter().any(|(id, _)| *id == 999)
+    );
+    // Back at the surface: no summons, and the engine's own spawning is the
+    // only one.
     game.acting.as_mut().expect("a player").position = [0.5, -60.0, 0.5];
+    let summoned = game.summoned.len();
+    let moves = game.moved.len();
     for _ in 0..60 {
         game.native_player_tick();
     }
-    check!(fails, "the surface is the engine's to populate", game.spawned.len() == spawns);
+    check!(
+        fails,
+        "the surface is the engine's to populate",
+        game.summoned.len() == summoned && game.moved.len() == moves
+    );
 
     // A disabled mod does nothing at all.
     game.disabled.push("underbedrock_core".into());

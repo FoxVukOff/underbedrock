@@ -3,7 +3,9 @@
   "probability": 0.0,
   "y": {
     "type": "minecraft:constant",
-    "value": -55
+    "value": {
+      "absolute": -55
+    }
   },
   "count": {
     "type": "minecraft:constant",

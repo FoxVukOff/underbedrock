@@ -5,7 +5,7 @@
     "explosion_resistance": 6.0,
     "requires_tool": true,
     "light": 6,
-    "sounds": "minecraft:metal"
+    "sounds": "minecraft:iron_block"
   },
   "item": true
 }

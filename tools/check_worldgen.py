@@ -120,6 +120,47 @@ def structural_checks(fails):
             fails.append(f'carver {name}: probability must be 0 (a carver tunnel below '
                          f'y -54 would be filled with the engine\'s deep lava sea)')
 
+    # Horizon's VerticalAnchor decodes from a map only ({"absolute": -55});
+    # vanilla also allows a bare integer, Horizon crashes the integrated
+    # server on one ("invalid type: integer, expected a map"). Every height
+    # provider in the pack and the content mod's features must carry maps.
+    ANCHOR_KEYS = {'absolute', 'above_bottom', 'below_top', 'relative_to_sea_level'}
+    HEIGHT_TYPES = {'minecraft:constant', 'minecraft:uniform', 'minecraft:biased_to_bottom',
+                    'minecraft:very_biased_to_bottom', 'minecraft:trapezoid'}
+
+    def anchor_ok(value):
+        return isinstance(value, dict) and len(ANCHOR_KEYS & set(value)) == 1
+
+    def height_provider_ok(provider):
+        if not isinstance(provider, dict) or provider.get('type') not in HEIGHT_TYPES:
+            return False
+        if provider['type'] == 'minecraft:constant':
+            return anchor_ok(provider.get('value'))
+        return anchor_ok(provider.get('min_inclusive')) and anchor_ok(provider.get('max_inclusive'))
+
+    def check_providers(node, where):
+        if isinstance(node, dict):
+            if node.get('type') in ('minecraft:cave', 'minecraft:nether_cave', 'minecraft:canyon') \
+                    and 'y' in node and not height_provider_ok(node['y']):
+                fails.append(f'{where}: the carver\'s y must be a height provider whose '
+                             f'anchors are maps ({{"absolute": N}}), never bare integers')
+            if node.get('type') == 'minecraft:height_range' \
+                    and not height_provider_ok(node.get('height')):
+                fails.append(f'{where}: height_range must carry a height provider whose '
+                             f'anchors are maps ({{"absolute": N}}), never bare integers')
+            for value in node.values():
+                check_providers(value, where)
+        elif isinstance(node, list):
+            for child in node:
+                check_providers(child, where)
+
+    for folder in (pack, ROOT / 'content-mod' / 'data'):
+        for path in sorted(folder.rglob('*.json')):
+            try:
+                check_providers(json.loads(path.read_text()), path.name)
+            except json.JSONDecodeError:
+                fails.append(f'{path.name}: not JSON')
+
     # Every density function and material rule reference resolves.
     df = pack / 'underbedrock/worldgen/density_function'
     have_df = {f'underbedrock:{p.stem}' for p in df.glob('*.json')}

@@ -101,7 +101,7 @@ BLOCKS = {
             "explosion_resistance": 6.0,
             "requires_tool": True,
             "light": 6,
-            "sounds": "minecraft:metal",
+            "sounds": "minecraft:iron_block",
         },
         "item": True,
     },
@@ -122,7 +122,7 @@ BLOCKS = {
             "hardness": 0.0,
             "explosion_resistance": 0.0,
             "light": 7,
-            "sounds": "minecraft:grass",
+            "sounds": "minecraft:short_grass",
         },
         "item": True,
     },
@@ -764,7 +764,7 @@ write(MR / "surface.json", {
 # would fill them with its deep lava sea, so the pack replaces the three
 # Overworld carvers with ones that never start. The Abyss's caves are the
 # material rule's; the surface keeps vanilla's density caves.
-CARVER_Y = {"type": "minecraft:constant", "value": -55}
+CARVER_Y = {"type": "minecraft:constant", "value": {"absolute": -55}}
 write(PACK / "data/minecraft/worldgen/carver/cave.json", {
     "type": "minecraft:cave",
     "probability": 0.0,
