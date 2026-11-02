@@ -16,6 +16,9 @@ echo "== textures and content =="
 python3 tools/make_textures.py
 python3 tools/make_content.py
 
+echo "== worldgen states, in the format Horizon's decoder reads =="
+python3 tools/check_worldgen.py
+
 echo "== the content mod, checked and packed by Horizon's own parser =="
 cargo run --manifest-path tools/modbuild/Cargo.toml --quiet -- content-mod release/underbedrock.hmod
 

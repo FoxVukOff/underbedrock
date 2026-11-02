@@ -9,9 +9,7 @@
           "predicate_type": "minecraft:block_match",
           "block": "underbedrock:voidstone"
         },
-        "state": {
-          "Name": "underbedrock:ether_crystal"
-        }
+        "state": "underbedrock:ether_crystal"
       }
     ]
   }

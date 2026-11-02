@@ -9,9 +9,7 @@
           "predicate_type": "minecraft:block_match",
           "block": "underbedrock:voidstone"
         },
-        "state": {
-          "Name": "minecraft:diamond_ore"
-        }
+        "state": "minecraft:diamond_ore"
       }
     ]
   }

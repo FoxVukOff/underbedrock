@@ -228,7 +228,7 @@ def ore(name, targets, size, discard=0.0):
         "config": {
             "size": size,
             "discard_chance_on_air_exposure": discard,
-            "targets": [{"target": t, "state": {"Name": s}} for t, s in targets],
+            "targets": [{"target": t, "state": s} for t, s in targets],
         },
     }
 
@@ -479,7 +479,7 @@ write(MR / "surface.json", {
                 "true_at_and_below": {"absolute": -576},
                 "false_at_and_above": {"absolute": -571},
             },
-            "then_run": {"type": "minecraft:block", "result_state": {"Name": "minecraft:bedrock"}},
+            "then_run": {"type": "minecraft:block", "result_state": "minecraft:bedrock"},
         },
         # The Overworld keeps its bedrock floor at -64..-59: vanilla's own floor
         # rule now sits at the level's bottom, so the old floor is placed here.
@@ -491,7 +491,7 @@ write(MR / "surface.json", {
                 "true_at_and_below": {"absolute": -64},
                 "false_at_and_above": {"absolute": -59},
             },
-            "then_run": {"type": "minecraft:block", "result_state": {"Name": "minecraft:bedrock"}},
+            "then_run": {"type": "minecraft:block", "result_state": "minecraft:bedrock"},
         },
         # Below the floor: the mod's own world.
         {
@@ -512,6 +512,6 @@ write(MR / "surface.json", {
     ],
 })
 write(MR / "underbedrock.json",
-      {"type": "minecraft:block", "result_state": {"Name": f"{ID}:voidstone"}})
+      {"type": "minecraft:block", "result_state": f"{ID}:voidstone"})
 
 print("wrote the content mod and the data pack")
