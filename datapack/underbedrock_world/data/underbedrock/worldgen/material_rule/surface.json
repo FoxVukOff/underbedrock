@@ -1,0 +1,59 @@
+{
+  "type": "minecraft:sequence",
+  "sequence": [
+    {
+      "type": "minecraft:condition",
+      "if_true": {
+        "type": "minecraft:vertical_gradient",
+        "random_name": "underbedrock:bottom_bedrock",
+        "true_at_and_below": {
+          "absolute": -576
+        },
+        "false_at_and_above": {
+          "absolute": -571
+        }
+      },
+      "then_run": {
+        "type": "minecraft:block",
+        "result_state": {
+          "Name": "minecraft:bedrock"
+        }
+      }
+    },
+    {
+      "type": "minecraft:condition",
+      "if_true": {
+        "type": "minecraft:vertical_gradient",
+        "random_name": "underbedrock:floor_bedrock",
+        "true_at_and_below": {
+          "absolute": -64
+        },
+        "false_at_and_above": {
+          "absolute": -59
+        }
+      },
+      "then_run": {
+        "type": "minecraft:block",
+        "result_state": {
+          "Name": "minecraft:bedrock"
+        }
+      }
+    },
+    {
+      "type": "minecraft:condition",
+      "if_true": {
+        "type": "minecraft:not",
+        "invert": {
+          "type": "minecraft:y_above",
+          "anchor": {
+            "absolute": -64
+          },
+          "surface_depth_multiplier": 0,
+          "add_stone_depth": false
+        }
+      },
+      "then_run": "underbedrock:underbedrock"
+    },
+    "minecraft:overworld"
+  ]
+}

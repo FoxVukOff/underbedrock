@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "EEE",
+    "EEE",
+    "EEE"
+  ],
+  "key": {
+    "E": "underbedrock:etherium_ingot"
+  },
+  "result": {
+    "id": "underbedrock:etherium_block"
+  }
+}

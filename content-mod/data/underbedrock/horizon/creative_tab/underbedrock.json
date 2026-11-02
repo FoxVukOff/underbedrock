@@ -1,0 +1,14 @@
+{
+  "title": "itemGroup.underbedrock",
+  "icon": "underbedrock:etherium_pickaxe",
+  "items": [
+    "underbedrock:etherium_pickaxe",
+    "underbedrock:etherium_block",
+    "underbedrock:etherium_ingot",
+    "underbedrock:raw_etherium",
+    "underbedrock:etherium_ore",
+    "underbedrock:ether_crystal",
+    "underbedrock:voidstone",
+    "underbedrock:voidstone_bricks"
+  ]
+}

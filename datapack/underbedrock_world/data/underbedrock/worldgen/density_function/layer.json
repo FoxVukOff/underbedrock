@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:add",
+  "left": {
+    "type": "minecraft:max",
+    "left": "underbedrock:floor_ramp",
+    "right": "underbedrock:ceiling_ramp"
+  },
+  "right": {
+    "type": "minecraft:sub",
+    "left": -0.25,
+    "right": "underbedrock:cheese"
+  }
+}

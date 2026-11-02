@@ -1,0 +1,14 @@
+[package]
+name = "horizon-mod-underbedrock-core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+publish = false
+description = "Under Bedrock's native half: the etherium pickaxe digs the bedrock floor open."
+
+# The mod's logic and its tests: the same file the bundle adds to the game.
+[lib]
+path = "mixins/underbedrock_core/runtime.rs"
+
+[workspace]

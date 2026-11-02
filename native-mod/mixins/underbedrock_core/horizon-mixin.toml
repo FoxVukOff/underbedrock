@@ -1,0 +1,85 @@
+[mod]
+id = "underbedrock_core"
+version = "0.1.0"
+priority = 100
+
+# The revision it was made and tested on. The mod hooks only Horizon's native
+# hook points (`hooks` 126 in horizon-native.json: the bulk block edit of API
+# 126 is the newest one it uses), so the launcher builds it on any Horizon
+# whose hook points are that version or a later one, and repins this to the
+# revision it builds on.
+[compatibility]
+horizon_revision = "ea5599757087a6f2ee0702dd469b79aa21bfb199"
+
+# The mod's own logic and state, added to the game as `crate::game::underbedrock_core`.
+[[module]]
+id = "runtime"
+file = "crates/horizon-client/src/game.rs"
+name = "underbedrock_core"
+source = "runtime.rs"
+
+# The mod's row in Options > Mods.
+[[injection]]
+id = "list"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_mods"
+helper = "list.rs"
+bindings = [
+  { name = "mods", ty = "&mut Vec<crate::game::native_hooks::NativeMod>", value = "&mut *mods" },
+]
+
+# Its settings page: the dig time and whether bedrock drops.
+[[injection]]
+id = "settings"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_settings"
+helper = "settings.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "mod_id", ty = "&str", value = "mod_id" },
+  { name = "buttons", ty = "&mut Vec<String>", value = "&mut *buttons" },
+]
+
+[[injection]]
+id = "settings-click"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_settings_click"
+helper = "settings_click.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "mod_id", ty = "&str", value = "mod_id" },
+  { name = "button", ty = "usize", value = "button" },
+]
+
+# The dig itself: each tick of a player, with the engine's own dig state
+# swapped in for them (the block they hold the attack key on, and for how
+# many ticks).
+[[injection]]
+id = "tick"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_player_tick"
+helper = "tick.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+]
+
+# /etherium in the server's command tree.
+[[injection]]
+id = "commands"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_register_commands"
+helper = "commands.rs"
+bindings = [
+  { name = "commands", ty = "&mut Vec<crate::game::native_hooks::NativeCommand>", value = "&mut *commands" },
+]
+
+[[injection]]
+id = "command"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_perform_command"
+helper = "command.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "command", ty = "&str", value = "command" },
+  { name = "ran", ty = "&mut bool", value = "&mut *ran" },
+]

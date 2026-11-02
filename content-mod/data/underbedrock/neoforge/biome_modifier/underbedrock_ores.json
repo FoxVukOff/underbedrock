@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": [
+    "underbedrock:ore_etherium_underbedrock",
+    "underbedrock:ore_crystal_underbedrock",
+    "underbedrock:ore_diamond_underbedrock",
+    "underbedrock:ore_iron_underbedrock"
+  ],
+  "step": "underground_ores"
+}

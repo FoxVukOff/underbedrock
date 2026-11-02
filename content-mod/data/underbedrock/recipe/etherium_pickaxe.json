@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "etherium_pickaxe",
+  "pattern": [
+    "EEE",
+    " R ",
+    " R "
+  ],
+  "key": {
+    "E": "underbedrock:etherium_ingot",
+    "R": "minecraft:blaze_rod"
+  },
+  "result": {
+    "id": "underbedrock:etherium_pickaxe"
+  }
+}

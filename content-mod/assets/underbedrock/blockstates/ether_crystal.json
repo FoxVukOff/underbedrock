@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "underbedrock:block/ether_crystal"
+    }
+  }
+}

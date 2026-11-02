@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "underbedrock:etherium_block"
+  ],
+  "result": {
+    "id": "underbedrock:etherium_ingot",
+    "count": 9
+  }
+}

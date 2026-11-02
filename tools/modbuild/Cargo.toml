@@ -1,0 +1,10 @@
+[package]
+name = "modbuild"
+version = "0.1.0"
+edition = "2021"
+description = "Build and check the Underbedrock content mod the way Horizon's game does (cargo horizon-mod build)."
+
+[dependencies]
+horizon-mods = { path = "/home/user/work/horizon/crates/horizon-mods", default-features = false }
+
+[workspace]

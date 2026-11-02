@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:blasting",
+  "category": "misc",
+  "ingredient": "underbedrock:raw_etherium",
+  "result": {
+    "id": "underbedrock:etherium_ingot"
+  },
+  "experience": 1.2,
+  "cookingtime": 100
+}

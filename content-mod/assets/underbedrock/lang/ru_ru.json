@@ -1,0 +1,11 @@
+{
+  "block.underbedrock.voidstone": "Пустотный камень",
+  "block.underbedrock.voidstone_bricks": "Пустотный кирпич",
+  "block.underbedrock.etherium_ore": "Эфириумовая руда",
+  "block.underbedrock.etherium_block": "Эфириумовый блок",
+  "block.underbedrock.ether_crystal": "Эфирный кристалл",
+  "item.underbedrock.raw_etherium": "Необработанный эфириум",
+  "item.underbedrock.etherium_ingot": "Слиток зачарованного сплава",
+  "item.underbedrock.etherium_pickaxe": "Кирка из зачарованного сплава",
+  "itemGroup.underbedrock": "Подбедрок"
+}

@@ -1,0 +1,9 @@
+[package]
+name = "stubcheck"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+publish = false
+description = "Compiles and exercises the Under Bedrock native mod's own sources against a stub of Horizon's game API (the game itself doesn't build in a small sandbox)."
+
+[workspace]
