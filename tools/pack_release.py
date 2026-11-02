@@ -6,7 +6,7 @@
 Делает четыре файла:
     release/underbedrock.hmod          контент-мод (zip: horizon-mod.toml первым, затем assets/ и data/)
     release/underbedrock_core.hnmod    нативный мод (тем же packager'ом, что и в native-mod/tools)
-    release/underbedrock_world.zip     датапак мира (папка datapack/underbedrock_world как есть)
+    release/underbedrock_world.zip     датапак мира, pack.mcmeta в корне архива: кладётся в datapacks/ как есть
     release/underbedrock-install.zip   все три плюс INSTALL.txt одной скачиваемой пачкой
 
 Нужен только Python 3.11+ (tomllib). Раст не обязателен: он нужен лишь проверкам
@@ -24,15 +24,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = ROOT / 'release'
 
-INSTALL_TXT = """Under Bedrock (Horizon 26.3) — установка. Полная инструкция в README.md.
+INSTALL_TXT = """Under Bedrock (Horizon 26.3) — install. Full guide: the mod's README / GitHub page.
 
-1. underbedrock.hmod        -> в папку horizon-mods/        (включить: Настройки -> Моды -> Under Bedrock)
-2. underbedrock_core.hnmod  -> в папку horizon-native-mods/ (включить там же; лаунчер один раз соберёт игру с модом, нужен интернет)
-3. underbedrock_world.zip   -> распаковать в saves/<НОВЫЙ мир>/datapacks/  (папки-датапаки включаются сами)
+1. underbedrock.hmod        -> horizon-mods/         (create the folder; enable in Options -> Mods -> Under Bedrock)
+2. underbedrock_core.hnmod  -> horizon-native-mods/  (enable there too; the launcher compiles a modded game once, needs internet)
+3. underbedrock_world.zip   -> saves/<NEW world>/datapacks/ as it is, pack.mcmeta is at the zip's root; world datapacks enable themselves
 
-Мир создавайте ПОСЛЕ датапака: у старых чанков под бедроком будет пустота.
-Проверка в игре: /etherium depth  ->  "y -576 .. 319".
-Как играть: кирка из зачарованного сплава (3 слитка + 2 стержня пламени), держать ЛКМ на бедроке ~3 c.
+Create the world AFTER the data pack lands: older chunks keep the old floor with void below it.
+In game: /etherium depth  ->  "y -576 .. 319". Hold the attack key on bedrock with the alloy pickaxe, ~3 s.
+
+--- RU ---
+1. underbedrock.hmod        -> в horizon-mods/        (включить: Настройки -> Моды -> Under Bedrock)
+2. underbedrock_core.hnmod  -> в horizon-native-mods/ (включить там же)
+3. underbedrock_world.zip   -> как есть в saves/<НОВЫЙ мир>/datapacks/ (pack.mcmeta в корне архива)
+Мир создавать ПОСЛЕ датапака. Проверка: /etherium depth -> "y -576 .. 319". Держать ЛКМ на бедроке ~3 c.
 """
 
 
@@ -62,13 +67,15 @@ def pack_hnmod():
 
 
 def pack_datapack():
-    """The world datapack, as a zip a world's datapacks folder takes."""
+    """The world datapack as a zip a world's datapacks folder takes as it is:
+    `pack.mcmeta` at the archive's root, the way Horizon's pack discovery
+    (`Zip::contains("pack.mcmeta")`) wants it — no repacking, no unpacking."""
     src = ROOT / 'datapack' / 'underbedrock_world'
     out = RELEASE / 'underbedrock_world.zip'
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(src.rglob('*')):
             if path.is_file():
-                archive.write(path, path.relative_to(ROOT / 'datapack').as_posix())
+                archive.write(path, path.relative_to(src).as_posix())
     return out
 
 

@@ -1,0 +1,5 @@
+# Build outputs and local artifacts. The distributable files live in GitHub
+# Releases; the repository carries sources only.
+target/
+release/
+__pycache__/

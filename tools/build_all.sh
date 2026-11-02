@@ -38,19 +38,8 @@ cargo run --quiet -- on
 cargo run --quiet -- off
 cd ../..
 
-echo "== the world datapack, as a zip a world's datapacks folder takes =="
-python3 - <<'PY'
-import zipfile
-from pathlib import Path
-root = Path('datapack/underbedrock_world')
-out = Path('release/underbedrock_world.zip')
-out.parent.mkdir(exist_ok=True)
-with zipfile.ZipFile(out, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
-    for path in sorted(root.rglob('*')):
-        if path.is_file():
-            archive.write(path, path.relative_to(Path('datapack')).as_posix())
-print(f"wrote {out} ({out.stat().st_size} bytes)")
-PY
+echo "== the distributable set: hmod, hnmod, datapack zip (pack.mcmeta at its root), install bundle =="
+python3 tools/pack_release.py
 
 echo "== all built =="
 ls -l release/
