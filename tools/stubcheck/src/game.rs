@@ -147,10 +147,16 @@ pub mod native_hooks {
 
     impl NativeCommand {
         pub fn new(usage: &str) -> Self {
-            Self { usage: usage.to_owned(), level: 0 }
+            Self {
+                usage: usage.to_owned(),
+                level: 0,
+            }
         }
         pub fn op(usage: &str, level: u8) -> Self {
-            Self { usage: usage.to_owned(), level: level.min(4) }
+            Self {
+                usage: usage.to_owned(),
+                level: level.min(4),
+            }
         }
     }
 
@@ -177,6 +183,9 @@ pub mod native_hooks {
     include!("../../../native-mod/mixins/underbedrock_core/tick.rs");
     include!("../../../native-mod/mixins/underbedrock_core/commands.rs");
     include!("../../../native-mod/mixins/underbedrock_core/command.rs");
+    include!("../../../native-mod/mixins/underbedrock_core/level_unload.rs");
+    include!("../../../native-mod/mixins/underbedrock_core/loot_drops.rs");
+    include!("../../../native-mod/mixins/underbedrock_core/net_from_server.rs");
 
     // Each hook calls its helper with the bindings the toml names.
     impl super::Game<'_> {
@@ -208,6 +217,22 @@ pub mod native_hooks {
         ) {
             let _ = player;
             underbedrock_core_performed(&mut *self, command, &mut *ran);
+        }
+
+        pub fn native_level_unload(&mut self, dimension: &str) {
+            underbedrock_core_level_unload(&mut *self, dimension);
+        }
+
+        pub fn native_loot_drops(
+            &mut self,
+            context: &crate::mod_api::NativeLootDrops<'_>,
+            drops: &mut Vec<crate::items::ItemStack>,
+        ) {
+            underbedrock_core_loot_drops(&mut *self, context, &mut *drops);
+        }
+
+        pub fn native_net_from_server(&mut self, channel: &str, data: &[u8]) {
+            underbedrock_core_net_from_server(&mut *self, channel, data);
         }
     }
 }
@@ -251,6 +276,13 @@ pub struct Game<'a> {
     pub next_mob: u32,
     pub spawned_mobs: Vec<(String, [f64; 3], native_mobs::NativeSpawn)>,
     pub removed_mobs: Vec<u32>,
+
+    /// What the net bridge sent, and the sounds and sparks the client half
+    /// played, for the harness to assert on.
+    pub net_sent: Vec<(u128, String, Vec<u8>)>,
+    pub sounds: Vec<(String, [f64; 3], f32, f32, i32)>,
+    pub particles: Vec<([f64; 3], bool)>,
+
     pub marker: std::marker::PhantomData<&'a ()>,
 }
 
@@ -292,13 +324,20 @@ impl<'a> Game<'a> {
             next_mob: 500,
             spawned_mobs: Vec::new(),
             removed_mobs: Vec::new(),
+            net_sent: Vec::new(),
+            sounds: Vec::new(),
+            particles: Vec::new(),
             marker: std::marker::PhantomData,
         }
     }
 
     /// The dig the engine keeps while the attack key is held on `pos`.
     pub fn start_dig(&mut self, pos: [i32; 3], ticks: u32) {
-        self.mining = Some(Mining { pos, progress: 0.0, ticks });
+        self.mining = Some(Mining {
+            pos,
+            progress: 0.0,
+            ticks,
+        });
     }
 
     /// The player let go, looked away or the dig finished.
@@ -308,17 +347,25 @@ impl<'a> Game<'a> {
 
     /// A setting's file, as `native_set_setting` writes it.
     pub fn setting_file(&self, mod_id: &str, key: &str) -> Option<String> {
-        self.settings.borrow().get(&format!("{mod_id}/{key}")).cloned()
+        self.settings
+            .borrow()
+            .get(&format!("{mod_id}/{key}"))
+            .cloned()
     }
 
     /// The last bulk edit's palette, filters and run count.
     pub fn last_edit(&self) -> Option<(Vec<String>, Vec<String>, usize)> {
-        self.edits.last().map(|e| (e.palette.clone(), e.filters.clone(), e.runs.len()))
+        self.edits
+            .last()
+            .map(|e| (e.palette.clone(), e.filters.clone(), e.runs.len()))
     }
 
     /// The block at `pos`, as the world keeps it.
     pub fn block_at(&self, pos: [i32; 3]) -> String {
-        self.blocks.get(&pos).cloned().unwrap_or_else(|| "minecraft:air".into())
+        self.blocks
+            .get(&pos)
+            .cloned()
+            .unwrap_or_else(|| "minecraft:air".into())
     }
 }
 
@@ -352,7 +399,11 @@ impl Game<'_> {
 
     /// The level in place is `dimension` and simulates.
     fn entity_level(&self, dimension: &str) -> bool {
-        self.level_open && self.acting.as_ref().is_some_and(|p| p.dimension == dimension)
+        self.level_open
+            && self
+                .acting
+                .as_ref()
+                .is_some_and(|p| p.dimension == dimension)
     }
 
     /// Spawns an entity of `kind` at `pos` from its compound, as `/summon`
@@ -384,7 +435,11 @@ impl Game<'_> {
         self.others.push(OtherEntity {
             id,
             kind: kind.to_owned(),
-            position: Vec3 { x: pos[0], y: pos[1], z: pos[2] },
+            position: Vec3 {
+                x: pos[0],
+                y: pos[1],
+                z: pos[2],
+            },
             yaw: 0.0,
             pitch: 0.0,
         });
@@ -407,7 +462,11 @@ impl Game<'_> {
         let Some(o) = self.others.iter_mut().find(|o| o.id == id) else {
             return false;
         };
-        o.position = Vec3 { x: pos[0], y: pos[1], z: pos[2] };
+        o.position = Vec3 {
+            x: pos[0],
+            y: pos[1],
+            z: pos[2],
+        };
         o.yaw = yaw;
         o.pitch = pitch;
         self.moved.push((id, pos));
@@ -494,7 +553,8 @@ impl Game<'_> {
             removed: false,
             spawn: options.clone(),
         });
-        self.spawned_mobs.push((kind.to_owned(), pos, options.clone()));
+        self.spawned_mobs
+            .push((kind.to_owned(), pos, options.clone()));
         Some(id)
     }
 
@@ -521,12 +581,17 @@ impl Game<'_> {
 
     /// A mod's setting `key` (one file per key).
     pub fn native_setting(&self, mod_id: &str, key: &str) -> Option<String> {
-        self.settings.borrow().get(&format!("{mod_id}/{key}")).cloned()
+        self.settings
+            .borrow()
+            .get(&format!("{mod_id}/{key}"))
+            .cloned()
     }
 
     /// Keeps a mod's setting `key`.
     pub fn native_set_setting(&self, mod_id: &str, key: &str, value: &str) {
-        self.settings.borrow_mut().insert(format!("{mod_id}/{key}"), value.to_owned());
+        self.settings
+            .borrow_mut()
+            .insert(format!("{mod_id}/{key}"), value.to_owned());
     }
 
     /// Sets a block in the level being ticked, through `Level.setBlock`.
@@ -537,7 +602,9 @@ impl Game<'_> {
         state: horizon_world::registry::BlockStateId,
         flags: i32,
     ) -> bool {
-        let Some(acting) = &self.acting else { return false };
+        let Some(acting) = &self.acting else {
+            return false;
+        };
         if !self.level_open || dimension != acting.dimension || flags < 0 {
             return false;
         }
@@ -562,8 +629,14 @@ impl Game<'_> {
         if !self.level_open || dimension != acting.dimension {
             return Err(format!("{dimension} is not the level being ticked"));
         }
-        if edit.runs.iter().any(|r| r.block as usize >= edit.palette.len())
-            || edit.runs.iter().any(|r| r.only.is_some_and(|f| f as usize >= edit.filters.len()))
+        if edit
+            .runs
+            .iter()
+            .any(|r| r.block as usize >= edit.palette.len())
+            || edit
+                .runs
+                .iter()
+                .any(|r| r.only.is_some_and(|f| f as usize >= edit.filters.len()))
         {
             return Err("a run names a palette entry or filter past the end".into());
         }
@@ -578,7 +651,8 @@ impl Game<'_> {
                     None => true,
                 };
                 if matches && before != edit.palette[run.block as usize] {
-                    self.blocks.insert(pos, edit.palette[run.block as usize].clone());
+                    self.blocks
+                        .insert(pos, edit.palette[run.block as usize].clone());
                     changed += 1;
                 }
             }
@@ -616,6 +690,40 @@ impl Game<'_> {
     /// A line of the command's answer, inside `native_perform_command`.
     pub fn native_feedback(&mut self, line: horizon_client::text::Text) {
         self.feedback.push(line.plain());
+    }
+
+    /// A message to one player's client, from any server hook (API 40).
+    pub fn native_net_send_to_player(
+        &mut self,
+        player: u128,
+        channel: &str,
+        data: &[u8],
+    ) -> Result<(), String> {
+        if !self.level_open {
+            return Err("no level is open".to_owned());
+        }
+        self.net_sent
+            .push((player, channel.to_owned(), data.to_vec()));
+        Ok(())
+    }
+
+    /// A sound played once, right there, in the window's game (API 83).
+    pub fn native_play_local_sound(
+        &mut self,
+        sound: &str,
+        at: [f64; 3],
+        volume: f32,
+        pitch: f32,
+        delay: i32,
+    ) -> bool {
+        self.sounds
+            .push((sound.to_owned(), at, volume, pitch, delay));
+        true
+    }
+
+    /// One flame spark, in the window's game; `soul` is the blue one.
+    pub fn native_flame_particle(&mut self, at: [f64; 3], soul: bool) {
+        self.particles.push((at, soul));
     }
 }
 

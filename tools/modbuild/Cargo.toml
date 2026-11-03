@@ -6,6 +6,6 @@ description = "Build and check the Underbedrock content mod the way Horizon's ga
 
 [dependencies]
 # Horizon's own mod parser and packer, at the revision the mod was made for.
-horizon-mods = { git = "https://github.com/horizon-rust/horizon", rev = "ea5599757087a6f2ee0702dd469b79aa21bfb199", default-features = false }
+horizon-mods = { git = "https://github.com/horizon-rust/horizon", rev = "f42ef42ef6ceccb3c6a20bea2481d87949a51c81", default-features = false }
 
 [workspace]

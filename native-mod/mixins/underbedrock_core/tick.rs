@@ -289,6 +289,9 @@ fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
         );
         return;
     }
+    // The break's feedback goes to the digging player's client: the window's
+    // half plays the sound and the blue sparks there (API 40's net bridge).
+    let _ = game.native_net_send_to_player(uuid, m::DUG_CHANNEL, &m::encode_dig(pos, target));
     if m::dig_drops(target, || game.native_setting(m::ID, "drop_bedrock")) {
         game.native_give_items(m::dig_drop(target), 1);
     }

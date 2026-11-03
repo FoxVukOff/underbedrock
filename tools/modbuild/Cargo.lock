@@ -72,7 +72,7 @@ checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
 [[package]]
 name = "horizon-mods"
 version = "0.1.0"
-source = "git+https://github.com/horizon-rust/horizon?rev=ea5599757087a6f2ee0702dd469b79aa21bfb199#ea5599757087a6f2ee0702dd469b79aa21bfb199"
+source = "git+https://github.com/horizon-rust/horizon?rev=f42ef42ef6ceccb3c6a20bea2481d87949a51c81#f42ef42ef6ceccb3c6a20bea2481d87949a51c81"
 dependencies = [
  "log",
  "serde",

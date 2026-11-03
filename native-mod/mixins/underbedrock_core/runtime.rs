@@ -24,6 +24,27 @@ pub const VOIDSHELL: &str = "underbedrock:voidshell";
 pub const ABYSS_BEDROCK: &str = "underbedrock:abyss_bedrock";
 pub const AIR: &str = "minecraft:air";
 
+/// The dig's feedback, on the nightly's net bridge (API 40): sounds and
+/// particles are the window's to play, so the server's dig tells the digging
+/// player's client, and the client half plays a slowed deepslate break (the
+/// floor is bedrock) and a burst of soul flames - the void's own blue.
+pub const DUG_CHANNEL: &str = "underbedrock_core:dug";
+pub const DIG_SOUND: &str = "minecraft:block.deepslate.break";
+pub const DIG_VOLUME: f32 = 1.5;
+pub const DIG_PITCH: f32 = 0.5;
+/// Where the sparks sit around the broken block's centre.
+pub const DIG_BURST: [[f64; 3]; 9] = [
+    [0.0, 0.0, 0.0],
+    [0.4, 0.2, 0.0],
+    [-0.4, 0.2, 0.0],
+    [0.0, 0.2, 0.4],
+    [0.0, 0.2, -0.4],
+    [0.3, -0.3, 0.3],
+    [-0.3, -0.3, 0.3],
+    [0.3, -0.3, -0.3],
+    [-0.3, -0.3, -0.3],
+];
+
 /// The Overworld the mod's datapack makes: 512 blocks below the vanilla
 /// floor (`min_y` -576, 896 blocks of height).
 pub const TALL_MIN_Y: i32 = -576;
@@ -777,6 +798,68 @@ pub fn clear_stalks() {
     STALKS.with(|stalks| stalks.borrow_mut().clear());
 }
 
+/// The dig's feedback, packed for the net bridge: the block's position and
+/// which dig it was, in 13 bytes.
+pub fn encode_dig(pos: [i32; 3], dig: Dig) -> [u8; 13] {
+    let mut data = [0u8; 13];
+    for (i, value) in pos.iter().enumerate() {
+        data[i * 4..i * 4 + 4].copy_from_slice(&value.to_le_bytes());
+    }
+    data[12] = match dig {
+        Dig::Bedrock => 0,
+        Dig::Voidshell => 1,
+    };
+    data
+}
+
+/// The feedback unpacked; bytes that aren't a whole dig pack are nothing.
+pub fn decode_dig(data: &[u8]) -> Option<([i32; 3], Dig)> {
+    if data.len() != 13 {
+        return None;
+    }
+    let mut pos = [0i32; 3];
+    for (i, value) in pos.iter_mut().enumerate() {
+        *value = i32::from_le_bytes(data[i * 4..i * 4 + 4].try_into().ok()?);
+    }
+    let dig = match data[12] {
+        0 => Dig::Bedrock,
+        1 => Dig::Voidshell,
+        _ => return None,
+    };
+    Some((pos, dig))
+}
+
+/// A level closed (API 134's `native_level_unload`): the Overworld's close
+/// forgets everything the mod keeps for it - the creatures, the hunts, the
+/// players' rhythms and the shape it announced - so a world reopened (or
+/// another one) starts clean and no stale engine id is ever moved again.
+/// Another dimension's close is none of the mod's business.
+pub fn forget_world(dimension: &str) -> bool {
+    if dimension != "minecraft:overworld" {
+        return false;
+    }
+    clear_creatures();
+    clear_stalks();
+    SHAPE.with(|cell| cell.set(None));
+    TICKS.with(|ticks| ticks.borrow_mut().clear());
+    BARS.with(|bars| bars.borrow_mut().clear());
+    true
+}
+
+/// Whether a death's drops (API 75's `native_loot_drops`) are the stalker's:
+/// a vex of the Overworld that a hunt tracks - or one that died deep in the
+/// frozen wastes, which only ever is a stalker (the ban takes any other mob
+/// below the gate, and a restart's orphan is a stalker too). The shard the
+/// hunt wears drops as the trophy.
+pub fn stalker_drops(dimension: &str, entity: Option<(u32, &str)>, origin_y: f64) -> bool {
+    let Some((id, kind)) = entity else {
+        return false;
+    };
+    kind == STALKER_KIND
+        && dimension == "minecraft:overworld"
+        && (is_stalker_mob(id) || origin_y < STALK_BELOW_Y)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1168,6 +1251,98 @@ mod tests {
         assert_eq!(get_stalk(2), Stalk::default());
         clear_stalks();
         assert!(!is_stalker_mob(9));
+    }
+
+    #[test]
+    fn a_closed_world_is_forgotten() {
+        clear_creatures();
+        clear_stalks();
+        add_creature(21, Creature::Wisp, [0.0, -200.0, 0.0], 7);
+        set_stalk(
+            7,
+            Stalk {
+                mob: Some(3),
+                body: Some(4),
+                quiet: 0,
+            },
+        );
+        assert!(!shape_seen((-576, 896)), "a fresh world's shape is unseen");
+        assert!(shape_seen((-576, 896)), "and remembered after the look");
+        assert!(!bar_shown(7, true), "the bar is noted once");
+        // Another dimension's close is not the mod's business.
+        assert!(!forget_world("minecraft:the_nether"));
+        assert_eq!(creatures_len(), 1);
+        // The Overworld's close forgets all of it.
+        assert!(forget_world("minecraft:overworld"));
+        assert_eq!(creatures_len(), 0);
+        assert_eq!(get_stalk(7), Stalk::default());
+        assert!(
+            !shape_seen((-576, 896)),
+            "a reopened world is looked at once again"
+        );
+        assert!(!bar_shown(7, true), "the bars were cleared");
+        SHAPE.with(|cell| cell.set(None));
+        BARS.with(|bars| bars.borrow_mut().clear());
+    }
+
+    #[test]
+    fn the_stalkers_death_leaves_its_shard() {
+        clear_stalks();
+        // A tracked stalker, wherever the blow lands.
+        set_stalk(
+            7,
+            Stalk {
+                mob: Some(31),
+                body: Some(32),
+                quiet: 0,
+            },
+        );
+        assert!(stalker_drops(
+            "minecraft:overworld",
+            Some((31, STALKER_KIND)),
+            -300.0
+        ));
+        // An untracked vex deep in the wastes - a restart's orphan - is one too.
+        assert!(stalker_drops(
+            "minecraft:overworld",
+            Some((99, STALKER_KIND)),
+            -500.0
+        ));
+        // Nothing else ever is: an untracked vex up high (an evoker's), another
+        // mob, another dimension, a block's drops.
+        assert!(!stalker_drops(
+            "minecraft:overworld",
+            Some((99, STALKER_KIND)),
+            -300.0
+        ));
+        assert!(!stalker_drops(
+            "minecraft:overworld",
+            Some((31, "minecraft:zombie")),
+            -500.0
+        ));
+        assert!(!stalker_drops(
+            "minecraft:the_nether",
+            Some((31, STALKER_KIND)),
+            -500.0
+        ));
+        assert!(!stalker_drops("minecraft:overworld", None, -500.0));
+        clear_stalks();
+    }
+
+    #[test]
+    fn the_dig_feedback_packs_and_unpacks() {
+        for (pos, dig) in [
+            ([3, -64, -7], Dig::Bedrock),
+            ([-11, -70, 15], Dig::Voidshell),
+        ] {
+            let data = encode_dig(pos, dig);
+            assert_eq!(decode_dig(&data), Some((pos, dig)));
+        }
+        assert_eq!(decode_dig(&[]), None);
+        assert_eq!(decode_dig(&[0u8; 12]), None);
+        let mut bad = encode_dig([0, 0, 0], Dig::Bedrock);
+        bad[12] = 7;
+        assert_eq!(decode_dig(&bad), None);
     }
 
     #[test]

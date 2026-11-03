@@ -60,6 +60,44 @@ pub mod nbt {
     }
 }
 
+/// `horizon_client::items` (the stacks `native_loot_drops` hands out).
+pub mod items {
+    /// One stack (`items.rs`'s `ItemStack`); the real one also carries
+    /// `damage` and `extra`, which the mod never touches.
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub struct ItemStack {
+        pub item: std::sync::Arc<str>,
+        pub count: u32,
+    }
+
+    impl ItemStack {
+        pub fn new(item: &str, count: u32) -> Self {
+            Self {
+                item: item.into(),
+                count,
+            }
+        }
+    }
+}
+
+/// `horizon_client::mod_api` (the context the `loot_drops` hook hears).
+pub mod mod_api {
+    /// What dropped the items `native_loot_drops` hears (`mod_api.rs`'s
+    /// `NativeLootDrops`).
+    #[derive(Clone, Copy, Debug)]
+    pub struct NativeLootDrops<'a> {
+        pub table: &'a str,
+        pub dimension: &'a str,
+        pub origin: [f64; 3],
+        pub block: Option<([i32; 3], crate::registry::BlockStateId)>,
+        pub entity: Option<(u32, &'a str)>,
+        pub player: Option<u128>,
+        pub tool: Option<&'a crate::items::ItemStack>,
+        pub explosion: Option<f32>,
+        pub used: bool,
+    }
+}
+
 pub mod game;
 
 use game::Game;
@@ -76,6 +114,8 @@ macro_rules! check {
 }
 
 fn main() {
+    use game::underbedrock_core as m;
+
     let mode = std::env::args().nth(1).unwrap_or_else(|| "on".into());
     let tall = mode != "off";
     let air_at_zero = tall;
@@ -84,14 +124,20 @@ fn main() {
     let (first_dig, second_dig, third_dig) = if tall { (60, 100, 200) } else { (20, 40, 60) };
     let first_drop = tall;
     let mut fails = 0u32;
-    println!("stubcheck {mode}: dig {first_dig} ticks, bedrock drops {first_drop}, air at state 0 {air_at_zero}");
+    println!(
+        "stubcheck {mode}: dig {first_dig} ticks, bedrock drops {first_drop}, air at state 0 {air_at_zero}"
+    );
 
     let mut game = Game::new();
     game.shape = if tall { (-576, 896) } else { (-64, 384) };
     game.air_at_zero = air_at_zero;
     if !tall {
-        game.settings.borrow_mut().insert("underbedrock_core/dig_ticks".into(), "20".into());
-        game.settings.borrow_mut().insert("underbedrock_core/drop_bedrock".into(), "false".into());
+        game.settings
+            .borrow_mut()
+            .insert("underbedrock_core/dig_ticks".into(), "20".into());
+        game.settings
+            .borrow_mut()
+            .insert("underbedrock_core/drop_bedrock".into(), "false".into());
     }
     let bedrock: [i32; 3] = [3, -64, -7];
     let stone: [i32; 3] = [4, -64, -7];
@@ -116,7 +162,14 @@ fn main() {
     check!(
         fails,
         "five usages of /abyss, every player's",
-        usages == ["abyss", "abyss give", "abyss depth", "abyss dig", "abyss drop"]
+        usages
+            == [
+                "abyss",
+                "abyss give",
+                "abyss depth",
+                "abyss dig",
+                "abyss drop"
+            ]
             && commands.iter().all(|c| c.level == 0)
     );
 
@@ -128,32 +181,65 @@ fn main() {
     check!(
         fails,
         "the page shows the dig time and the drop",
-        buttons == [format!("Break time: {:.1} s (bedrock, voidshell)", first_dig as f32 / 20.0),
-                    format!("Bedrock drops: {}", if first_drop { "ON" } else { "OFF" })]
+        buttons
+            == [
+                format!(
+                    "Break time: {:.1} s (bedrock, voidshell)",
+                    first_dig as f32 / 20.0
+                ),
+                format!("Bedrock drops: {}", if first_drop { "ON" } else { "OFF" })
+            ]
     );
 
     // A tick with nothing going on: the world's shape is looked at once.
     game.native_player_tick();
     check!(
         fails,
-        if tall { "a tall world needs no warning" } else { "a short world is reported once" },
+        if tall {
+            "a tall world needs no warning"
+        } else {
+            "a short world is reported once"
+        },
         game.told.len() == usize::from(!tall)
-            && game.told.first().is_none_or(|(_, line)| line.contains("NOT tall"))
+            && game
+                .told
+                .first()
+                .is_none_or(|(_, line)| line.contains("NOT tall"))
     );
     game.native_player_tick();
-    check!(fails, "and not reported again", game.told.len() == usize::from(!tall));
-    check!(fails, "nothing broke", game.block_at(bedrock) == "minecraft:bedrock");
+    check!(
+        fails,
+        "and not reported again",
+        game.told.len() == usize::from(!tall)
+    );
+    check!(
+        fails,
+        "nothing broke",
+        game.block_at(bedrock) == "minecraft:bedrock"
+    );
 
     // Digging without the pickaxe, and a block that isn't bedrock.
     game.held = None;
     game.start_dig(bedrock, first_dig * 4);
     game.native_player_tick();
-    check!(fails, "an empty hand digs no bedrock", game.block_at(bedrock) == "minecraft:bedrock");
+    check!(
+        fails,
+        "an empty hand digs no bedrock",
+        game.block_at(bedrock) == "minecraft:bedrock"
+    );
     game.held = Some(("underbedrock:void_alloy_pickaxe".into(), 1, true));
     game.start_dig(stone, first_dig * 4);
     game.native_player_tick();
-    check!(fails, "stone is the engine's to break", game.block_at(stone) == "minecraft:stone");
-    check!(fails, "and no progress line shows for it", game.bars.is_empty());
+    check!(
+        fails,
+        "stone is the engine's to break",
+        game.block_at(stone) == "minecraft:stone"
+    );
+    check!(
+        fails,
+        "and no progress line shows for it",
+        game.bars.is_empty()
+    );
 
     // Half way through the dig of bedrock.
     game.start_dig(bedrock, first_dig / 2);
@@ -161,18 +247,32 @@ fn main() {
     check!(
         fails,
         "the action bar shows the dig's progress",
-        game.bars.last().is_some_and(|(_, line)| line.contains("50%") && line.starts_with("Bedrock ["))
+        game.bars
+            .last()
+            .is_some_and(|(_, line)| line.contains("50%") && line.starts_with("Bedrock ["))
     );
-    check!(fails, "the bedrock is still there", game.block_at(bedrock) == "minecraft:bedrock");
+    check!(
+        fails,
+        "the bedrock is still there",
+        game.block_at(bedrock) == "minecraft:bedrock"
+    );
     check!(fails, "and nothing dropped yet", game.given.is_empty());
 
     // A tick short of the dig time, then the dig time itself.
     game.start_dig(bedrock, first_dig - 1);
     game.native_player_tick();
-    check!(fails, "a tick short, it holds", game.block_at(bedrock) == "minecraft:bedrock");
+    check!(
+        fails,
+        "a tick short, it holds",
+        game.block_at(bedrock) == "minecraft:bedrock"
+    );
     game.start_dig(bedrock, first_dig);
     game.native_player_tick();
-    check!(fails, "at the dig time the bedrock goes", game.block_at(bedrock) == "minecraft:air");
+    check!(
+        fails,
+        "at the dig time the bedrock goes",
+        game.block_at(bedrock) == "minecraft:air"
+    );
     check!(
         fails,
         "the progress line is cleared",
@@ -180,13 +280,24 @@ fn main() {
     );
     check!(
         fails,
-        if first_drop { "the bedrock drops" } else { "the drop is off" },
+        if first_drop {
+            "the bedrock drops"
+        } else {
+            "the drop is off"
+        },
         game.given.len() == usize::from(first_drop)
-            && game.given.first().is_none_or(|(item, count)| item == "minecraft:bedrock" && *count == 1)
+            && game
+                .given
+                .first()
+                .is_none_or(|(item, count)| item == "minecraft:bedrock" && *count == 1)
     );
     check!(
         fails,
-        if air_at_zero { "air went in by its state id" } else { "a bulk edit named the blocks" },
+        if air_at_zero {
+            "air went in by its state id"
+        } else {
+            "a bulk edit named the blocks"
+        },
         game.edits.is_empty() == air_at_zero
             && game.last_edit().is_none_or(|(palette, filters, runs)| {
                 palette == ["minecraft:air".to_owned()]
@@ -195,11 +306,58 @@ fn main() {
             })
     );
 
+    // The break's feedback (the nightly's net bridge, API 40): the server
+    // told the digging player's client what broke, and the client half hears
+    // it and plays the sound and the blue sparks there.
+    check!(
+        fails,
+        "the break was told to the player's client",
+        game.net_sent.len() == 1
+            && game.net_sent[0].0 == 7
+            && game.net_sent[0].1 == m::DUG_CHANNEL
+            && m::decode_dig(&game.net_sent[0].2) == Some((bedrock, m::Dig::Bedrock))
+    );
+    let (channel, data) = (game.net_sent[0].1.clone(), game.net_sent[0].2.clone());
+    game.native_net_from_server(&channel, &data);
+    let centre = [
+        bedrock[0] as f64 + 0.5,
+        bedrock[1] as f64 + 0.5,
+        bedrock[2] as f64 + 0.5,
+    ];
+    check!(
+        fails,
+        "and the client plays the sound and the sparks",
+        game.sounds.len() == 1
+            && game.sounds[0].0 == m::DIG_SOUND
+            && game.sounds[0].1 == centre
+            && game.sounds[0].2 == m::DIG_VOLUME
+            && game.sounds[0].3 == m::DIG_PITCH
+            && game.sounds[0].4 == 0
+            && game.particles.len() == m::DIG_BURST.len()
+            && game.particles.iter().all(|(_, soul)| *soul)
+    );
+    // Another channel's message, and torn bytes on the mod's, change nothing.
+    game.native_net_from_server("other_mod:hello", &data);
+    game.native_net_from_server(m::DUG_CHANNEL, &[1, 2, 3]);
+    check!(
+        fails,
+        "an unknown channel or torn bytes play nothing",
+        game.sounds.len() == 1 && game.particles.len() == m::DIG_BURST.len()
+    );
+
     // Holding on the hole it left does nothing more.
     game.start_dig(bedrock, first_dig * 4);
     game.native_player_tick();
-    check!(fails, "the hole stays a hole", game.block_at(bedrock) == "minecraft:air");
-    check!(fails, "and nothing drops twice", game.given.len() == usize::from(first_drop));
+    check!(
+        fails,
+        "the hole stays a hole",
+        game.block_at(bedrock) == "minecraft:air"
+    );
+    check!(
+        fails,
+        "and nothing drops twice",
+        game.given.len() == usize::from(first_drop)
+    );
 
     // Letting go clears the line once.
     game.blocks.insert(bedrock, "minecraft:bedrock".into());
@@ -225,25 +383,47 @@ fn main() {
     check!(
         fails,
         "a click cycles the dig time and flips the drop",
-        buttons == [format!("Break time: {:.1} s (bedrock, voidshell)", second_dig as f32 / 20.0),
-                    format!("Bedrock drops: {}", if first_drop { "OFF" } else { "ON" })]
-            && game.setting_file("underbedrock_core", "dig_ticks").as_deref()
+        buttons
+            == [
+                format!(
+                    "Break time: {:.1} s (bedrock, voidshell)",
+                    second_dig as f32 / 20.0
+                ),
+                format!("Bedrock drops: {}", if first_drop { "OFF" } else { "ON" })
+            ]
+            && game
+                .setting_file("underbedrock_core", "dig_ticks")
+                .as_deref()
                 == Some(second_dig.to_string().as_str())
-            && game.setting_file("underbedrock_core", "drop_bedrock").as_deref()
+            && game
+                .setting_file("underbedrock_core", "drop_bedrock")
+                .as_deref()
                 == Some(if first_drop { "false" } else { "true" })
     );
     // The new dig time is the one the dig counts against, at once, and the
     // flipped drop flag is the one the break obeys.
     game.start_dig(bedrock, first_dig);
     game.native_player_tick();
-    check!(fails, "the old dig time no longer breaks it", game.block_at(bedrock) == "minecraft:bedrock");
+    check!(
+        fails,
+        "the old dig time no longer breaks it",
+        game.block_at(bedrock) == "minecraft:bedrock"
+    );
     let given_before = game.given.len();
     game.start_dig(bedrock, second_dig);
     game.native_player_tick();
-    check!(fails, "the new one does", game.block_at(bedrock) == "minecraft:air");
     check!(
         fails,
-        if first_drop { "and the drop it flipped off stays off" } else { "and the drop it flipped on gives one" },
+        "the new one does",
+        game.block_at(bedrock) == "minecraft:air"
+    );
+    check!(
+        fails,
+        if first_drop {
+            "and the drop it flipped off stays off"
+        } else {
+            "and the drop it flipped on gives one"
+        },
         game.given.len() == given_before + usize::from(!first_drop)
     );
 
@@ -252,16 +432,27 @@ fn main() {
     let feedback = |game: &Game, from: usize| game.feedback[from..].join(" | ");
     let mut ran = false;
     game.native_perform_command(&player, "give", &mut ran);
-    check!(fails, "another mod's command is left alone", !ran && game.feedback.is_empty());
+    check!(
+        fails,
+        "another mod's command is left alone",
+        !ran && game.feedback.is_empty()
+    );
     let mark = game.feedback.len();
     game.native_perform_command(&player, "abyss", &mut ran);
-    check!(fails, "/abyss lists the commands", ran && feedback(&game, mark).contains("/abyss give"));
+    check!(
+        fails,
+        "/abyss lists the commands",
+        ran && feedback(&game, mark).contains("/abyss give")
+    );
     let mark = game.feedback.len();
     game.native_perform_command(&player, "abyss give", &mut ran);
     check!(
         fails,
         "/abyss give gives the pickaxe",
-        ran && game.given.last().is_some_and(|(item, count)| item == "underbedrock:void_alloy_pickaxe" && *count == 1)
+        ran && game
+            .given
+            .last()
+            .is_some_and(|(item, count)| item == "underbedrock:void_alloy_pickaxe" && *count == 1)
             && feedback(&game, mark).contains("void-alloy pickaxe")
     );
     let mark = game.feedback.len();
@@ -270,8 +461,15 @@ fn main() {
     check!(
         fails,
         "/abyss depth says how deep the world goes",
-        ran && depth.contains(&format!("y {} .. {}", game.shape.0, game.shape.0 + game.shape.1 - 1))
-            && depth.contains(if tall { "below the bedrock floor" } else { "NOT tall" })
+        ran && depth.contains(&format!(
+            "y {} .. {}",
+            game.shape.0,
+            game.shape.0 + game.shape.1 - 1
+        )) && depth.contains(if tall {
+            "below the bedrock floor"
+        } else {
+            "NOT tall"
+        })
     );
     let mark = game.feedback.len();
     game.native_perform_command(&player, "abyss dig", &mut ran);
@@ -279,7 +477,9 @@ fn main() {
         fails,
         "/abyss dig cycles the dig time",
         ran && feedback(&game, mark).contains(&format!("{:.1} s", third_dig as f32 / 20.0))
-            && game.setting_file("underbedrock_core", "dig_ticks").as_deref()
+            && game
+                .setting_file("underbedrock_core", "dig_ticks")
+                .as_deref()
                 == Some(third_dig.to_string().as_str())
     );
     let mark = game.feedback.len();
@@ -288,23 +488,32 @@ fn main() {
         fails,
         "/abyss drop flips the drop back",
         ran && feedback(&game, mark).contains(if first_drop { "ON" } else { "OFF" })
-            && game.setting_file("underbedrock_core", "drop_bedrock").as_deref()
+            && game
+                .setting_file("underbedrock_core", "drop_bedrock")
+                .as_deref()
                 == Some(if first_drop { "true" } else { "false" })
     );
     let mark = game.feedback.len();
     game.native_perform_command(&player, "abyss fly", &mut ran);
-    check!(fails, "an unknown subcommand says so", ran && feedback(&game, mark).contains("no /abyss fly"));
+    check!(
+        fails,
+        "an unknown subcommand says so",
+        ran && feedback(&game, mark).contains("no /abyss fly")
+    );
 
     // The Abyss keeps its own company, with the mod's OWN creatures: deep
     // enough, with a pocket to hang in, the mod summons one of its displays;
     // at the cap, or up top, it doesn't. No vanilla mob is ever spawned.
-    use game::underbedrock_core as m;
     let deep: [f64; 3] = [0.5, -200.0, 0.5];
     game.acting.as_mut().expect("a player").position = deep;
     for _ in 0..60 {
         game.native_player_tick();
     }
-    check!(fails, "no pocket in the rock, no creature", game.summoned.is_empty());
+    check!(
+        fails,
+        "no pocket in the rock, no creature",
+        game.summoned.is_empty()
+    );
     let seed = 7u64 ^ (deep[0] as i64 as u64).wrapping_mul(0x2545_F491);
     let [dx, dy, dz] = m::candidate_offset(seed, 0);
     // The same cells the mod's tick looks at: the offset added to the
@@ -314,7 +523,10 @@ fn main() {
         (deep[1] + dy as f64).floor() as i32,
         (deep[2] + dz as f64) as i32,
     ];
-    game.blocks.insert([feet[0], feet[1] - 1, feet[2]], "underbedrock:voidstone".into());
+    game.blocks.insert(
+        [feet[0], feet[1] - 1, feet[2]],
+        "underbedrock:voidstone".into(),
+    );
     for _ in 0..60 {
         game.native_player_tick();
     }
@@ -336,7 +548,10 @@ fn main() {
         "the mod moves its creature, and poses it at its own scale",
         game.moved.len() == moves + 1
             && game.posed.len() >= poses
-            && game.posed.first().is_none_or(|(_, scale)| scale[0] == creature.scale())
+            && game
+                .posed
+                .first()
+                .is_none_or(|(_, scale)| scale[0] == creature.scale())
     );
     // At the cap the mod stops summoning.
     while game.others.len() < m::CREATURE_CAP {
@@ -344,7 +559,11 @@ fn main() {
         game.others.push(game::OtherEntity {
             id: 100 + n,
             kind: m::ITEM_DISPLAY.into(),
-            position: game::Vec3 { x: deep[0] + 5.0, y: -210.0, z: deep[2] },
+            position: game::Vec3 {
+                x: deep[0] + 5.0,
+                y: -210.0,
+                z: deep[2],
+            },
             yaw: 0.0,
             pitch: 0.0,
         });
@@ -353,7 +572,11 @@ fn main() {
     for _ in 0..60 {
         game.native_player_tick();
     }
-    check!(fails, "at the cap the Abyss stays as it is", game.summoned.len() == summoned);
+    check!(
+        fails,
+        "at the cap the Abyss stays as it is",
+        game.summoned.len() == summoned
+    );
     // A player who walks away lets the mod's creatures go: every one of them,
     // summoned or adopted, is out of the engine's list on the next deep tick.
     game.acting.as_mut().expect("a player").position = [500.5, -200.0, 0.5];
@@ -369,7 +592,11 @@ fn main() {
     game.others.push(game::OtherEntity {
         id: 999,
         kind: m::BLOCK_DISPLAY.into(),
-        position: game::Vec3 { x: deep[0] + 3.0, y: -201.0, z: deep[2] },
+        position: game::Vec3 {
+            x: deep[0] + 3.0,
+            y: -201.0,
+            z: deep[2],
+        },
         yaw: 0.0,
         pitch: 0.0,
     });
@@ -398,7 +625,11 @@ fn main() {
     game.others.push(game::OtherEntity {
         id: 777,
         kind: m::ITEM_DISPLAY.into(),
-        position: game::Vec3 { x: wastes[0] + 2.0, y: -501.0, z: wastes[2] },
+        position: game::Vec3 {
+            x: wastes[0] + 2.0,
+            y: -501.0,
+            z: wastes[2],
+        },
         yaw: 0.0,
         pitch: 0.0,
     });
@@ -447,6 +678,50 @@ fn main() {
         stalker.is_some_and(|id| !game.removed_mobs.contains(&id))
             && body.is_some_and(|id| game.moved.iter().any(|(moved, _)| *moved == id))
     );
+    // The stalker's death (API 75's loot hook): its shard drops as the
+    // trophy, on the ground, with no player's state touched.
+    let mut drops = Vec::new();
+    game.native_loot_drops(
+        &crate::mod_api::NativeLootDrops {
+            table: "minecraft:entities/vex",
+            dimension: "minecraft:overworld",
+            origin: wastes,
+            block: None,
+            entity: Some((500, m::STALKER_KIND)),
+            player: Some(7),
+            tool: None,
+            explosion: None,
+            used: false,
+        },
+        &mut drops,
+    );
+    check!(
+        fails,
+        "the stalker's death drops its shard",
+        drops == vec![horizon_client::items::ItemStack::new(m::STALKER_ITEM, 1)]
+    );
+    // An evoker's vex up on the surface is none of the mod's.
+    drops.clear();
+    game.native_loot_drops(
+        &crate::mod_api::NativeLootDrops {
+            table: "minecraft:entities/vex",
+            dimension: "minecraft:overworld",
+            origin: [0.5, 70.0, 0.5],
+            block: None,
+            entity: Some((999, m::STALKER_KIND)),
+            player: Some(7),
+            tool: None,
+            explosion: None,
+            used: false,
+        },
+        &mut drops,
+    );
+    check!(
+        fails,
+        "a surface vex drops nothing of the mod's",
+        drops.is_empty()
+    );
+
     // The player climbs out: both go at once.
     game.acting.as_mut().expect("a player").position = [0.5, -300.0, 0.5];
     game.native_player_tick();
@@ -471,6 +746,32 @@ fn main() {
         game.summoned.len() == summoned && game.moved.len() == moves
     );
 
+    // A world closed (API 134): the Overworld's close forgets everything the
+    // mod kept for it, so a reopened world starts clean; another dimension's
+    // close is none of the mod's business.
+    m::clear_creatures();
+    m::add_creature(21, m::Creature::Wisp, [0.0, -200.0, 0.0], 7);
+    m::set_stalk(
+        7,
+        m::Stalk {
+            mob: Some(3),
+            body: Some(4),
+            quiet: 0,
+        },
+    );
+    game.native_level_unload("minecraft:the_nether");
+    check!(
+        fails,
+        "another dimension's close touches nothing",
+        m::creatures_len() == 1
+    );
+    game.native_level_unload("minecraft:overworld");
+    check!(
+        fails,
+        "the Overworld's close forgets the mod's state",
+        m::creatures_len() == 0 && m::get_stalk(7) == m::Stalk::default()
+    );
+
     // A disabled mod does nothing at all.
     game.disabled.push("underbedrock_core".into());
     game.blocks.insert(bedrock, "minecraft:bedrock".into());
@@ -483,7 +784,9 @@ fn main() {
         fails,
         "a disabled mod digs nothing and runs no command",
         !ran && game.block_at(bedrock) == "minecraft:bedrock"
-            && game.bars.len() == bars && game.told.len() == told && game.feedback.len() == feedbacks
+            && game.bars.len() == bars
+            && game.told.len() == told
+            && game.feedback.len() == feedbacks
     );
 
     println!("{}", if fails == 0 { "all ok" } else { "FAILURES" });

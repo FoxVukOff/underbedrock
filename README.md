@@ -60,7 +60,7 @@ everyone else, and every other tool, gets an unbreakable block.
 hoe and shovel** and a **helmet, chestplate, leggings and boots** — netherite-
 tier stats, enchantment glint, repaired with void alloy ingots, eight shaped
 recipes. The **Stalker Shard** completes the tab as a trophy item (it is also
-what the stalker wears — see below).
+what the stalker wears, and what killing one drops — see below).
 
 **Inhabitants.** The Abyss is populated by the mod's **own creatures** — no
 vanilla mob lives down there, and the native mod *enforces* it: every tick,
@@ -77,8 +77,8 @@ they hunt. One **stalker** per player takes shape 14 blocks out: an invisible,
 silent, weightless vex of 60 HP that the engine's own flying melee drives
 (through stone, like the ghost it is), wearing an item display of the mod's
 stalker shard as its visible body, faced at the player every tick. Kill it and
-the wastes are quiet for 30 seconds, then send another; climb above y −420 and
-the hunt ends at once. Bring the void set.
+its shard drops as the trophy, the wastes are quiet for 30 seconds, then send
+another; climb above y −420 and the hunt ends at once. Bring the void set.
 
 **The rest.** English and Russian languages, recipes (smelting, blasting,
 alloy, pickaxe, crystal block both ways, bricks, lamp, sprout), loot tables
@@ -107,8 +107,10 @@ itself.
 The native mod is source-only code that runs with the player's rights: Horizon
 asks for consent before compiling it, and the sources travel inside the
 `.hnmod` archive (`mixins/underbedrock_core/*.rs`) to be read beforehand. It
-uses nothing but Horizon's official native hook points (`hooks: 126`), so it
-builds on any Horizon whose hook points are that version or newer.
+uses nothing but Horizon's official native hook points (`hooks: 164`), so it
+builds on any Horizon whose hook points are that version or newer — in
+practice a recent **nightly** build: the state-block hook the dig verifies
+through is newer than the 26.3 stable's hook set.
 
 **The data pack needs a new world.** A world's height is fixed when it loads,
 so the pack must be in place before chunks generate: create the world after
@@ -186,16 +188,22 @@ never start: a carver tunnel below y −54 would be filled with the engine's
 deep lava sea. The surface keeps vanilla's density caves, oceans and rivers
 through the aquifer's floodedness noise.
 
-**The dig.** The native mod binds six hook points: the mod list row, its
-settings page and click, the player tick, and `/abyss`'s registration and
-performance. Each player tick it reads the engine's own dig state — the block
+**The dig.** The native mod binds nine hook points: the mod list row, its
+settings page and click, the player tick, `/abyss`'s registration and
+performance, a level's unload, a death's drops, and the messages its own net
+channel carries to a client. Each player tick it reads the engine's own dig state — the block
 the attack key is held on and the ticks it has been held for, which the engine
 counts even on unbreakable blocks — and, when that block is bedrock or
 voidshell and the held item is the void-alloy pickaxe, reports the progress on
 the action bar. At the configured dig time the block is removed through
 `native_set_block` with the air state id (verified at runtime), with a
 named-block `native_edit_blocks` bulk edit as a fallback, and the drop is
-given through `native_give_items`. Abyss bedrock is simply never a dig target.
+given through `native_give_items`. The break is also told to the digging
+player's client over the mod's own net channel (`native_net_send_to_player`,
+API 40), and the client half plays it there — a slowed deepslate break and a
+burst of blue soul-flame sparks (`native_play_local_sound`,
+`native_flame_particle`): sounds and particles only ever play in the window's
+game, so the channel is the bridge. Abyss bedrock is simply never a dig target.
 No internals are mixin-patched; the one private field the mod reads
 (`Game::mining`, the dig state) is reached as a same-crate descendant module,
 and a future rename of it fails the mod's build loudly rather than misbehaving
@@ -225,10 +233,16 @@ stalker itself is a vex the mod spawns per player below y −420
 (`native_spawn_mob` with the invisible, silent, no-gravity flags and 60 HP):
 the engine's own melee AI does the hunting and the damage, while the mod
 moves its shard-display body onto the mob every tick and faces it at the
-player. A mob the engine no longer lists (killed, gone) takes its body with it
-and leaves the wastes quiet for 600 ticks; a player who climbs out dismisses
-both at once; and any display the wastes do not know — a body a server
-restart orphaned — is cleaned up, since no ambient creature lives that deep.
+player. A mob the engine no longer lists (killed, gone) takes its body with
+it; the death's drops then gain the stalker shard as a trophy
+(`native_loot_drops`, API 75) — and a vex that dies below y −420 counts as
+the stalker even when a server restart orphaned the mod's record of it. The
+wastes stay quiet for 600 ticks; a player who climbs out dismisses both at
+once; any display the wastes do not know — a body a restart orphaned — is
+cleaned up, since no ambient creature lives that deep; and a world that
+closes is forgotten whole (`native_level_unload`, API 134): the creatures,
+hunts and players' rhythms the mod kept are dropped, so a reopened world
+starts clean.
 
 ---
 
@@ -288,9 +302,9 @@ tools/check_worldgen.py     the worldgen JSONs vs Horizon's decoder and the mod'
 tools/build_all.sh          everything above, in order
 ```
 
-Built and checked against Horizon `ea55997` (26.3, native hook points v126,
-`NATIVE_HOOKS_API` 153) and horizon-mixins `ddd9700`; every file format was
-verified against that revision's sources.
+Built and checked against Horizon nightly `f42ef42` (2026-11-03; game 26.3,
+native hook points v164 of `NATIVE_HOOKS_API` 359) and horizon-mixins
+`ddd9700`; every file format was verified against that revision's sources.
 
 ---
 
@@ -298,9 +312,10 @@ verified against that revision's sources.
 
 - The bedrock and voidshell dig is a survival/adventure mechanic; in creative
   mode bedrock breaks instantly, as vanilla does.
-- While the dig runs, the player hears the ordinary mining sound the engine
-  sends; there is no separate break sound or particle burst — Horizon exposes
-  no hook point for them.
+- While the dig runs, the player hears only the ordinary mining sound the
+  engine sends. The break itself does answer — its own sound and blue sparks,
+  played on the digging player's client through the mod's net channel — but
+  the progress toward it stays silent.
 - Breaking bedrock or voidshell costs the pickaxe no durability (no hook point
   damages a held stack); ordinary mining wears it as usual.
 - The ambient creatures are display entities the native mod summons and
