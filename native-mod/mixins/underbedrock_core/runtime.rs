@@ -19,6 +19,8 @@ pub const DESCRIPTION: &str = "The void-alloy pickaxe digs bedrock and the voids
 /// voidshell gate under it. The abyss bedrock at the world's bottom is dug by
 /// nothing, the pickaxe included.
 pub const PICKAXE: &str = "underbedrock:void_alloy_pickaxe";
+/// The ingot a held hand feeds the calm deep's gloomling with.
+pub const ALLOY: &str = "underbedrock:void_alloy";
 pub const BEDROCK: &str = "minecraft:bedrock";
 pub const VOIDSHELL: &str = "underbedrock:voidshell";
 pub const ABYSS_BEDROCK: &str = "underbedrock:abyss_bedrock";
@@ -45,8 +47,10 @@ pub const DIG_BURST: [[f64; 3]; 9] = [
     [-0.3, -0.3, -0.3],
 ];
 
-/// The Overworld the mod's datapack makes: 512 blocks below the vanilla
-/// floor (`min_y` -576, 896 blocks of height).
+/// How deep a world must go to have the room below its bedrock floor: the
+/// mod's own datapack makes `min_y` -1008 with 1328 blocks of height; the
+/// first pack made -576 with 896, and a world that carries it stays tall
+/// enough - the thresholds accept both.
 pub const TALL_MIN_Y: i32 = -576;
 pub const TALL_HEIGHT: i32 = 896;
 
@@ -76,7 +80,7 @@ pub const HELP: &str = "Under Bedrock: /abyss give (the pickaxe), /abyss depth (
 pub const WISP_ITEM: &str = "underbedrock:void_crystal";
 /// What a lantern's display shows: the mod's own crystal lamp block.
 pub const LANTERN_BLOCK: &str = "underbedrock:crystal_lamp";
-/// What an ember's display shows: the mod's ember shard of the hot expanse.
+/// What an ember's display shows: the mod's ember shard of the lava zone.
 pub const EMBER_ITEM: &str = "underbedrock:ember_shard";
 /// What a frostmote's display shows: the mod's frost shard of the cold rim.
 pub const FROSTMOTE_ITEM: &str = "underbedrock:frost_shard";
@@ -86,13 +90,6 @@ pub const BLOCK_DISPLAY: &str = "minecraft:block_display";
 
 /// A player below this y is in the Abyss, and gets its company.
 pub const SPAWN_BELOW_Y: f64 = -80.0;
-/// The layer floors, as the datapack bands them: under each y the next,
-/// colder layer starts (the hot expanse, the inactive one, the cool islands,
-/// the frozen wastes). The wastes under [`STALK_BELOW_Y`] are the stalker's
-/// hunting ground: no ambient creature lives there.
-pub const INACTIVE_BELOW_Y: f64 = -168.0;
-pub const COOL_BELOW_Y: f64 = -280.0;
-pub const STALK_BELOW_Y: f64 = -420.0;
 /// No vanilla mob lives under the gate: the ban takes out any that wanders in.
 pub const BAN_BELOW_Y: f64 = -55.0;
 /// The most of the mod's creatures within reach of one player at a time.
@@ -114,6 +111,34 @@ pub const POSE_EVERY: u32 = 8;
 pub const WATCHER_NEAR: f64 = 16.0;
 pub const WATCHER_KEEP: f64 = 4.0;
 
+/// The gloomling's pearl, and the layer bands of the Abyss of 2026-11-03:
+/// the lava zone under the gate down to the void the warden hunts in.
+pub const GLOOM_ITEM: &str = "underbedrock:gloom_pearl";
+/// How far off its player a fed gloomling hangs once it has caught up.
+pub const GLOOM_KEEP: f32 = 2.5;
+/// The absolute-void warden's shard, and the body its hunt wears.
+pub const STALKER_ITEM: &str = "underbedrock:stalker_shard";
+pub const LAVA_BOT: f64 = -220.0;
+pub const INACTIVE_BOT: f64 = -360.0;
+pub const DEEPS_BOT: f64 = -500.0;
+pub const COOL_BOT: f64 = -640.0;
+pub const FROZEN_BOT: f64 = -780.0;
+pub const VOID_BOT: f64 = -960.0;
+/// The ticks of a held void alloy near a gloomling that make it trust the
+/// hand, and the y of every layer boundary a transition veil plays at.
+pub const FEED_TICKS: u32 = 40;
+pub const VEIL_BOUNDS: [i32; 6] = [-79, -221, -361, -501, -641, -781];
+/// How close to the held alloy a gloomling has to be to eat from it.
+pub const GLOOMLING_REACH: f64 = 5.0;
+/// The crossing has to be this far past a boundary before its veil plays:
+/// a player hovering on the line gets no burst every tick.
+pub const VEIL_HYSTERESIS: f64 = 2.0;
+/// The veil's sparkles: end rods at the boundary's own height, in a disc
+/// around the player's x and z (the burst's lift, spread and count).
+pub const VEIL_LIFT: f64 = 1.0;
+pub const VEIL_SPREAD: [f64; 3] = [3.0, 0.6, 3.0];
+pub const VEIL_COUNT: i32 = 48;
+
 /// How close a display's yaw has to sit to a kind's code to read as that
 /// kind. The round-trip is exact - the move keeps the code as it is, the
 /// engine saves it as the same f32 bits (`Rotation` in the display's NBT) and
@@ -132,10 +157,15 @@ pub enum Creature {
     /// A bigger crystal that closes on a player who comes near, keeps its
     /// distance, and watches them.
     Watcher,
-    /// An ember of the hot expanse: a fast flicker of the ember shard.
+    /// An ember of the lava zone: a fast flicker of the ember shard.
     Ember,
     /// A frostmote of the cold rim: the frost shard, drifting slow.
     Frostmote,
+    /// A gloomling of the world in the deep: the calm layer's one creature,
+    /// a pearl that drifts shy and can be fed.
+    Gloomling,
+    /// A gloomling fed from the hand: it follows its player anywhere.
+    Gloom,
 }
 
 impl Creature {
@@ -143,7 +173,12 @@ impl Creature {
     pub fn display(self) -> &'static str {
         match self {
             Self::Lantern => BLOCK_DISPLAY,
-            Self::Wisp | Self::Watcher | Self::Ember | Self::Frostmote => ITEM_DISPLAY,
+            Self::Wisp
+            | Self::Watcher
+            | Self::Ember
+            | Self::Frostmote
+            | Self::Gloomling
+            | Self::Gloom => ITEM_DISPLAY,
         }
     }
     /// The item or block its display shows: the mod's own.
@@ -153,6 +188,7 @@ impl Creature {
             Self::Ember => EMBER_ITEM,
             Self::Frostmote => FROSTMOTE_ITEM,
             Self::Wisp | Self::Watcher => WISP_ITEM,
+            Self::Gloomling | Self::Gloom => GLOOM_ITEM,
         }
     }
     /// The scale its display is posed at.
@@ -163,6 +199,8 @@ impl Creature {
             Self::Watcher => 1.5,
             Self::Ember => 0.8,
             Self::Frostmote => 0.85,
+            Self::Gloomling => 0.7,
+            Self::Gloom => 0.8,
         }
     }
     /// Whether a display kind is one the mod's creatures ride: the item
@@ -191,6 +229,8 @@ impl Creature {
             Self::Watcher => 167.0,
             Self::Lantern => 239.0,
             Self::Frostmote => 311.0,
+            Self::Gloomling => 183.0,
+            Self::Gloom => 215.0,
         }
     }
 }
@@ -201,14 +241,14 @@ impl Creature {
 /// never summoned (or one an older version of it left behind) is not the
 /// mod's to drive.
 pub fn kind_from_yaw(display_kind: &str, yaw: f32) -> Option<Creature> {
-    use Creature::{Ember, Frostmote, Lantern, Watcher, Wisp};
+    use Creature::{Ember, Frostmote, Gloom, Gloomling, Lantern, Watcher, Wisp};
     Creature::of(display_kind)?;
     let yaw = yaw.rem_euclid(360.0);
     let near = |code: f32| {
         let d = (yaw - code).abs().rem_euclid(360.0);
         d.min(360.0 - d) <= YAW_TOL
     };
-    [Wisp, Ember, Watcher, Lantern, Frostmote]
+    [Wisp, Ember, Watcher, Lantern, Frostmote, Gloomling, Gloom]
         .into_iter()
         .find(|kind| kind.display() == display_kind && near(kind.yaw_code()))
 }
@@ -436,26 +476,29 @@ pub fn candidate_offset(seed: u64, attempt: u32) -> [i32; 3] {
     [dx, dy, dz]
 }
 
-/// The creature the `seed`'s summon is, for the layer at `y`: embers flicker
-/// in the hot expanse, the classic company keeps the cool islands (a frostmote
-/// here and there, the cold ahead), and the frozen wastes below
-/// [`STALK_BELOW_Y`] are the stalker's ground - no ambient creature there.
+/// The creature the `seed`'s summon is, for the layer at `y`: every layer of
+/// the Abyss keeps its own company - embers and lamps in the lava zone, wisps
+/// and lamps in the inactive one, the gloomling alone in the calm deep, the
+/// classic company in the cool lands, frostmotes in the frozen wastes - and
+/// the absolute void below [`FROZEN_BOT`] keeps none at all.
 pub fn pick_creature(seed: u64, y: f64) -> Option<Creature> {
-    if y < STALK_BELOW_Y {
+    if y < FROZEN_BOT {
         return None;
     }
-    let roll = mix(seed ^ 0xAB55_5EED) % 10;
-    Some(if y < COOL_BELOW_Y {
+    let roll = mix(seed ^ 0x0AB5_5EED) % 10;
+    Some(if y < COOL_BOT {
+        Creature::Frostmote
+    } else if y < DEEPS_BOT {
         match roll {
-            0..=3 => Creature::Wisp,
-            4..=6 => Creature::Watcher,
-            7..=8 => Creature::Lantern,
-            _ => Creature::Frostmote,
+            0..=4 => Creature::Wisp,
+            5..=7 => Creature::Watcher,
+            _ => Creature::Lantern,
         }
-    } else if y < INACTIVE_BELOW_Y {
+    } else if y < INACTIVE_BOT {
+        Creature::Gloomling
+    } else if y < LAVA_BOT {
         match roll {
-            0..=3 => Creature::Ember,
-            4..=7 => Creature::Wisp,
+            0..=5 => Creature::Wisp,
             _ => Creature::Lantern,
         }
     } else {
@@ -467,12 +510,16 @@ pub fn pick_creature(seed: u64, y: f64) -> Option<Creature> {
     })
 }
 
-/// Whether a display entity is one of the mod's creatures: a display kind,
-/// under the bedrock floor (nothing up top is the mod's) and above the frozen
-/// wastes - down there the only display the mod keeps is the stalker's body,
-/// which the hunt tracks itself.
 pub fn is_ours(display_kind: &str, pos: [f64; 3]) -> bool {
-    Creature::of(display_kind).is_some() && pos[1] < SPAWN_BELOW_Y && pos[1] > STALK_BELOW_Y
+    Creature::of(display_kind).is_some() && pos[1] < SPAWN_BELOW_Y && pos[1] > FROZEN_BOT
+}
+
+/// Whether a display wears the fed gloomling's yaw code: one that does is
+/// the mod's to drive at ANY depth - a tamed creature follows its player up
+/// through the gate and into the daylight, where the ambient bands end, and
+/// a restart that emptied the ledger adopts it back by its code.
+pub fn is_tamed_code(display_kind: &str, yaw: f32) -> bool {
+    display_kind == ITEM_DISPLAY && (yaw - Creature::Gloom.yaw_code()).abs() <= YAW_TOL
 }
 
 /// Whether a creature is near enough to the player to count against the cap.
@@ -526,6 +573,10 @@ pub fn drift(kind: Creature, anchor: [f64; 3], phase: f32) -> [f64; 3] {
         Creature::Watcher => (1.4, 1.1, 0.4, 1.2),
         Creature::Ember => (2.2, 1.3, 0.9, 1.0),
         Creature::Frostmote => (1.8, 0.35, 0.5, 1.4),
+        // The deep's calm: a gloomling drifts little and slow, and a fed one
+        // barely leaves its player's shoulder.
+        Creature::Gloomling => (1.2, 0.2, 0.3, 0.8),
+        Creature::Gloom => (0.5, 0.3, 0.2, 1.2),
     };
     let turn = phase * spin;
     [
@@ -559,6 +610,30 @@ pub fn watcher_anchor(anchor: [f64; 3], player: [f64; 3]) -> [f64; 3] {
     ]
 }
 
+/// Where a fed gloomling's anchor goes this tick: it eases in to
+/// [`GLOOM_KEEP`] blocks of its player's eye, a tenth of the remaining way
+/// each tick, however far they are - a tamed creature follows through the
+/// whole Abyss, and up out of it.
+pub fn follow_anchor(anchor: [f64; 3], player: [f64; 3]) -> [f64; 3] {
+    let eye = [player[0], player[1] + 1.0, player[2]];
+    let away = [anchor[0] - eye[0], anchor[1] - eye[1], anchor[2] - eye[2]];
+    let dist = (away[0] * away[0] + away[1] * away[1] + away[2] * away[2]).sqrt();
+    if dist <= GLOOM_KEEP as f64 || dist < 1.0e-6 {
+        return anchor;
+    }
+    let keep = GLOOM_KEEP as f64;
+    let want = [
+        eye[0] + away[0] / dist * keep,
+        eye[1] + away[1] / dist * keep,
+        eye[2] + away[2] / dist * keep,
+    ];
+    [
+        anchor[0] + (want[0] - anchor[0]) * 0.1,
+        anchor[1] + (want[1] - anchor[1]) * 0.1,
+        anchor[2] + (want[2] - anchor[2]) * 0.1,
+    ]
+}
+
 /// The yaw that looks from `from` at `to`, in the engine's degrees: 0 south,
 /// -90 east.
 pub fn face_yaw(from: [f64; 3], to: [f64; 3]) -> f32 {
@@ -585,6 +660,8 @@ pub struct CreatureState {
     pub phase: f32,
     pub owner: u128,
     pub pose_in: u32,
+    /// The ticks a gloomling has been fed from a held alloy so far.
+    pub feed: u32,
 }
 
 /// What one step of the creatures asks the engine to do.
@@ -618,6 +695,49 @@ pub fn creature_kind(id: u32) -> Option<Creature> {
     })
 }
 
+/// Feeds the gloomling `id` from `owner`'s held alloy by one tick: at
+/// [`FEED_TICKS`] it trusts the hand and becomes theirs - the kind flips to
+/// the fed one (and so does the yaw code the next move writes), the owner is
+/// who fed it. Says whether this tick was the one.
+pub fn feed_creature(id: u32, owner: u128) -> bool {
+    CREATURES.with(|creatures| {
+        let mut creatures = creatures.borrow_mut();
+        let Some(creature) = creatures.iter_mut().find(|c| c.id == id) else {
+            return false;
+        };
+        if creature.kind != Creature::Gloomling {
+            return false;
+        }
+        creature.feed += 1;
+        if creature.feed < FEED_TICKS {
+            return false;
+        }
+        creature.kind = Creature::Gloom;
+        creature.owner = owner;
+        creature.feed = 0;
+        true
+    })
+}
+
+/// The ids of the fed gloomlings: the tick keeps them in its live list at
+/// any depth, even up in the daylight behind their player.
+pub fn tamed_ids() -> Vec<u32> {
+    CREATURES.with(|creatures| {
+        creatures
+            .borrow()
+            .iter()
+            .filter(|c| c.kind == Creature::Gloom)
+            .map(|c| c.id)
+            .collect()
+    })
+}
+
+/// The ids of every creature the mod drives this tick: nothing the tick
+/// itself placed is a stray to clean up.
+pub fn driven_ids() -> Vec<u32> {
+    CREATURES.with(|creatures| creatures.borrow().iter().map(|c| c.id).collect())
+}
+
 /// Empties the creature list: a world closed, or the harness runs again.
 pub fn clear_creatures() {
     CREATURES.with(|creatures| creatures.borrow_mut().clear());
@@ -640,6 +760,7 @@ pub fn add_creature(id: u32, kind: Creature, anchor: [f64; 3], owner: u128) {
             phase: 0.0,
             owner,
             pose_in: 0,
+            feed: 0,
         });
     });
 }
@@ -681,12 +802,24 @@ pub fn step_creatures(
                     phase: *id as f32 * 0.7,
                     owner,
                     pose_in: 0,
+                    feed: 0,
                 }),
                 None => step.purge.push(*id),
             }
         }
         creatures.retain_mut(|creature| {
-            if creature.owner == owner {
+            if creature.kind == Creature::Watcher {
+                creature.anchor = watcher_anchor(creature.anchor, player);
+            }
+            if creature.kind == Creature::Gloom {
+                // A fed gloomling is let go by nothing: it keeps its player,
+                // easing in to a pearl's length of them while they are the
+                // one whose tick this is, and holding where it waits when
+                // they are not down here.
+                if creature.owner == owner {
+                    creature.anchor = follow_anchor(creature.anchor, player);
+                }
+            } else if creature.owner == owner {
                 let away = [
                     player[0] - creature.anchor[0],
                     player[2] - creature.anchor[2],
@@ -695,9 +828,6 @@ pub fn step_creatures(
                     step.cull.push(creature.id);
                     return false;
                 }
-            }
-            if creature.kind == Creature::Watcher {
-                creature.anchor = watcher_anchor(creature.anchor, player);
             }
             creature.phase += PHASE_STEP;
             let pos = drift(creature.kind, creature.anchor, creature.phase);
@@ -715,36 +845,107 @@ pub fn step_creatures(
     step
 }
 
-// --- the stalker of the frozen wastes ----------------------------------------
-// The bottom layer hunts. When a player descends into the frozen wastes, the
-// mod sends one killer after them: a vex (API 37) - the engine's own flying
-// melee that walks through stone - spawned invisible, silent and weightless,
-// so what the player sees is the body the mod keeps for it: an item display
-// of the stalker shard, moved onto the mob every tick and faced at them. The
-// engine's melee does the damage; the mod only shows, tracks and cleans up.
-// Above the wastes the pair is dismissed at once; when the stalker falls, the
-// wastes are quiet for a while, then send another.
+// --- the pests of the layers, and the warden of the void --------------------
+// Every layer of the Abyss but the calm deep keeps one hunter of its own: a
+// vex (API 37) - the engine's flying melee that walks through stone - spawned
+// invisible, silent and weightless, wearing an item display of the layer's
+// shard as its visible body, moved onto the mob every tick and faced at the
+// player. The engine's melee does the damage; the mod only shows, tracks and
+// cleans up. The layer pests are annoyances - a few swings end them, they
+// take shape far off and come back slowly. The warden of the absolute void
+// is the same machine turned up: it dislikes the player's presence, takes
+// shape close, comes back quick and takes some ending. Above a layer its
+// pair is dismissed at once; when a hunter falls, its layer is quiet for a
+// while, then sends another.
 
-/// The mob the stalker rides, its health, and what its body shows. The hunt
-/// is meant to annoy, not to kill: a few swings end it, and it comes back
-/// soon after - long enough to dig, too short to settle in.
-pub const STALKER_KIND: &str = "minecraft:vex";
-pub const STALKER_HEALTH: f32 = 24.0;
-pub const STALKER_ITEM: &str = "underbedrock:stalker_shard";
-/// The body's scale, and how far over the mob it hangs.
-pub const STALKER_SCALE: f32 = 1.4;
-pub const STALKER_LIFT: f64 = 0.45;
-/// How far off the player the hunter takes shape.
-pub const STALKER_RING: f64 = 16.0;
-/// The quiet after a stalker falls, and the pause before a summon that found
-/// no room (peaceful, an unloaded chunk) is tried again, in ticks.
-pub const STALK_QUIET: u32 = 300;
-pub const STALK_RETRY: u32 = 40;
+/// The mob every hunter rides.
+pub const HUNT_KIND: &str = "minecraft:vex";
+/// How far over its mob a body hangs.
+pub const HUNT_LIFT: f64 = 0.45;
 
-/// One player's hunt: the mob's and its body's engine ids, and the ticks of
-/// quiet left before the wastes send another.
+/// One layer's hunter: the band it hunts in, the body it wears and drops,
+/// and how annoying it is - the health it takes, the ring it takes shape on,
+/// the quiet after it falls, the pause before a summon that found no room
+/// (peaceful, an unloaded chunk) is tried again, the body's scale.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PestCfg {
+    pub name: &'static str,
+    pub top: f64,
+    pub bot: f64,
+    pub body: &'static str,
+    pub health: f32,
+    pub ring: f64,
+    pub quiet: u32,
+    pub retry: u32,
+    pub scale: f32,
+}
+
+/// The five hunters, shallow to deep. The calm deep keeps none - its one
+/// creature is the gloomling, which only eats.
+pub const PESTS: [PestCfg; 5] = [
+    PestCfg {
+        name: "emberling",
+        top: -73.0,
+        bot: LAVA_BOT,
+        body: "underbedrock:ember_shard",
+        health: 16.0,
+        ring: 18.0,
+        quiet: 420,
+        retry: 40,
+        scale: 0.9,
+    },
+    PestCfg {
+        name: "cinder",
+        top: -221.0,
+        bot: INACTIVE_BOT,
+        body: "underbedrock:cinder_shard",
+        health: 16.0,
+        ring: 18.0,
+        quiet: 420,
+        retry: 40,
+        scale: 0.9,
+    },
+    PestCfg {
+        name: "shade",
+        top: -501.0,
+        bot: COOL_BOT,
+        body: "underbedrock:void_crystal",
+        health: 18.0,
+        ring: 16.0,
+        quiet: 360,
+        retry: 40,
+        scale: 1.0,
+    },
+    PestCfg {
+        name: "rime",
+        top: -641.0,
+        bot: FROZEN_BOT,
+        body: "underbedrock:frost_shard",
+        health: 20.0,
+        ring: 16.0,
+        quiet: 320,
+        retry: 40,
+        scale: 1.0,
+    },
+    // The warden: closer, quicker back, twice the health - the one who
+    // dislikes the player's presence in the absolute void.
+    PestCfg {
+        name: "warden",
+        top: -781.0,
+        bot: VOID_BOT,
+        body: STALKER_ITEM,
+        health: 32.0,
+        ring: 10.0,
+        quiet: 120,
+        retry: 20,
+        scale: 1.5,
+    },
+];
+
+/// One player's hunt in one layer: the mob's and its body's engine ids, and
+/// the ticks of quiet left before the layer sends another.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct Stalk {
+pub struct Pest {
     pub mob: Option<u32>,
     pub body: Option<u32>,
     pub quiet: u32,
@@ -752,7 +953,7 @@ pub struct Stalk {
 
 /// What one tick of a hunt asks the engine to do.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct StalkOrder {
+pub struct PestOrder {
     /// `native_remove_mob`: the hunt is over.
     pub dismiss_mob: Option<u32>,
     /// `native_remove_entity`: a body to let go.
@@ -767,43 +968,44 @@ pub struct StalkOrder {
     pub follow: Option<([f64; 3], f32)>,
 }
 
-/// Where the hunter takes shape: on a ring around the player, at their depth
-/// (it flies, and walks through stone).
-pub fn stalker_spot(seed: u64, at: [f64; 3]) -> [f64; 3] {
+/// Where a hunter takes shape: on its ring around the player, at their
+/// depth (it flies, and walks through stone).
+pub fn pest_spot(cfg: &PestCfg, seed: u64, at: [f64; 3]) -> [f64; 3] {
     let turn = (mix(seed) % 36_000) as f64 * std::f64::consts::TAU / 36_000.0;
     [
-        at[0] + STALKER_RING * turn.cos(),
+        at[0] + cfg.ring * turn.cos(),
         at[1],
-        at[2] + STALKER_RING * turn.sin(),
+        at[2] + cfg.ring * turn.sin(),
     ]
 }
 
-/// One tick of a player's hunt: `in_zone` is whether they are in the wastes,
-/// `mob_at` where the engine has their vex this tick (None once it is gone -
-/// killed, or a ban of a world the mod lost track of). The order is what the
-/// engine must do; the state that comes back is what the caller keeps, with
-/// the ids a successful summon hands out written over it.
-pub fn stalk_tick(
-    stalk: Stalk,
+/// One tick of a player's hunt in `cfg`'s layer: `in_zone` is whether they
+/// are in it, `mob_at` where the engine has their vex this tick (None once
+/// it is gone - killed, or a ban of a world the mod lost track of). The
+/// order is what the engine must do; the state that comes back is what the
+/// caller keeps, with the ids a successful summon hands out written over it.
+pub fn pest_tick(
+    cfg: &PestCfg,
+    pest: Pest,
     in_zone: bool,
     mob_at: Option<[f64; 3]>,
     player: [f64; 3],
-) -> (Stalk, StalkOrder) {
-    let mut order = StalkOrder::default();
+) -> (Pest, PestOrder) {
+    let mut order = PestOrder::default();
     if !in_zone {
-        // Out of the wastes: the hunt is over, at once and quietly.
-        order.dismiss_mob = stalk.mob;
-        order.dismiss_body = stalk.body;
-        return (Stalk::default(), order);
+        // Out of the layer: the hunt is over, at once and quietly.
+        order.dismiss_mob = pest.mob;
+        order.dismiss_body = pest.body;
+        return (Pest::default(), order);
     }
-    let mut stalk = Stalk {
-        quiet: stalk.quiet.saturating_sub(1),
-        ..stalk
+    let mut pest = Pest {
+        quiet: pest.quiet.saturating_sub(1),
+        ..pest
     };
-    match (stalk.mob, mob_at) {
+    match (pest.mob, mob_at) {
         (Some(_), Some(pos)) => {
-            let body_at = [pos[0], pos[1] + STALKER_LIFT, pos[2]];
-            if stalk.body.is_some() {
+            let body_at = [pos[0], pos[1] + HUNT_LIFT, pos[2]];
+            if pest.body.is_some() {
                 let eye = [player[0], player[1] + 1.0, player[2]];
                 order.follow = Some((body_at, face_yaw(body_at, eye)));
             } else {
@@ -811,56 +1013,86 @@ pub fn stalk_tick(
             }
         }
         (Some(_), None) => {
-            // It fell (or went): the body follows, and the wastes are quiet.
-            order.dismiss_body = stalk.body;
-            stalk = Stalk {
+            // It fell (or went): the body follows, and the layer is quiet.
+            order.dismiss_body = pest.body;
+            pest = Pest {
                 mob: None,
                 body: None,
-                quiet: STALK_QUIET,
+                quiet: cfg.quiet,
             };
         }
         (None, _) => {
-            if stalk.quiet == 0 {
+            if pest.quiet == 0 {
                 order.summon = true;
-                stalk.quiet = STALK_RETRY;
+                pest.quiet = cfg.retry;
             }
         }
     }
-    (stalk, order)
+    (pest, order)
 }
 
 thread_local! {
-    /// Each player's hunt, in the world in place.
-    static STALKS: RefCell<HashMap<u128, Stalk>> = RefCell::new(HashMap::new());
+    /// Each player's five hunts, in the world in place.
+    static HUNTS: RefCell<HashMap<u128, [Pest; 5]>> = RefCell::new(HashMap::new());
 }
 
-/// The hunt the mod keeps for `uuid` (the default when it keeps none).
-pub fn get_stalk(uuid: u128) -> Stalk {
-    STALKS.with(|stalks| stalks.borrow().get(&uuid).copied().unwrap_or_default())
+/// The hunts the mod keeps for `uuid` (all default when it keeps none).
+pub fn get_pests(uuid: u128) -> [Pest; 5] {
+    HUNTS.with(|hunts| hunts.borrow().get(&uuid).copied().unwrap_or_default())
 }
 
-/// Keeps `uuid`'s hunt; the default clears it, so a finished hunt leaves no
-/// entry behind.
-pub fn set_stalk(uuid: u128, stalk: Stalk) {
-    STALKS.with(|stalks| {
-        let mut stalks = stalks.borrow_mut();
-        if stalk == Stalk::default() {
-            stalks.remove(&uuid);
+/// Keeps `uuid`'s hunts; all-default clears the entry, so a finished hunt
+/// leaves nothing behind.
+pub fn set_pests(uuid: u128, pests: [Pest; 5]) {
+    HUNTS.with(|hunts| {
+        let mut hunts = hunts.borrow_mut();
+        if pests == [Pest::default(); 5] {
+            hunts.remove(&uuid);
         } else {
-            stalks.insert(uuid, stalk);
+            hunts.insert(uuid, pests);
         }
     });
 }
 
-/// Whether mob `id` is a stalker the mod tracks (any player's): the ban under
-/// the gate spares exactly these.
-pub fn is_stalker_mob(id: u32) -> bool {
-    STALKS.with(|stalks| stalks.borrow().values().any(|stalk| stalk.mob == Some(id)))
+/// Whether mob `id` is a hunter the mod tracks (any player's, any layer's):
+/// the ban under the gate spares exactly these.
+pub fn is_tracked_mob(id: u32) -> bool {
+    HUNTS.with(|hunts| {
+        hunts
+            .borrow()
+            .values()
+            .any(|pests| pests.iter().any(|pest| pest.mob == Some(id)))
+    })
+}
+
+/// The body displays the hunts wear this tick: the tick keeps them out of
+/// the creature list and out of the stray-cleanup below the frozen floor.
+pub fn pest_bodies() -> Vec<u32> {
+    HUNTS.with(|hunts| {
+        hunts
+            .borrow()
+            .values()
+            .flat_map(|pests| pests.iter().filter_map(|pest| pest.body))
+            .collect()
+    })
+}
+
+/// What a tracked hunter's death drops: its layer's shard, and nothing for
+/// a mob the mod does not track (depth alone is not proof of a hunt).
+pub fn pest_drop(id: u32) -> Option<&'static str> {
+    HUNTS.with(|hunts| {
+        hunts.borrow().values().find_map(|pests| {
+            pests
+                .iter()
+                .position(|pest| pest.mob == Some(id))
+                .map(|slot| PESTS[slot].body)
+        })
+    })
 }
 
 /// Empties the hunts: a world closed, or the harness runs again.
-pub fn clear_stalks() {
-    STALKS.with(|stalks| stalks.borrow_mut().clear());
+pub fn clear_pests() {
+    HUNTS.with(|hunts| hunts.borrow_mut().clear());
 }
 
 /// The dig's feedback, packed for the net bridge: the block's position and
@@ -894,6 +1126,52 @@ pub fn decode_dig(data: &[u8]) -> Option<([i32; 3], Dig)> {
     Some((pos, dig))
 }
 
+/// The band of boundaries a y sits in: 0 above the gate, then one per
+/// layer down to 6, the absolute void.
+pub fn veil_band(y: f64) -> usize {
+    VEIL_BOUNDS
+        .iter()
+        .filter(|&&bound| (bound as f64) > y)
+        .count()
+}
+
+thread_local! {
+    /// Each player's last band, for the crossing watch.
+    static VEIL_BANDS: RefCell<HashMap<u128, usize>> = RefCell::new(HashMap::new());
+}
+
+/// The boundary a player has just crossed, for the transition veil: the
+/// first sight of a player records their band and plays nothing; after that
+/// a band change answers with the index (in [`VEIL_BOUNDS`]) of the
+/// boundary crossed - but only once the player is [`VEIL_HYSTERESIS`] past
+/// it, so hovering on the line plays nothing every tick. The tick puts the
+/// sparkles where the boundary itself is, not where the player is.
+pub fn veil_crossing(uuid: u128, y: f64) -> Option<usize> {
+    VEIL_BANDS.with(|bands| {
+        let mut bands = bands.borrow_mut();
+        let band = veil_band(y);
+        let Some(&last) = bands.get(&uuid) else {
+            bands.insert(uuid, band);
+            return None;
+        };
+        if band == last {
+            return None;
+        }
+        let crossed = last.min(band);
+        let bound = VEIL_BOUNDS[crossed] as f64;
+        let past = if band > last {
+            y <= bound - VEIL_HYSTERESIS
+        } else {
+            y >= bound + VEIL_HYSTERESIS
+        };
+        if !past {
+            return None;
+        }
+        bands.insert(uuid, band);
+        Some(crossed)
+    })
+}
+
 /// A level closed (API 134's `native_level_unload`): the Overworld's close
 /// forgets everything the mod keeps for it - the creatures, the hunts, the
 /// players' rhythms and the shape it announced - so a world reopened (or
@@ -907,23 +1185,25 @@ pub fn forget_world(dimension: &str) -> bool {
         return false;
     }
     clear_creatures();
-    clear_stalks();
+    clear_pests();
+    VEIL_BANDS.with(|bands| bands.borrow_mut().clear());
     SHAPE.with(|cell| cell.set(None));
     TICKS.with(|ticks| ticks.borrow_mut().clear());
     BARS.with(|bars| bars.borrow_mut().clear());
     true
 }
 
-/// Whether a death's drops (API 75's `native_loot_drops`) are the stalker's:
-/// a vex of the Overworld that a hunt tracks right now. Depth alone is not
-/// proof - a vanilla vex can chase a player down a dug shaft and die in the
-/// wastes, and that death owes nobody a trophy - so an untracked vex drops
-/// nothing however deep it falls.
-pub fn stalker_drops(dimension: &str, entity: Option<(u32, &str)>) -> bool {
-    let Some((id, kind)) = entity else {
-        return false;
-    };
-    kind == STALKER_KIND && dimension == "minecraft:overworld" && is_stalker_mob(id)
+/// What a death's drops (API 75's `native_loot_drops`) gain: the shard of
+/// the layer whose hunt tracked the dying vex, in the Overworld, right now.
+/// Depth alone is not proof - a vanilla vex can chase a player down a dug
+/// shaft and die in the deep, and that death owes nobody a trophy - so an
+/// untracked vex drops nothing however deep it falls.
+pub fn pest_drops(dimension: &str, entity: Option<(u32, &str)>) -> Option<&'static str> {
+    let (id, kind) = entity?;
+    if kind != HUNT_KIND || dimension != "minecraft:overworld" {
+        return None;
+    }
+    pest_drop(id)
 }
 
 /// The line a player hears when the dig's feedback cannot reach their client
@@ -1023,8 +1303,8 @@ mod tests {
     #[test]
     fn a_spawn_plan_needs_a_pocket_and_room_under_the_cap() {
         let at = [0.5, -200.0, 0.5];
-        // The frozen wastes are the stalker's ground: no ambient plan there.
-        assert_eq!(spawn_plan(7, [0.5, -500.0, 0.5], 0, |_| true), None);
+        // The absolute void is the warden's ground: no ambient plan there.
+        assert_eq!(spawn_plan(7, [0.5, -900.0, 0.5], 0, |_| true), None);
         // Everything open: no floor under any feet, so no plan.
         assert_eq!(spawn_plan(7, at, 0, |_| true), None);
         // At the cap: no plan even with a pocket.
@@ -1043,7 +1323,7 @@ mod tests {
         let (creature, spot) = spawn_plan(7, at, CREATURE_CAP - 1, pocket).expect("a plan");
         assert_eq!(
             creature,
-            pick_creature(7, at[1]).expect("a cool-layer pick")
+            pick_creature(7, at[1]).expect("a lava-layer pick")
         );
         let [dx, dy, dz] = candidate_offset(7, 0);
         assert_eq!(
@@ -1058,33 +1338,46 @@ mod tests {
 
     #[test]
     fn each_layer_picks_its_own_company() {
-        let mut seen = [0u32; 5];
+        let mut seen = [0u32; 6];
         for seed in 0..600u64 {
-            // The hot expanse: embers, lanterns and the odd wisp.
-            match pick_creature(seed, -100.0).expect("the hot layer picks") {
+            // The lava zone: embers, lanterns and the odd wisp.
+            match pick_creature(seed, -100.0).expect("the lava zone picks") {
                 Creature::Ember => seen[0] += 1,
                 Creature::Lantern => seen[1] += 1,
                 Creature::Wisp => seen[2] += 1,
-                other => panic!("the hot layer picked {other:?}"),
+                other => panic!("the lava zone picked {other:?}"),
             }
-            // The cool islands: the classic company, and frostmotes at the rim.
-            match pick_creature(seed, -350.0).expect("the cool layer picks") {
+            // The inactive layer: wisps and lanterns, no embers.
+            match pick_creature(seed, -300.0).expect("the inactive layer picks") {
+                Creature::Wisp => seen[2] += 1,
+                Creature::Lantern => seen[1] += 1,
+                other => panic!("the inactive layer picked {other:?}"),
+            }
+            // The calm deep: the gloomling alone.
+            assert_eq!(pick_creature(seed, -400.0), Some(Creature::Gloomling));
+            seen[5] += 1;
+            // The cool lands: the classic company.
+            match pick_creature(seed, -550.0).expect("the cool lands pick") {
                 Creature::Wisp => seen[2] += 1,
                 Creature::Watcher => seen[3] += 1,
                 Creature::Lantern => seen[1] += 1,
-                Creature::Frostmote => seen[4] += 1,
-                other => panic!("the cool layer picked {other:?}"),
+                other => panic!("the cool lands picked {other:?}"),
             }
+            // The frozen wastes: frostmotes only.
+            assert_eq!(pick_creature(seed, -700.0), Some(Creature::Frostmote));
+            seen[4] += 1;
         }
         assert!(seen.iter().all(|count| *count > 0), "{seen:?}");
-        // The frozen wastes: nothing ambient, only the stalker.
-        assert_eq!(pick_creature(7, -500.0), None);
-        assert_eq!(pick_creature(7, -421.0), None);
+        // The absolute void: nothing ambient, only the warden hunts.
+        assert_eq!(pick_creature(7, -800.0), None);
+        assert_eq!(pick_creature(7, -950.0), None);
         // What each shows and rides.
         assert_eq!(Creature::Ember.shows(), EMBER_ITEM);
         assert_eq!(Creature::Frostmote.shows(), FROSTMOTE_ITEM);
+        assert_eq!(Creature::Gloomling.shows(), GLOOM_ITEM);
+        assert_eq!(Creature::Gloom.shows(), GLOOM_ITEM);
         assert_eq!(Creature::Ember.display(), ITEM_DISPLAY);
-        assert_eq!(Creature::Frostmote.display(), ITEM_DISPLAY);
+        assert_eq!(Creature::Gloom.display(), ITEM_DISPLAY);
         assert_eq!(Creature::of(BLOCK_DISPLAY), Some(Creature::Lantern));
         assert_eq!(Creature::of(ITEM_DISPLAY), Some(Creature::Wisp));
         assert_eq!(Creature::of("minecraft:text_display"), None);
@@ -1097,9 +1390,11 @@ mod tests {
         assert!(is_ours(BLOCK_DISPLAY, [-30.0, -90.0, 20.0]));
         // Above the floor, or not a display the mod rides: not the mod's.
         assert!(!is_ours(ITEM_DISPLAY, [10.0, -70.0, 0.0]));
-        // The frozen wastes keep no ambient display: the stalker's body is
-        // the hunt's own, not a creature's.
-        assert!(!is_ours(ITEM_DISPLAY, [10.0, -500.0, 0.0]));
+        // The frozen wastes keep frostmotes now; the absolute void below
+        // them keeps no ambient display at all - the warden's body is the
+        // hunt's own, not a creature's.
+        assert!(is_ours(ITEM_DISPLAY, [10.0, -700.0, 0.0]));
+        assert!(!is_ours(ITEM_DISPLAY, [10.0, -900.0, 0.0]));
         assert!(!is_ours("minecraft:text_display", [10.0, -210.0, 0.0]));
         assert!(!is_ours("minecraft:marker", [10.0, -210.0, 0.0]));
         // Near enough to count against the cap, and too far.
@@ -1116,6 +1411,8 @@ mod tests {
             Creature::Watcher,
             Creature::Ember,
             Creature::Frostmote,
+            Creature::Gloomling,
+            Creature::Gloom,
         ] {
             let mut phase = 0.0;
             for _ in 0..2000 {
@@ -1250,37 +1547,39 @@ mod tests {
     }
 
     #[test]
-    fn the_wastes_send_a_stalker_and_take_it_back() {
-        let player = [0.0, -500.0, 0.0];
-        let mob = [10.0, -500.0, 10.0];
-        // In the wastes with the quiet over: a summon is ordered, and the
+    fn every_layer_sends_its_pest_and_takes_it_back() {
+        let warden = &PESTS[4];
+        let player = [0.0, -850.0, 0.0];
+        let mob = [10.0, -850.0, 10.0];
+        // In the void with the quiet over: a summon is ordered, and the
         // retry waits in case it finds no room (peaceful, an unloaded chunk).
-        let (stalk, order) = stalk_tick(Stalk::default(), true, None, player);
-        assert!(order.summon && stalk.quiet == STALK_RETRY);
+        let (pest, order) = pest_tick(warden, Pest::default(), true, None, player);
+        assert!(order.summon && pest.quiet == warden.retry);
         assert!(!order.summon_body && order.follow.is_none());
-        let mut stalk = stalk;
-        for _ in 0..STALK_RETRY - 1 {
-            let (next, order) = stalk_tick(stalk, true, None, player);
+        let mut pest = pest;
+        for _ in 0..warden.retry - 1 {
+            let (next, order) = pest_tick(warden, pest, true, None, player);
             assert!(!order.summon, "the retry waits its pause");
-            stalk = next;
+            pest = next;
         }
-        let (_, order) = stalk_tick(stalk, true, None, player);
+        let (_, order) = pest_tick(warden, pest, true, None, player);
         assert!(order.summon, "the retry comes");
         // The caller wrote the ids in: the body follows the mob, faced at
         // the player.
-        let hunting = Stalk {
+        let hunting = Pest {
             mob: Some(5),
             body: Some(6),
             quiet: 0,
         };
-        let (kept, order) = stalk_tick(hunting, true, Some(mob), player);
+        let (kept, order) = pest_tick(warden, hunting, true, Some(mob), player);
         assert_eq!(kept, hunting);
         let (at, yaw) = order.follow.expect("the body follows");
-        assert!((at[1] - (mob[1] + STALKER_LIFT)).abs() < 1.0e-9);
+        assert!((at[1] - (mob[1] + HUNT_LIFT)).abs() < 1.0e-9);
         assert_eq!(yaw, face_yaw(at, [player[0], player[1] + 1.0, player[2]]));
         // A mob with no body (a summon that failed): the body is asked for.
-        let (_, order) = stalk_tick(
-            Stalk {
+        let (_, order) = pest_tick(
+            warden,
+            Pest {
                 mob: Some(5),
                 body: None,
                 quiet: 0,
@@ -1290,86 +1589,211 @@ mod tests {
             player,
         );
         assert!(order.summon_body && order.follow.is_none());
-        // It fell: the body goes with it, and the wastes are quiet.
-        let (after, order) = stalk_tick(hunting, true, None, player);
+        // It fell: the body goes with it, and the layer is quiet.
+        let (after, order) = pest_tick(warden, hunting, true, None, player);
         assert_eq!(order.dismiss_body, Some(6));
         assert!(order.dismiss_mob.is_none() && !order.summon);
         assert_eq!(
             after,
-            Stalk {
+            Pest {
                 mob: None,
                 body: None,
-                quiet: STALK_QUIET
+                quiet: warden.quiet
             }
         );
-        let (_, order) = stalk_tick(after, true, None, player);
+        let (_, order) = pest_tick(warden, after, true, None, player);
         assert!(!order.summon, "the quiet holds");
         // The player climbs out mid-hunt: both go, at once.
-        let (after, order) = stalk_tick(hunting, false, Some(mob), [0.0, -300.0, 0.0]);
+        let (after, order) = pest_tick(warden, hunting, false, Some(mob), [0.0, -300.0, 0.0]);
         assert_eq!(order.dismiss_mob, Some(5));
         assert_eq!(order.dismiss_body, Some(6));
-        assert_eq!(after, Stalk::default());
-        // Out of the wastes with nothing to take back: no orders at all.
-        let (after, order) = stalk_tick(Stalk::default(), false, None, player);
-        assert_eq!(after, Stalk::default());
-        assert_eq!(order, StalkOrder::default());
+        assert_eq!(after, Pest::default());
+        // Out of the layer with nothing to take back: no orders at all.
+        let (after, order) = pest_tick(warden, Pest::default(), false, None, player);
+        assert_eq!(after, Pest::default());
+        assert_eq!(order, PestOrder::default());
+        // A shallow layer pest: the same machine, gentler numbers than the
+        // warden's - annoying, not lethal.
+        let emberling = &PESTS[0];
+        let (pest, order) = pest_tick(emberling, Pest::default(), true, None, [0.0, -150.0, 0.0]);
+        assert!(order.summon && pest.quiet == emberling.retry);
+        assert!(emberling.health < warden.health);
+        assert!(emberling.ring > warden.ring && emberling.quiet > warden.quiet);
     }
 
     #[test]
-    fn a_stalker_takes_shape_on_its_ring() {
-        for seed in [1u64, 99, 0xF00D] {
-            let at = [0.5, -500.0, 0.5];
-            let spot = stalker_spot(seed, at);
-            let away = ((spot[0] - at[0]).powi(2) + (spot[2] - at[2]).powi(2)).sqrt();
-            assert!((away - STALKER_RING).abs() < 1.0e-9, "{away} off the ring");
-            assert_eq!(spot[1], at[1], "at the player's depth");
+    fn a_hunter_takes_shape_on_its_ring() {
+        for (cfg, at) in [
+            (&PESTS[0], [0.5, -150.0, 0.5]),
+            (&PESTS[4], [0.5, -850.0, 0.5]),
+        ] {
+            for seed in [1u64, 99, 0xF00D] {
+                let spot = pest_spot(cfg, seed, at);
+                let away = ((spot[0] - at[0]).powi(2) + (spot[2] - at[2]).powi(2)).sqrt();
+                assert!((away - cfg.ring).abs() < 1.0e-9, "{away} off the ring");
+                assert_eq!(spot[1], at[1], "at the player's depth");
+            }
+            assert_ne!(pest_spot(cfg, 1, at), pest_spot(cfg, 2, at));
         }
-        assert_ne!(stalker_spot(1, [0.0; 3]), stalker_spot(2, [0.0; 3]));
     }
 
     #[test]
-    fn a_stalker_is_known_by_its_mob() {
-        clear_stalks();
-        set_stalk(
-            1,
-            Stalk {
-                mob: Some(9),
-                body: Some(10),
-                quiet: 0,
-            },
+    fn a_hunter_is_known_by_its_mob_and_drops_its_shard() {
+        clear_pests();
+        let mut mine = [Pest::default(); 5];
+        mine[0] = Pest {
+            mob: Some(9),
+            body: Some(10),
+            quiet: 0,
+        };
+        mine[4] = Pest {
+            mob: Some(19),
+            body: None,
+            quiet: 3,
+        };
+        set_pests(1, mine);
+        assert!(is_tracked_mob(9) && is_tracked_mob(19));
+        assert!(!is_tracked_mob(11));
+        assert_eq!(get_pests(1)[4].quiet, 3);
+        assert_eq!(pest_bodies(), vec![10]);
+        // A tracked hunter's death drops its own layer's shard; an
+        // untracked vex, however deep, owes nobody a trophy.
+        assert_eq!(
+            pest_drops("minecraft:overworld", Some((9, HUNT_KIND))),
+            Some(PESTS[0].body)
         );
-        set_stalk(
-            2,
-            Stalk {
-                mob: Some(19),
-                body: None,
-                quiet: 3,
-            },
+        assert_eq!(
+            pest_drops("minecraft:overworld", Some((19, HUNT_KIND))),
+            Some(PESTS[4].body)
         );
-        assert!(is_stalker_mob(9) && is_stalker_mob(19));
-        assert!(!is_stalker_mob(11));
-        assert_eq!(get_stalk(2).quiet, 3);
+        assert_eq!(
+            pest_drops("minecraft:overworld", Some((99, HUNT_KIND))),
+            None
+        );
+        assert_eq!(
+            pest_drops("minecraft:overworld", Some((9, "minecraft:zombie"))),
+            None
+        );
+        assert_eq!(
+            pest_drops("minecraft:the_nether", Some((9, HUNT_KIND))),
+            None
+        );
+        assert_eq!(pest_drops("minecraft:overworld", None), None);
         // The default clears: a finished hunt leaves no entry.
-        set_stalk(2, Stalk::default());
-        assert!(!is_stalker_mob(19));
-        assert_eq!(get_stalk(2), Stalk::default());
-        clear_stalks();
-        assert!(!is_stalker_mob(9));
+        set_pests(1, [Pest::default(); 5]);
+        assert!(!is_tracked_mob(9));
+        assert_eq!(get_pests(1), [Pest::default(); 5]);
+        clear_pests();
+        assert!(!is_tracked_mob(9));
+    }
+
+    #[test]
+    fn a_fed_gloomling_keeps_its_player() {
+        clear_creatures();
+        let owner = 0x0BED_0009;
+        // A gloomling the deep spawned: shy, unowned, unfed. Feeding is a
+        // held thing, tick by tick, and the last tick is the one that tames.
+        add_creature(31, Creature::Gloomling, [10.0, -400.0, 10.0], owner);
+        for _ in 0..FEED_TICKS - 1 {
+            assert!(!feed_creature(31, owner));
+        }
+        assert!(feed_creature(31, owner), "the last tick tames it");
+        assert_eq!(creature_kind(31), Some(Creature::Gloom));
+        // Fed, it is let go by nothing: even a tick from far away moves it,
+        // never culls it, and the tick keeps it in the live list anywhere.
+        let far = [200.0, -400.0, 200.0];
+        let step = step_creatures(
+            far,
+            owner,
+            &[(31, ITEM_DISPLAY, 215.0, [10.0, -400.0, 10.0])],
+        );
+        assert!(step.cull.is_empty());
+        assert_eq!(step.moves[0].2, Creature::Gloom.yaw_code());
+        assert_eq!(tamed_ids(), vec![31]);
+        assert!(driven_ids().contains(&31));
+        // A wild gloomling its player walks away from is let go as usual.
+        add_creature(32, Creature::Gloomling, [10.0, -400.0, 10.0], owner);
+        let step = step_creatures(
+            far,
+            owner,
+            &[(32, ITEM_DISPLAY, 183.0, [10.0, -400.0, 10.0])],
+        );
+        assert_eq!(step.cull, vec![32]);
+        clear_creatures();
+    }
+
+    #[test]
+    fn a_crossing_plays_its_veil_once() {
+        assert_eq!(veil_band(0.0), 0);
+        assert_eq!(veil_band(-100.0), 1);
+        assert_eq!(veil_band(-250.0), 2);
+        assert_eq!(veil_band(-850.0), 6);
+        // The first sight of a player records their band and plays nothing.
+        assert_eq!(veil_crossing(5, -100.0), None);
+        // Down through the lava zone's floor: the boundary at index 1.
+        assert_eq!(veil_crossing(5, -230.0), Some(1));
+        // Inside the band: nothing. Back on the line: the hysteresis holds.
+        assert_eq!(veil_crossing(5, -222.0), None);
+        assert_eq!(veil_crossing(5, -220.0), None);
+        // Past the line the other way: the same boundary, crossed up.
+        assert_eq!(veil_crossing(5, -218.0), Some(1));
+        // A fall to the void plays the one boundary the watch last knew.
+        assert_eq!(veil_crossing(5, -850.0), Some(1));
+        // The watch is per player...
+        assert_eq!(veil_crossing(6, -850.0), None);
+        // ...and a closed world forgets it.
+        assert!(forget_world("minecraft:overworld"));
+        assert_eq!(veil_crossing(5, -850.0), None);
+    }
+
+    #[test]
+    fn a_fed_gloomling_eases_to_its_players_side() {
+        let player = [0.0, 60.0, 0.0];
+        let anchor = [40.0, -400.0, 0.0];
+        // Every tick closes a tenth of the way...
+        let mut at = anchor;
+        let first = follow_anchor(at, player);
+        assert!(first[0] < at[0] && first[1] > at[1]);
+        // ...until it hangs GLOOM_KEEP off the player's eye, and holds.
+        for _ in 0..400 {
+            at = follow_anchor(at, player);
+        }
+        let eye = [player[0], player[1] + 1.0, player[2]];
+        let away =
+            ((at[0] - eye[0]).powi(2) + (at[1] - eye[1]).powi(2) + (at[2] - eye[2]).powi(2)).sqrt();
+        assert!((away - GLOOM_KEEP as f64).abs() < 1.0e-6, "{away}");
+        // The easing is asymptotic: at the keep it stops moving by any
+        // amount that matters.
+        let held = follow_anchor(at, player);
+        assert!((held[0] - at[0]).abs() < 1.0e-9);
+        assert!((held[1] - at[1]).abs() < 1.0e-9);
+        assert!((held[2] - at[2]).abs() < 1.0e-9);
+        // Right on top of its player, it holds exactly where it is.
+        let eye = [player[0], player[1] + 1.0, player[2]];
+        assert_eq!(follow_anchor(eye, player), eye);
+    }
+
+    #[test]
+    fn a_fed_gloomling_is_known_by_its_code_anywhere() {
+        assert!(is_tamed_code(ITEM_DISPLAY, 215.0));
+        assert!(is_tamed_code(ITEM_DISPLAY, 216.5));
+        assert!(!is_tamed_code(ITEM_DISPLAY, 212.0));
+        assert!(!is_tamed_code(ITEM_DISPLAY, 183.0));
+        assert!(!is_tamed_code(BLOCK_DISPLAY, 215.0));
     }
 
     #[test]
     fn a_closed_world_is_forgotten() {
         clear_creatures();
-        clear_stalks();
+        clear_pests();
         add_creature(21, Creature::Wisp, [0.0, -200.0, 0.0], 7);
-        set_stalk(
-            7,
-            Stalk {
-                mob: Some(3),
-                body: Some(4),
-                quiet: 0,
-            },
-        );
+        let mut hunts = [Pest::default(); 5];
+        hunts[4] = Pest {
+            mob: Some(3),
+            body: Some(4),
+            quiet: 0,
+        };
+        set_pests(7, hunts);
         assert!(!shape_seen((-576, 896)), "a fresh world's shape is unseen");
         assert!(shape_seen((-576, 896)), "and remembered after the look");
         assert!(!bar_shown(7, true), "the bar is noted once");
@@ -1379,7 +1803,7 @@ mod tests {
         // The Overworld's close forgets all of it.
         assert!(forget_world("minecraft:overworld"));
         assert_eq!(creatures_len(), 0);
-        assert_eq!(get_stalk(7), Stalk::default());
+        assert_eq!(get_pests(7), [Pest::default(); 5]);
         assert!(
             !shape_seen((-576, 896)),
             "a reopened world is looked at once again"
@@ -1387,41 +1811,6 @@ mod tests {
         assert!(!bar_shown(7, true), "the bars were cleared");
         SHAPE.with(|cell| cell.set(None));
         BARS.with(|bars| bars.borrow_mut().clear());
-    }
-
-    #[test]
-    fn the_stalkers_death_leaves_its_shard() {
-        clear_stalks();
-        // A tracked stalker, wherever the blow lands.
-        set_stalk(
-            7,
-            Stalk {
-                mob: Some(31),
-                body: Some(32),
-                quiet: 0,
-            },
-        );
-        assert!(stalker_drops(
-            "minecraft:overworld",
-            Some((31, STALKER_KIND))
-        ));
-        // Nothing else ever is: an untracked vex, however deep - even one that
-        // chased a player down into the wastes owes nobody a trophy - another
-        // mob, another dimension, a block's drops.
-        assert!(!stalker_drops(
-            "minecraft:overworld",
-            Some((99, STALKER_KIND))
-        ));
-        assert!(!stalker_drops(
-            "minecraft:overworld",
-            Some((31, "minecraft:zombie"))
-        ));
-        assert!(!stalker_drops(
-            "minecraft:the_nether",
-            Some((31, STALKER_KIND))
-        ));
-        assert!(!stalker_drops("minecraft:overworld", None));
-        clear_stalks();
     }
 
     #[test]
@@ -1434,6 +1823,8 @@ mod tests {
             Creature::Watcher,
             Creature::Ember,
             Creature::Frostmote,
+            Creature::Gloomling,
+            Creature::Gloom,
         ] {
             let code = kind.yaw_code();
             assert_eq!(kind_from_yaw(kind.display(), code), Some(kind));
@@ -1515,6 +1906,7 @@ mod tests {
     #[test]
     fn a_tall_world_has_room_below_its_floor() {
         assert!(tall(-576, 896));
+        assert!(tall(-1008, 1328), "the pack's own shape");
         assert!(tall(-1024, 1280));
         assert!(!tall(-64, 384));
         assert!(!tall(-576, 640));

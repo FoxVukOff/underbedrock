@@ -52,7 +52,7 @@
               "invert": {
                 "type": "minecraft:y_above",
                 "anchor": {
-                  "absolute": -564
+                  "absolute": -960
                 },
                 "surface_depth_multiplier": 0,
                 "add_stone_depth": false
@@ -97,7 +97,7 @@
                     "if_true": {
                       "type": "minecraft:y_above",
                       "anchor": {
-                        "absolute": -169
+                        "absolute": -86
                       },
                       "surface_depth_multiplier": 0,
                       "add_stone_depth": false
@@ -108,11 +108,14 @@
                         {
                           "type": "minecraft:condition",
                           "if_true": {
-                            "type": "minecraft:noise_threshold",
-                            "noise": "underbedrock:cheese_big",
-                            "min_threshold": 0.1,
-                            "max_threshold": 1000000.0,
-                            "is_3d": true
+                            "type": "minecraft:vertical_gradient",
+                            "random_name": "underbedrock:blend_-85",
+                            "true_at_and_below": {
+                              "absolute": -85
+                            },
+                            "false_at_and_above": {
+                              "absolute": -73
+                            }
                           },
                           "then_run": {
                             "type": "minecraft:sequence",
@@ -120,36 +123,547 @@
                               {
                                 "type": "minecraft:condition",
                                 "if_true": {
+                                  "type": "minecraft:not",
+                                  "invert": {
+                                    "type": "minecraft:y_above",
+                                    "anchor": {
+                                      "absolute": -120
+                                    },
+                                    "surface_depth_multiplier": 0,
+                                    "add_stone_depth": false
+                                  }
+                                },
+                                "then_run": {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:y_above",
+                                    "anchor": {
+                                      "absolute": -121
+                                    },
+                                    "surface_depth_multiplier": 0,
+                                    "add_stone_depth": false
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:sequence",
+                                    "sequence": [
+                                      {
+                                        "type": "minecraft:condition",
+                                        "if_true": {
+                                          "type": "minecraft:noise_threshold",
+                                          "noise": "underbedrock:cheese",
+                                          "min_threshold": 0.46,
+                                          "max_threshold": 0.6,
+                                          "is_3d": true
+                                        },
+                                        "then_run": {
+                                          "type": "minecraft:block",
+                                          "result_state": "underbedrock:scorched_stone"
+                                        }
+                                      },
+                                      {
+                                        "type": "minecraft:condition",
+                                        "if_true": {
+                                          "type": "minecraft:noise_threshold",
+                                          "noise": "underbedrock:cheese",
+                                          "min_threshold": 0.25,
+                                          "max_threshold": 0.34,
+                                          "is_3d": true
+                                        },
+                                        "then_run": {
+                                          "type": "minecraft:block",
+                                          "result_state": "underbedrock:scorched_stone"
+                                        }
+                                      },
+                                      {
+                                        "type": "minecraft:condition",
+                                        "if_true": {
+                                          "type": "minecraft:noise_threshold",
+                                          "noise": "underbedrock:cheese",
+                                          "min_threshold": 0.34,
+                                          "max_threshold": 0.46,
+                                          "is_3d": true
+                                        },
+                                        "then_run": {
+                                          "type": "minecraft:block",
+                                          "result_state": "minecraft:lava"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:not",
+                                  "invert": {
+                                    "type": "minecraft:y_above",
+                                    "anchor": {
+                                      "absolute": -121
+                                    },
+                                    "surface_depth_multiplier": 0,
+                                    "add_stone_depth": false
+                                  }
+                                },
+                                "then_run": {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:y_above",
+                                    "anchor": {
+                                      "absolute": -122
+                                    },
+                                    "surface_depth_multiplier": 0,
+                                    "add_stone_depth": false
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:condition",
+                                    "if_true": {
+                                      "type": "minecraft:noise_threshold",
+                                      "noise": "underbedrock:cheese",
+                                      "min_threshold": 0.22,
+                                      "max_threshold": 0.63,
+                                      "is_3d": true
+                                    },
+                                    "then_run": {
+                                      "type": "minecraft:block",
+                                      "result_state": "underbedrock:scorched_stone"
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:not",
+                                  "invert": {
+                                    "type": "minecraft:y_above",
+                                    "anchor": {
+                                      "absolute": -180
+                                    },
+                                    "surface_depth_multiplier": 0,
+                                    "add_stone_depth": false
+                                  }
+                                },
+                                "then_run": {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:y_above",
+                                    "anchor": {
+                                      "absolute": -181
+                                    },
+                                    "surface_depth_multiplier": 0,
+                                    "add_stone_depth": false
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:sequence",
+                                    "sequence": [
+                                      {
+                                        "type": "minecraft:condition",
+                                        "if_true": {
+                                          "type": "minecraft:noise_threshold",
+                                          "noise": "underbedrock:cheese",
+                                          "min_threshold": -0.6,
+                                          "max_threshold": -0.46,
+                                          "is_3d": true
+                                        },
+                                        "then_run": {
+                                          "type": "minecraft:block",
+                                          "result_state": "underbedrock:scorched_stone"
+                                        }
+                                      },
+                                      {
+                                        "type": "minecraft:condition",
+                                        "if_true": {
+                                          "type": "minecraft:noise_threshold",
+                                          "noise": "underbedrock:cheese",
+                                          "min_threshold": -0.34,
+                                          "max_threshold": -0.25,
+                                          "is_3d": true
+                                        },
+                                        "then_run": {
+                                          "type": "minecraft:block",
+                                          "result_state": "underbedrock:scorched_stone"
+                                        }
+                                      },
+                                      {
+                                        "type": "minecraft:condition",
+                                        "if_true": {
+                                          "type": "minecraft:noise_threshold",
+                                          "noise": "underbedrock:cheese",
+                                          "min_threshold": -0.46,
+                                          "max_threshold": -0.34,
+                                          "is_3d": true
+                                        },
+                                        "then_run": {
+                                          "type": "minecraft:block",
+                                          "result_state": "minecraft:lava"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:not",
+                                  "invert": {
+                                    "type": "minecraft:y_above",
+                                    "anchor": {
+                                      "absolute": -181
+                                    },
+                                    "surface_depth_multiplier": 0,
+                                    "add_stone_depth": false
+                                  }
+                                },
+                                "then_run": {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:y_above",
+                                    "anchor": {
+                                      "absolute": -182
+                                    },
+                                    "surface_depth_multiplier": 0,
+                                    "add_stone_depth": false
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:condition",
+                                    "if_true": {
+                                      "type": "minecraft:noise_threshold",
+                                      "noise": "underbedrock:cheese",
+                                      "min_threshold": -0.63,
+                                      "max_threshold": -0.22,
+                                      "is_3d": true
+                                    },
+                                    "then_run": {
+                                      "type": "minecraft:block",
+                                      "result_state": "underbedrock:scorched_stone"
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
                                   "type": "minecraft:noise_threshold",
-                                  "noise": "underbedrock:cheese",
-                                  "min_threshold": -1000000.0,
-                                  "max_threshold": -0.45,
+                                  "noise": "underbedrock:cheese_big",
+                                  "min_threshold": 0.1,
+                                  "max_threshold": 1000000.0,
                                   "is_3d": true
                                 },
                                 "then_run": {
                                   "type": "minecraft:block",
-                                  "result_state": "minecraft:lava"
+                                  "result_state": "minecraft:air"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.3,
+                                  "max_threshold": 0.36,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:scorched_stone"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.36,
+                                  "max_threshold": 0.42,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:void_crystal_ore"
                                 }
                               },
                               {
                                 "type": "minecraft:block",
-                                "result_state": "minecraft:air"
+                                "result_state": "underbedrock:emberstone"
                               }
                             ]
+                          }
+                        },
+                        {
+                          "type": "minecraft:sequence",
+                          "sequence": [
+                            {
+                              "type": "minecraft:block",
+                              "result_state": "underbedrock:voidshell"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:not",
+                    "invert": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -86
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    }
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -215
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    },
+                    "then_run": {
+                      "type": "minecraft:sequence",
+                      "sequence": [
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:not",
+                            "invert": {
+                              "type": "minecraft:y_above",
+                              "anchor": {
+                                "absolute": -120
+                              },
+                              "surface_depth_multiplier": 0,
+                              "add_stone_depth": false
+                            }
+                          },
+                          "then_run": {
+                            "type": "minecraft:condition",
+                            "if_true": {
+                              "type": "minecraft:y_above",
+                              "anchor": {
+                                "absolute": -121
+                              },
+                              "surface_depth_multiplier": 0,
+                              "add_stone_depth": false
+                            },
+                            "then_run": {
+                              "type": "minecraft:sequence",
+                              "sequence": [
+                                {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:noise_threshold",
+                                    "noise": "underbedrock:cheese",
+                                    "min_threshold": 0.46,
+                                    "max_threshold": 0.6,
+                                    "is_3d": true
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:block",
+                                    "result_state": "underbedrock:scorched_stone"
+                                  }
+                                },
+                                {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:noise_threshold",
+                                    "noise": "underbedrock:cheese",
+                                    "min_threshold": 0.25,
+                                    "max_threshold": 0.34,
+                                    "is_3d": true
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:block",
+                                    "result_state": "underbedrock:scorched_stone"
+                                  }
+                                },
+                                {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:noise_threshold",
+                                    "noise": "underbedrock:cheese",
+                                    "min_threshold": 0.34,
+                                    "max_threshold": 0.46,
+                                    "is_3d": true
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:block",
+                                    "result_state": "minecraft:lava"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:not",
+                            "invert": {
+                              "type": "minecraft:y_above",
+                              "anchor": {
+                                "absolute": -121
+                              },
+                              "surface_depth_multiplier": 0,
+                              "add_stone_depth": false
+                            }
+                          },
+                          "then_run": {
+                            "type": "minecraft:condition",
+                            "if_true": {
+                              "type": "minecraft:y_above",
+                              "anchor": {
+                                "absolute": -122
+                              },
+                              "surface_depth_multiplier": 0,
+                              "add_stone_depth": false
+                            },
+                            "then_run": {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.22,
+                                "max_threshold": 0.63,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:scorched_stone"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:not",
+                            "invert": {
+                              "type": "minecraft:y_above",
+                              "anchor": {
+                                "absolute": -180
+                              },
+                              "surface_depth_multiplier": 0,
+                              "add_stone_depth": false
+                            }
+                          },
+                          "then_run": {
+                            "type": "minecraft:condition",
+                            "if_true": {
+                              "type": "minecraft:y_above",
+                              "anchor": {
+                                "absolute": -181
+                              },
+                              "surface_depth_multiplier": 0,
+                              "add_stone_depth": false
+                            },
+                            "then_run": {
+                              "type": "minecraft:sequence",
+                              "sequence": [
+                                {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:noise_threshold",
+                                    "noise": "underbedrock:cheese",
+                                    "min_threshold": -0.6,
+                                    "max_threshold": -0.46,
+                                    "is_3d": true
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:block",
+                                    "result_state": "underbedrock:scorched_stone"
+                                  }
+                                },
+                                {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:noise_threshold",
+                                    "noise": "underbedrock:cheese",
+                                    "min_threshold": -0.34,
+                                    "max_threshold": -0.25,
+                                    "is_3d": true
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:block",
+                                    "result_state": "underbedrock:scorched_stone"
+                                  }
+                                },
+                                {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:noise_threshold",
+                                    "noise": "underbedrock:cheese",
+                                    "min_threshold": -0.46,
+                                    "max_threshold": -0.34,
+                                    "is_3d": true
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:block",
+                                    "result_state": "minecraft:lava"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:not",
+                            "invert": {
+                              "type": "minecraft:y_above",
+                              "anchor": {
+                                "absolute": -181
+                              },
+                              "surface_depth_multiplier": 0,
+                              "add_stone_depth": false
+                            }
+                          },
+                          "then_run": {
+                            "type": "minecraft:condition",
+                            "if_true": {
+                              "type": "minecraft:y_above",
+                              "anchor": {
+                                "absolute": -182
+                              },
+                              "surface_depth_multiplier": 0,
+                              "add_stone_depth": false
+                            },
+                            "then_run": {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": -0.63,
+                                "max_threshold": -0.22,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:scorched_stone"
+                              }
+                            }
                           }
                         },
                         {
                           "type": "minecraft:condition",
                           "if_true": {
                             "type": "minecraft:noise_threshold",
-                            "noise": "underbedrock:tunnels",
-                            "min_threshold": -0.03,
-                            "max_threshold": 0.03,
+                            "noise": "underbedrock:cheese_big",
+                            "min_threshold": 0.1,
+                            "max_threshold": 1000000.0,
                             "is_3d": true
                           },
                           "then_run": {
                             "type": "minecraft:block",
-                            "result_state": "minecraft:lava"
+                            "result_state": "minecraft:air"
                           }
                         },
                         {
@@ -195,7 +709,7 @@
                     "invert": {
                       "type": "minecraft:y_above",
                       "anchor": {
-                        "absolute": -169
+                        "absolute": -215
                       },
                       "surface_depth_multiplier": 0,
                       "add_stone_depth": false
@@ -206,7 +720,402 @@
                     "if_true": {
                       "type": "minecraft:y_above",
                       "anchor": {
-                        "absolute": -281
+                        "absolute": -228
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    },
+                    "then_run": {
+                      "type": "minecraft:sequence",
+                      "sequence": [
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:vertical_gradient",
+                            "random_name": "underbedrock:blend_-227",
+                            "true_at_and_below": {
+                              "absolute": -227
+                            },
+                            "false_at_and_above": {
+                              "absolute": -215
+                            }
+                          },
+                          "then_run": {
+                            "type": "minecraft:sequence",
+                            "sequence": [
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:tunnels",
+                                  "min_threshold": -0.03,
+                                  "max_threshold": 0.03,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:emberstone"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.25,
+                                  "max_threshold": 1000000.0,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:air"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:tunnels",
+                                  "min_threshold": -0.09,
+                                  "max_threshold": 0.09,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:air"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": -0.5,
+                                  "max_threshold": -0.44,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:void_gravel"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.13,
+                                  "max_threshold": 0.16,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:void_crystal_ore"
+                                }
+                              },
+                              {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:scorched_stone"
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "minecraft:sequence",
+                          "sequence": [
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:not",
+                                "invert": {
+                                  "type": "minecraft:y_above",
+                                  "anchor": {
+                                    "absolute": -120
+                                  },
+                                  "surface_depth_multiplier": 0,
+                                  "add_stone_depth": false
+                                }
+                              },
+                              "then_run": {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:y_above",
+                                  "anchor": {
+                                    "absolute": -121
+                                  },
+                                  "surface_depth_multiplier": 0,
+                                  "add_stone_depth": false
+                                },
+                                "then_run": {
+                                  "type": "minecraft:sequence",
+                                  "sequence": [
+                                    {
+                                      "type": "minecraft:condition",
+                                      "if_true": {
+                                        "type": "minecraft:noise_threshold",
+                                        "noise": "underbedrock:cheese",
+                                        "min_threshold": 0.46,
+                                        "max_threshold": 0.6,
+                                        "is_3d": true
+                                      },
+                                      "then_run": {
+                                        "type": "minecraft:block",
+                                        "result_state": "underbedrock:scorched_stone"
+                                      }
+                                    },
+                                    {
+                                      "type": "minecraft:condition",
+                                      "if_true": {
+                                        "type": "minecraft:noise_threshold",
+                                        "noise": "underbedrock:cheese",
+                                        "min_threshold": 0.25,
+                                        "max_threshold": 0.34,
+                                        "is_3d": true
+                                      },
+                                      "then_run": {
+                                        "type": "minecraft:block",
+                                        "result_state": "underbedrock:scorched_stone"
+                                      }
+                                    },
+                                    {
+                                      "type": "minecraft:condition",
+                                      "if_true": {
+                                        "type": "minecraft:noise_threshold",
+                                        "noise": "underbedrock:cheese",
+                                        "min_threshold": 0.34,
+                                        "max_threshold": 0.46,
+                                        "is_3d": true
+                                      },
+                                      "then_run": {
+                                        "type": "minecraft:block",
+                                        "result_state": "minecraft:lava"
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:not",
+                                "invert": {
+                                  "type": "minecraft:y_above",
+                                  "anchor": {
+                                    "absolute": -121
+                                  },
+                                  "surface_depth_multiplier": 0,
+                                  "add_stone_depth": false
+                                }
+                              },
+                              "then_run": {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:y_above",
+                                  "anchor": {
+                                    "absolute": -122
+                                  },
+                                  "surface_depth_multiplier": 0,
+                                  "add_stone_depth": false
+                                },
+                                "then_run": {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:noise_threshold",
+                                    "noise": "underbedrock:cheese",
+                                    "min_threshold": 0.22,
+                                    "max_threshold": 0.63,
+                                    "is_3d": true
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:block",
+                                    "result_state": "underbedrock:scorched_stone"
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:not",
+                                "invert": {
+                                  "type": "minecraft:y_above",
+                                  "anchor": {
+                                    "absolute": -180
+                                  },
+                                  "surface_depth_multiplier": 0,
+                                  "add_stone_depth": false
+                                }
+                              },
+                              "then_run": {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:y_above",
+                                  "anchor": {
+                                    "absolute": -181
+                                  },
+                                  "surface_depth_multiplier": 0,
+                                  "add_stone_depth": false
+                                },
+                                "then_run": {
+                                  "type": "minecraft:sequence",
+                                  "sequence": [
+                                    {
+                                      "type": "minecraft:condition",
+                                      "if_true": {
+                                        "type": "minecraft:noise_threshold",
+                                        "noise": "underbedrock:cheese",
+                                        "min_threshold": -0.6,
+                                        "max_threshold": -0.46,
+                                        "is_3d": true
+                                      },
+                                      "then_run": {
+                                        "type": "minecraft:block",
+                                        "result_state": "underbedrock:scorched_stone"
+                                      }
+                                    },
+                                    {
+                                      "type": "minecraft:condition",
+                                      "if_true": {
+                                        "type": "minecraft:noise_threshold",
+                                        "noise": "underbedrock:cheese",
+                                        "min_threshold": -0.34,
+                                        "max_threshold": -0.25,
+                                        "is_3d": true
+                                      },
+                                      "then_run": {
+                                        "type": "minecraft:block",
+                                        "result_state": "underbedrock:scorched_stone"
+                                      }
+                                    },
+                                    {
+                                      "type": "minecraft:condition",
+                                      "if_true": {
+                                        "type": "minecraft:noise_threshold",
+                                        "noise": "underbedrock:cheese",
+                                        "min_threshold": -0.46,
+                                        "max_threshold": -0.34,
+                                        "is_3d": true
+                                      },
+                                      "then_run": {
+                                        "type": "minecraft:block",
+                                        "result_state": "minecraft:lava"
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:not",
+                                "invert": {
+                                  "type": "minecraft:y_above",
+                                  "anchor": {
+                                    "absolute": -181
+                                  },
+                                  "surface_depth_multiplier": 0,
+                                  "add_stone_depth": false
+                                }
+                              },
+                              "then_run": {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:y_above",
+                                  "anchor": {
+                                    "absolute": -182
+                                  },
+                                  "surface_depth_multiplier": 0,
+                                  "add_stone_depth": false
+                                },
+                                "then_run": {
+                                  "type": "minecraft:condition",
+                                  "if_true": {
+                                    "type": "minecraft:noise_threshold",
+                                    "noise": "underbedrock:cheese",
+                                    "min_threshold": -0.63,
+                                    "max_threshold": -0.22,
+                                    "is_3d": true
+                                  },
+                                  "then_run": {
+                                    "type": "minecraft:block",
+                                    "result_state": "underbedrock:scorched_stone"
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese_big",
+                                "min_threshold": 0.1,
+                                "max_threshold": 1000000.0,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:air"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.3,
+                                "max_threshold": 0.36,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:scorched_stone"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.36,
+                                "max_threshold": 0.42,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:void_crystal_ore"
+                              }
+                            },
+                            {
+                              "type": "minecraft:block",
+                              "result_state": "underbedrock:emberstone"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:not",
+                    "invert": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -228
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    }
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -355
                       },
                       "surface_depth_multiplier": 0,
                       "add_stone_depth": false
@@ -225,7 +1134,7 @@
                           },
                           "then_run": {
                             "type": "minecraft:block",
-                            "result_state": "minecraft:lava"
+                            "result_state": "underbedrock:emberstone"
                           }
                         },
                         {
@@ -299,7 +1208,7 @@
                     "invert": {
                       "type": "minecraft:y_above",
                       "anchor": {
-                        "absolute": -281
+                        "absolute": -355
                       },
                       "surface_depth_multiplier": 0,
                       "add_stone_depth": false
@@ -310,7 +1219,681 @@
                     "if_true": {
                       "type": "minecraft:y_above",
                       "anchor": {
-                        "absolute": -421
+                        "absolute": -368
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    },
+                    "then_run": {
+                      "type": "minecraft:sequence",
+                      "sequence": [
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:vertical_gradient",
+                            "random_name": "underbedrock:blend_-367",
+                            "true_at_and_below": {
+                              "absolute": -367
+                            },
+                            "false_at_and_above": {
+                              "absolute": -355
+                            }
+                          },
+                          "then_run": {
+                            "type": "minecraft:sequence",
+                            "sequence": [
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese_big",
+                                  "min_threshold": 0.3,
+                                  "max_threshold": 1000000.0,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:air"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.22,
+                                  "max_threshold": 1000000.0,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:air"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.19,
+                                  "max_threshold": 0.22,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:crystal_sprout"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.16,
+                                  "max_threshold": 0.19,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:voidstone_bricks"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese_big",
+                                  "min_threshold": 0.26,
+                                  "max_threshold": 0.3,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:crystal_lamp"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.12,
+                                  "max_threshold": 0.15,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:void_crystal_ore"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.08,
+                                  "max_threshold": 0.11,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:deepslate_diamond_ore"
+                                }
+                              },
+                              {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:voidstone"
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "minecraft:sequence",
+                          "sequence": [
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:tunnels",
+                                "min_threshold": -0.03,
+                                "max_threshold": 0.03,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:emberstone"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.25,
+                                "max_threshold": 1000000.0,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:air"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:tunnels",
+                                "min_threshold": -0.09,
+                                "max_threshold": 0.09,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:air"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": -0.5,
+                                "max_threshold": -0.44,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:void_gravel"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.13,
+                                "max_threshold": 0.16,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:void_crystal_ore"
+                              }
+                            },
+                            {
+                              "type": "minecraft:block",
+                              "result_state": "underbedrock:scorched_stone"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:not",
+                    "invert": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -368
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    }
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -495
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    },
+                    "then_run": {
+                      "type": "minecraft:sequence",
+                      "sequence": [
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:noise_threshold",
+                            "noise": "underbedrock:cheese_big",
+                            "min_threshold": 0.3,
+                            "max_threshold": 1000000.0,
+                            "is_3d": true
+                          },
+                          "then_run": {
+                            "type": "minecraft:block",
+                            "result_state": "minecraft:air"
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:noise_threshold",
+                            "noise": "underbedrock:cheese",
+                            "min_threshold": 0.22,
+                            "max_threshold": 1000000.0,
+                            "is_3d": true
+                          },
+                          "then_run": {
+                            "type": "minecraft:block",
+                            "result_state": "minecraft:air"
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:noise_threshold",
+                            "noise": "underbedrock:cheese",
+                            "min_threshold": 0.19,
+                            "max_threshold": 0.22,
+                            "is_3d": true
+                          },
+                          "then_run": {
+                            "type": "minecraft:block",
+                            "result_state": "underbedrock:crystal_sprout"
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:noise_threshold",
+                            "noise": "underbedrock:cheese",
+                            "min_threshold": 0.16,
+                            "max_threshold": 0.19,
+                            "is_3d": true
+                          },
+                          "then_run": {
+                            "type": "minecraft:block",
+                            "result_state": "underbedrock:voidstone_bricks"
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:noise_threshold",
+                            "noise": "underbedrock:cheese_big",
+                            "min_threshold": 0.26,
+                            "max_threshold": 0.3,
+                            "is_3d": true
+                          },
+                          "then_run": {
+                            "type": "minecraft:block",
+                            "result_state": "underbedrock:crystal_lamp"
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:noise_threshold",
+                            "noise": "underbedrock:cheese",
+                            "min_threshold": 0.12,
+                            "max_threshold": 0.15,
+                            "is_3d": true
+                          },
+                          "then_run": {
+                            "type": "minecraft:block",
+                            "result_state": "underbedrock:void_crystal_ore"
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:noise_threshold",
+                            "noise": "underbedrock:cheese",
+                            "min_threshold": 0.08,
+                            "max_threshold": 0.11,
+                            "is_3d": true
+                          },
+                          "then_run": {
+                            "type": "minecraft:block",
+                            "result_state": "minecraft:deepslate_diamond_ore"
+                          }
+                        },
+                        {
+                          "type": "minecraft:block",
+                          "result_state": "underbedrock:voidstone"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:not",
+                    "invert": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -495
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    }
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -508
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    },
+                    "then_run": {
+                      "type": "minecraft:sequence",
+                      "sequence": [
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:vertical_gradient",
+                            "random_name": "underbedrock:blend_-507",
+                            "true_at_and_below": {
+                              "absolute": -507
+                            },
+                            "false_at_and_above": {
+                              "absolute": -495
+                            }
+                          },
+                          "then_run": {
+                            "type": "minecraft:sequence",
+                            "sequence": [
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese_big",
+                                  "min_threshold": 0.35,
+                                  "max_threshold": 1000000.0,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:air"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.25,
+                                  "max_threshold": 1000000.0,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:air"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:tunnels",
+                                  "min_threshold": -0.09,
+                                  "max_threshold": 0.09,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:air"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.22,
+                                  "max_threshold": 0.25,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:crystal_sprout"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.19,
+                                  "max_threshold": 0.22,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:voidstone_bricks"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese_big",
+                                  "min_threshold": 0.3,
+                                  "max_threshold": 0.34,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:crystal_lamp"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.17,
+                                  "max_threshold": 0.19,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:deepslate_diamond_ore"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.13,
+                                  "max_threshold": 0.16,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:void_crystal_ore"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.09,
+                                  "max_threshold": 0.12,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:deepslate_iron_ore"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.05,
+                                  "max_threshold": 0.08,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:deepslate_coal_ore"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": -0.5,
+                                  "max_threshold": -0.44,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:void_gravel"
+                                }
+                              },
+                              {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:voidstone"
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "minecraft:sequence",
+                          "sequence": [
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese_big",
+                                "min_threshold": 0.3,
+                                "max_threshold": 1000000.0,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:air"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.22,
+                                "max_threshold": 1000000.0,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:air"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.19,
+                                "max_threshold": 0.22,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:crystal_sprout"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.16,
+                                "max_threshold": 0.19,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:voidstone_bricks"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese_big",
+                                "min_threshold": 0.26,
+                                "max_threshold": 0.3,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:crystal_lamp"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.12,
+                                "max_threshold": 0.15,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:void_crystal_ore"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.08,
+                                "max_threshold": 0.11,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:deepslate_diamond_ore"
+                              }
+                            },
+                            {
+                              "type": "minecraft:block",
+                              "result_state": "underbedrock:voidstone"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:not",
+                    "invert": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -508
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    }
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -635
                       },
                       "surface_depth_multiplier": 0,
                       "add_stone_depth": false
@@ -487,7 +2070,7 @@
                     "invert": {
                       "type": "minecraft:y_above",
                       "anchor": {
-                        "absolute": -421
+                        "absolute": -635
                       },
                       "surface_depth_multiplier": 0,
                       "add_stone_depth": false
@@ -498,7 +2081,264 @@
                     "if_true": {
                       "type": "minecraft:y_above",
                       "anchor": {
-                        "absolute": -565
+                        "absolute": -648
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    },
+                    "then_run": {
+                      "type": "minecraft:sequence",
+                      "sequence": [
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:vertical_gradient",
+                            "random_name": "underbedrock:blend_-647",
+                            "true_at_and_below": {
+                              "absolute": -647
+                            },
+                            "false_at_and_above": {
+                              "absolute": -635
+                            }
+                          },
+                          "then_run": {
+                            "type": "minecraft:sequence",
+                            "sequence": [
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.4,
+                                  "max_threshold": 1000000.0,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:air"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": -0.5,
+                                  "max_threshold": -0.44,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:frost_gravel"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.33,
+                                  "max_threshold": 0.37,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:void_crystal_ore"
+                                }
+                              },
+                              {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:froststone"
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "minecraft:sequence",
+                          "sequence": [
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese_big",
+                                "min_threshold": 0.35,
+                                "max_threshold": 1000000.0,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:air"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.25,
+                                "max_threshold": 1000000.0,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:air"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:tunnels",
+                                "min_threshold": -0.09,
+                                "max_threshold": 0.09,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:air"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.22,
+                                "max_threshold": 0.25,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:crystal_sprout"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.19,
+                                "max_threshold": 0.22,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:voidstone_bricks"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese_big",
+                                "min_threshold": 0.3,
+                                "max_threshold": 0.34,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:crystal_lamp"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.17,
+                                "max_threshold": 0.19,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:deepslate_diamond_ore"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.13,
+                                "max_threshold": 0.16,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:void_crystal_ore"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.09,
+                                "max_threshold": 0.12,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:deepslate_iron_ore"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.05,
+                                "max_threshold": 0.08,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:deepslate_coal_ore"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": -0.5,
+                                "max_threshold": -0.44,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:void_gravel"
+                              }
+                            },
+                            {
+                              "type": "minecraft:block",
+                              "result_state": "underbedrock:voidstone"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:not",
+                    "invert": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -648
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    }
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -775
                       },
                       "surface_depth_multiplier": 0,
                       "add_stone_depth": false
@@ -551,6 +2391,199 @@
                         {
                           "type": "minecraft:block",
                           "result_state": "underbedrock:froststone"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:not",
+                    "invert": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -775
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    }
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -788
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    },
+                    "then_run": {
+                      "type": "minecraft:sequence",
+                      "sequence": [
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:vertical_gradient",
+                            "random_name": "underbedrock:blend_-787",
+                            "true_at_and_below": {
+                              "absolute": -787
+                            },
+                            "false_at_and_above": {
+                              "absolute": -775
+                            }
+                          },
+                          "then_run": {
+                            "type": "minecraft:sequence",
+                            "sequence": [
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese_big",
+                                  "min_threshold": -1000000.0,
+                                  "max_threshold": 0.45,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "minecraft:air"
+                                }
+                              },
+                              {
+                                "type": "minecraft:condition",
+                                "if_true": {
+                                  "type": "minecraft:noise_threshold",
+                                  "noise": "underbedrock:cheese",
+                                  "min_threshold": 0.33,
+                                  "max_threshold": 0.37,
+                                  "is_3d": true
+                                },
+                                "then_run": {
+                                  "type": "minecraft:block",
+                                  "result_state": "underbedrock:void_crystal_ore"
+                                }
+                              },
+                              {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:voidstone"
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "minecraft:sequence",
+                          "sequence": [
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.4,
+                                "max_threshold": 1000000.0,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "minecraft:air"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": -0.5,
+                                "max_threshold": -0.44,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:frost_gravel"
+                              }
+                            },
+                            {
+                              "type": "minecraft:condition",
+                              "if_true": {
+                                "type": "minecraft:noise_threshold",
+                                "noise": "underbedrock:cheese",
+                                "min_threshold": 0.33,
+                                "max_threshold": 0.37,
+                                "is_3d": true
+                              },
+                              "then_run": {
+                                "type": "minecraft:block",
+                                "result_state": "underbedrock:void_crystal_ore"
+                              }
+                            },
+                            {
+                              "type": "minecraft:block",
+                              "result_state": "underbedrock:froststone"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:not",
+                    "invert": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -788
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    }
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:y_above",
+                      "anchor": {
+                        "absolute": -961
+                      },
+                      "surface_depth_multiplier": 0,
+                      "add_stone_depth": false
+                    },
+                    "then_run": {
+                      "type": "minecraft:sequence",
+                      "sequence": [
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:noise_threshold",
+                            "noise": "underbedrock:cheese_big",
+                            "min_threshold": -1000000.0,
+                            "max_threshold": 0.45,
+                            "is_3d": true
+                          },
+                          "then_run": {
+                            "type": "minecraft:block",
+                            "result_state": "minecraft:air"
+                          }
+                        },
+                        {
+                          "type": "minecraft:condition",
+                          "if_true": {
+                            "type": "minecraft:noise_threshold",
+                            "noise": "underbedrock:cheese",
+                            "min_threshold": 0.33,
+                            "max_threshold": 0.37,
+                            "is_3d": true
+                          },
+                          "then_run": {
+                            "type": "minecraft:block",
+                            "result_state": "underbedrock:void_crystal_ore"
+                          }
+                        },
+                        {
+                          "type": "minecraft:block",
+                          "result_state": "underbedrock:voidstone"
                         }
                       ]
                     }

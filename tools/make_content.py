@@ -8,8 +8,8 @@ The world under the bedrock floor, top to bottom:
   y -54 .. -58    ordinary deepslate (the Overworld's own floor)
   y -59 .. -64    a thin bedrock transition, jagged as vanilla's floor
   y -65 .. -72    voidshell: the mod's gate block, dug only by the void pickaxe
-  y -73 .. -564   the Abyss: voidstone, carved caves (air, never lava), ores
-  y -565 .. -576  abyss bedrock: unbreakable, so nobody falls out of the world
+  y -73 .. -960   the Abyss: eight layers with blended transitions, ores
+  y -961 .. -1008 abyss bedrock: unbreakable, so nobody falls out of the world
 """
 import json
 import shutil
@@ -126,7 +126,7 @@ BLOCKS = {
         },
         "item": True,
     },
-    # The hot expanse: magma-like rock with ember cracks, faintly lit.
+    # The lava zone: magma-like rock with ember cracks, faintly lit.
     "emberstone": {
         "template": "minecraft:netherrack",
         "properties": {
@@ -138,7 +138,7 @@ BLOCKS = {
         },
         "item": True,
     },
-    # The inactive hot expanse: cooled ash-grey rock.
+    # The inactive lava zone: cooled ash-grey rock.
     "scorched_stone": {
         "template": "minecraft:stone",
         "properties": {
@@ -244,12 +244,16 @@ for gear_name, (gear_template, gear_damage) in GEAR.items():
         },
     })
 
-# Layer shards: trophies of the hot and frozen expanse, and the stalker's own
-# shard (the native half renders it as the stalker's visible body).
+# Layer shards: trophies of the layers' hunts - and the warden's own shard
+# (the native half renders it as the warden's visible body).
 write(MOD / f"data/{ID}/horizon/item/ember_shard.json",
       {"template": "minecraft:diamond", "rarity": "uncommon"})
 write(MOD / f"data/{ID}/horizon/item/frost_shard.json",
       {"template": "minecraft:diamond", "rarity": "uncommon"})
+write(MOD / f"data/{ID}/horizon/item/cinder_shard.json",
+      {"template": "minecraft:diamond", "rarity": "uncommon"})
+write(MOD / f"data/{ID}/horizon/item/gloom_pearl.json",
+      {"template": "minecraft:ender_pearl", "rarity": "rare"})
 write(MOD / f"data/{ID}/horizon/item/stalker_shard.json",
       {"template": "minecraft:echo_shard", "rarity": "epic"})
 
@@ -274,6 +278,8 @@ write(MOD / f"data/{ID}/horizon/creative_tab/{ID}.json", {
         f"{ID}:void_alloy",
         f"{ID}:ember_shard",
         f"{ID}:frost_shard",
+        f"{ID}:cinder_shard",
+        f"{ID}:gloom_pearl",
         f"{ID}:stalker_shard",
         # the Abyss, layer by layer, top down
         f"{ID}:voidshell",
@@ -482,6 +488,8 @@ EN = {
     f"item.{ID}.void_alloy_leggings": "Void Alloy Leggings",
     f"item.{ID}.void_alloy_boots": "Void Alloy Boots",
     f"item.{ID}.ember_shard": "Ember Shard",
+    f"item.{ID}.cinder_shard": "Cinder Shard",
+    f"item.{ID}.gloom_pearl": "Gloom Pearl",
     f"item.{ID}.frost_shard": "Frost Shard",
     f"item.{ID}.stalker_shard": "Stalker Shard",
     f"block.{ID}.emberstone": "Emberstone",
@@ -512,6 +520,8 @@ RU = {
     f"item.{ID}.void_alloy_leggings": "Поножи из пустотного сплава",
     f"item.{ID}.void_alloy_boots": "Ботинки из пустотного сплава",
     f"item.{ID}.ember_shard": "Тлеющий осколок",
+    f"item.{ID}.cinder_shard": "Зольный осколок",
+    f"item.{ID}.gloom_pearl": "Жемчужина глубин",
     f"item.{ID}.frost_shard": "Морозный осколок",
     f"item.{ID}.stalker_shard": "Осколок сталкера",
     f"block.{ID}.emberstone": "Тлеющий камень",
@@ -547,7 +557,8 @@ for name in ("void_alloy_pickaxe", "void_alloy_sword", "void_alloy_axe",
           {"parent": "minecraft:item/handheld", "textures": {"layer0": f"{ID}:item/{name}"}})
     write(MOD / f"assets/{ID}/items/{name}.json",
           {"model": {"type": "minecraft:model", "model": f"{ID}:item/{name}"}})
-for name in ("ember_shard", "frost_shard", "stalker_shard", "void_alloy_helmet",
+for name in ("ember_shard", "frost_shard", "cinder_shard", "gloom_pearl",
+             "stalker_shard", "void_alloy_helmet",
              "void_alloy_chestplate", "void_alloy_leggings", "void_alloy_boots"):
     write(MOD / f"assets/{ID}/models/item/{name}.json",
           {"parent": "minecraft:item/generated", "textures": {"layer0": f"{ID}:item/{name}"}})
@@ -608,10 +619,10 @@ DIMENSION_TYPE = {
     "has_ceiling": False,
     "has_ender_dragon_fight": False,
     "has_skylight": True,
-    "height": 896,
+    "height": 1328,
     "infiniburn": "#minecraft:infiniburn_overworld",
     "logical_height": 384,
-    "min_y": -576,
+    "min_y": -1008,
     "monster_spawn_block_light_limit": 0,
     "monster_spawn_light_level": {"type": "minecraft:uniform", "max_inclusive": 7, "min_inclusive": 0},
     "timelines": "#minecraft:in_overworld",
@@ -619,7 +630,7 @@ DIMENSION_TYPE = {
 write(PACK / "data/minecraft/dimension_type/overworld.json", DIMENSION_TYPE)
 
 write(PACK / "data/minecraft/worldgen/noise_settings/overworld.json", {
-    "noise": {"min_y": -576, "height": 896},
+    "noise": {"min_y": -1008, "height": 1328},
     "default_block": "minecraft:stone",
     "default_fluid": "minecraft:water",
     # The aquifer keeps the surface world's oceans, rivers and dry caves as
@@ -744,54 +755,106 @@ def seq(*rules):
     return {"type": "minecraft:sequence", "sequence": list(rules)}
 
 
-# The Abyss, layer by layer (the user's stack, 2026-11): hot and open under
-# the gate, colder and emptier with depth; the frozen wastes below -420 host
-# nothing but the stalker (the native half spawns and renders it).
-HOT = yband(-73, -168, seq(
-    # Wide open expanse: emberstone islands where cheese_big stays low, and
-    # lava lakes in the bellies of the open space.
-    when(noise_at_least("cheese_big", 0.10),
-         seq(when(noise_win("cheese", -1000000.0, -0.45), LAVA), AIR)),
-    # Thin lava veins where the tunnels noise crosses zero.
-    when(noise_win("tunnels", -0.03, 0.03), LAVA),
+# The Abyss, layer by layer (the user's stack of 2026-11-03, extended to the
+# void bedrock at -1008): the lava zone under the gate, its inactive twin,
+# the calm world in the deep, the cool lands, the frozen wastes, the absolute
+# void the warden hunts in, and the floor no pickaxe digs. Between every two
+# layers a blend band dithers one material into the next (a vertical
+# gradient, the way vanilla fades deepslate in), so no boundary is a cliff of
+# one block into another.
+#
+# Lava lives only in contained lakes: a basin floor two-wide in the noise
+# window under the lava's level, a rim ring of solid at the lava's own level
+# (the windows are contiguous, so every side neighbour of a lava block is
+# rim), and the surface open to the cave air above. A lake therefore has a
+# floor and walls of stone and nothing to fall over - the uncontained lakes
+# of the first build ran over the island edges and down into the next layer.
+GATE = seq(blk(f"{ID}:voidshell"))
+LAVA_SEQ = seq(
+    # Two lake levels, each a basin: floor under, rim ring around, lava in
+    # the middle of the window. The floor's window is wider than the lake's
+    # by a margin the noise cannot drift across in one block of height.
+    yband(-120, -120, seq(
+        when(noise_win("cheese", 0.46, 0.60), blk(f"{ID}:scorched_stone")),
+        when(noise_win("cheese", 0.25, 0.34), blk(f"{ID}:scorched_stone")),
+        when(noise_win("cheese", 0.34, 0.46), LAVA))),
+    yband(-121, -121, when(noise_win("cheese", 0.22, 0.63),
+                           blk(f"{ID}:scorched_stone"))),
+    yband(-180, -180, seq(
+        when(noise_win("cheese", -0.60, -0.46), blk(f"{ID}:scorched_stone")),
+        when(noise_win("cheese", -0.34, -0.25), blk(f"{ID}:scorched_stone")),
+        when(noise_win("cheese", -0.46, -0.34), LAVA))),
+    yband(-181, -181, when(noise_win("cheese", -0.63, -0.22),
+                           blk(f"{ID}:scorched_stone"))),
+    # The open expanse: emberstone islands in wide air, dry now.
+    when(noise_at_least("cheese_big", 0.10), AIR),
     when(noise_win("cheese", 0.30, 0.36), blk(f"{ID}:scorched_stone")),
     when(noise_win("cheese", 0.36, 0.42), blk(f"{ID}:void_crystal_ore")),
     blk(f"{ID}:emberstone"),
-))
-INACTIVE = yband(-169, -280, seq(
-    # Cooling lava veins take the tunnel sheets before the air rules do.
-    when(noise_win("tunnels", -0.03, 0.03), LAVA),
+)
+INACTIVE_SEQ = seq(
+    # The lava here solidified: glowing emberstone veins in the scorched
+    # stone instead of fluid, so nothing drips and nothing falls.
+    when(noise_win("tunnels", -0.03, 0.03), blk(f"{ID}:emberstone")),
     when(noise_at_least("cheese", 0.25), AIR),
     when(noise_win("tunnels", -0.09, 0.09), AIR),
     when(noise_win("cheese", -0.50, -0.44), blk(f"{ID}:void_gravel")),
     when(noise_win("cheese", 0.13, 0.16), blk(f"{ID}:void_crystal_ore")),
     blk(f"{ID}:scorched_stone"),
-))
-COOL = yband(-281, -420, seq(
+)
+DEEPS_SEQ = seq(
+    # The world in the deep: the calmest layer, wide gentle caverns, crystal
+    # decor on the walls, rich crystal ore - and the gloomling, the one
+    # creature here, which the native half keeps.
+    when(noise_at_least("cheese_big", 0.30), AIR),
+    when(noise_at_least("cheese", 0.22), AIR),
+    when(noise_win("cheese", 0.19, 0.22), blk(f"{ID}:crystal_sprout")),
+    when(noise_win("cheese", 0.16, 0.19), blk(f"{ID}:voidstone_bricks")),
+    when(noise_win("cheese_big", 0.26, 0.30), blk(f"{ID}:crystal_lamp")),
+    when(noise_win("cheese", 0.12, 0.15), blk(f"{ID}:void_crystal_ore")),
+    when(noise_win("cheese", 0.08, 0.11), blk("minecraft:deepslate_diamond_ore")),
+    blk(f"{ID}:voidstone"),
+)
+COOL_SEQ = seq(
     when(noise_at_least("cheese_big", 0.35), AIR),
     when(noise_at_least("cheese", 0.25), AIR),
     when(noise_win("tunnels", -0.09, 0.09), AIR),
-    # Decor grows on the cave walls: sprouts in the shell right under the
-    # cheese-air threshold, ruin bricks behind them, lamps on the wide
-    # cavern walls.
     when(noise_win("cheese", 0.22, 0.25), blk(f"{ID}:crystal_sprout")),
     when(noise_win("cheese", 0.19, 0.22), blk(f"{ID}:voidstone_bricks")),
     when(noise_win("cheese_big", 0.30, 0.34), blk(f"{ID}:crystal_lamp")),
-    # Ores, each its own disjoint window of the fine cheese noise.
     when(noise_win("cheese", 0.17, 0.19), blk("minecraft:deepslate_diamond_ore")),
     when(noise_win("cheese", 0.13, 0.16), blk(f"{ID}:void_crystal_ore")),
     when(noise_win("cheese", 0.09, 0.12), blk("minecraft:deepslate_iron_ore")),
     when(noise_win("cheese", 0.05, 0.08), blk("minecraft:deepslate_coal_ore")),
     when(noise_win("cheese", -0.50, -0.44), blk(f"{ID}:void_gravel")),
     blk(f"{ID}:voidstone"),
-))
-FROZEN = yband(-421, -564, seq(
-    # Sparse caves only: the wastes are cold, empty and quiet.
+)
+FROZEN_SEQ = seq(
     when(noise_at_least("cheese", 0.40), AIR),
     when(noise_win("cheese", -0.50, -0.44), blk(f"{ID}:frost_gravel")),
     when(noise_win("cheese", 0.33, 0.37), blk(f"{ID}:void_crystal_ore")),
     blk(f"{ID}:froststone"),
-))
+)
+VOID_SEQ = seq(
+    # The absolute void: mostly open dark, rare voidstone masses hanging in
+    # it, a little crystal in them. The warden's hunting ground.
+    when(noise_win("cheese_big", -1000000.0, 0.45), AIR),
+    when(noise_win("cheese", 0.33, 0.37), blk(f"{ID}:void_crystal_ore")),
+    blk(f"{ID}:voidstone"),
+)
+
+
+def blend(top, bottom, shallow, deep):
+    """The transition band from `top` down to `bottom`: a vertical gradient
+    dithers the deeper layer's materials into the shallower layer's, the way
+    vanilla fades its deepslate in - no boundary is a single sharp block."""
+    return when(at_most(top), when(at_least(bottom), seq(
+        when({"type": "minecraft:vertical_gradient",
+              "random_name": f"{ID}:blend_{bottom}",
+              "true_at_and_below": {"absolute": bottom},
+              "false_at_and_above": {"absolute": top}}, deep),
+        shallow)))
+
 
 write(MR / "surface.json", seq(
     # The Overworld's bedrock floor, a thin jagged band at -64..-59: the
@@ -804,10 +867,23 @@ write(MR / "surface.json", seq(
          when(at_least(-63), blk("minecraft:bedrock"))),
     # Everything below y -55: the Abyss, depth by depth.
     when(at_most(-55), seq(
-        # The world's bottom: bedrock no pickaxe digs.
-        when(at_most(-564), blk(f"{ID}:abyss_bedrock")),
-        # The layered world itself, -73..-564.
-        when(at_most(-72), seq(HOT, INACTIVE, COOL, FROZEN)),
+        # The world's bottom: bedrock no pickaxe digs, -961..-1008.
+        when(at_most(-960), blk(f"{ID}:abyss_bedrock")),
+        # The layered world itself, -73..-960, blends between the layers.
+        when(at_most(-72), seq(
+            blend(-73, -85, GATE, LAVA_SEQ),
+            yband(-86, -214, LAVA_SEQ),
+            blend(-215, -227, LAVA_SEQ, INACTIVE_SEQ),
+            yband(-228, -354, INACTIVE_SEQ),
+            blend(-355, -367, INACTIVE_SEQ, DEEPS_SEQ),
+            yband(-368, -494, DEEPS_SEQ),
+            blend(-495, -507, DEEPS_SEQ, COOL_SEQ),
+            yband(-508, -634, COOL_SEQ),
+            blend(-635, -647, COOL_SEQ, FROZEN_SEQ),
+            yband(-648, -774, FROZEN_SEQ),
+            blend(-775, -787, FROZEN_SEQ, VOID_SEQ),
+            yband(-788, -960, VOID_SEQ),
+        )),
         # The gate under the bedrock floor: voidshell, -65..-72.
         when(at_most(-65), blk(f"{ID}:voidshell")),
     )),
@@ -852,8 +928,8 @@ write(PACK / "data/minecraft/worldgen/carver/cave_extra_underground.json", {
 # reach the whole stack) are switched off for this world entirely - the
 # surface keeps every other structure. Amethyst geodes are a placed feature,
 # and those do take a height range - but vanilla anchors its floor to the
-# world's bottom, which in this world sinks it into the wastes (the fix is
-# just below).
+# world's bottom, which in this world sinks it into the absolute void (the
+# fix is just below).
 EMPTY_SET = {
     "structures": [],
     "placement": {
@@ -866,8 +942,8 @@ EMPTY_SET = {
 write(PACK / "data/minecraft/worldgen/structure_set/mineshafts.json", EMPTY_SET)
 write(PACK / "data/minecraft/worldgen/structure_set/ancient_cities.json", EMPTY_SET)
 # Vanilla's geode placement hangs its floor on `above_bottom: 6` - six over
-# the world's bottom, which in a -64 world is -58 but in this -576 world
-# would be -570, deep in the frozen wastes. The override pins the same band
+# the world's bottom, which in a -64 world is -58 but in this -1008 world
+# would be -1002, deep in the absolute void. The override pins the same band
 # vanilla gives a normal world (absolute -58..30) and keeps every other
 # vanilla modifier in place (rarity 24, the in-square jitter, the biome
 # filter - which Horizon decodes as "minecraft:biome"); the provider key of

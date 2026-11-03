@@ -282,6 +282,9 @@ pub struct Game<'a> {
     pub net_sent: Vec<(u128, String, Vec<u8>)>,
     pub sounds: Vec<(String, [f64; 3], f32, f32, i32)>,
     pub particles: Vec<([f64; 3], bool)>,
+    /// The particles the server half queued in the level (API 103): the
+    /// type's name, where, the spread, the speed and the count.
+    pub sent_particles: Vec<(String, [f64; 3], [f64; 3], f64, i32)>,
     /// The harness's switch for a net bridge that refuses, so the dig's
     /// feedback failure path gets exercised too.
     pub net_broken: bool,
@@ -330,6 +333,7 @@ impl<'a> Game<'a> {
             net_sent: Vec::new(),
             sounds: Vec::new(),
             particles: Vec::new(),
+            sent_particles: Vec::new(),
             net_broken: false,
             marker: std::marker::PhantomData,
         }
@@ -731,6 +735,26 @@ impl Game<'_> {
     /// One flame spark, in the window's game; `soul` is the blue one.
     pub fn native_flame_particle(&mut self, at: [f64; 3], soul: bool) {
         self.particles.push((at, soul));
+    }
+
+    /// Particles queued in the authoritative level (API 103): the stub
+    /// records the burst for the harness and accepts it.
+    pub fn native_send_particles(
+        &mut self,
+        options: &horizon_client::particles::ParticleOptions,
+        state: Option<horizon_world::registry::BlockStateId>,
+        at: [f64; 3],
+        spread: [f64; 3],
+        speed: f64,
+        count: i32,
+    ) -> bool {
+        let _ = state;
+        if !self.level_open || !at.iter().all(|v| v.is_finite()) {
+            return false;
+        }
+        self.sent_particles
+            .push((options.ty.name().to_owned(), at, spread, speed, count));
+        true
     }
 }
 

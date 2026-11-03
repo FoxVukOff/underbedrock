@@ -28,6 +28,32 @@ pub mod text {
     pub const GOLD: u32 = 0xFFAA00;
 }
 
+/// `horizon_client::particles` (`crates/horizon-client-core/src/particle_type.rs`):
+/// the shapes the mod's sources touch, with the real names.
+pub mod particles {
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    pub struct ParticleType(&'static str);
+
+    #[allow(non_upper_case_globals)]
+    impl ParticleType {
+        pub const EndRod: Self = Self("minecraft:end_rod");
+        pub fn name(self) -> &'static str {
+            self.0
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct ParticleOptions {
+        pub ty: ParticleType,
+    }
+
+    impl ParticleOptions {
+        pub fn simple(ty: ParticleType) -> Self {
+            Self { ty }
+        }
+    }
+}
+
 /// `horizon_world::registry` (the state ids `native_set_block` takes).
 pub mod registry {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -129,7 +155,7 @@ fn main() {
     );
 
     let mut game = Game::new();
-    game.shape = if tall { (-576, 896) } else { (-64, 384) };
+    game.shape = if tall { (-1008, 1328) } else { (-64, 384) };
     game.air_at_zero = air_at_zero;
     if !tall {
         game.settings
@@ -520,7 +546,7 @@ fn main() {
     // The Abyss keeps its own company, with the mod's OWN creatures: deep
     // enough, with a pocket to hang in, the mod summons one of its displays;
     // at the cap, or up top, it doesn't. No vanilla mob is ever spawned.
-    let deep: [f64; 3] = [0.5, -200.0, 0.5];
+    let deep: [f64; 3] = [0.5, -400.0, 0.5];
     game.acting.as_mut().expect("a player").position = deep;
     for _ in 0..60 {
         game.native_player_tick();
@@ -529,6 +555,19 @@ fn main() {
         fails,
         "no pocket in the rock, no creature",
         game.summoned.is_empty()
+    );
+    // The descent itself: the gate's boundary sparkled once, at its own
+    // height around the player - the veil of the crossing (API 103's
+    // server-side particles).
+    check!(
+        fails,
+        "the crossing of the gate sparkles at the boundary itself",
+        game.sent_particles.len() == 1
+            && game.sent_particles[0].0 == "minecraft:end_rod"
+            && game.sent_particles[0].1
+                == [deep[0], m::VEIL_BOUNDS[0] as f64 + m::VEIL_LIFT, deep[2]]
+            && game.sent_particles[0].2 == m::VEIL_SPREAD
+            && game.sent_particles[0].4 == m::VEIL_COUNT
     );
     let seed = 7u64 ^ (deep[0] as i64 as u64).wrapping_mul(0x2545_F491);
     let [dx, dy, dz] = m::candidate_offset(seed, 0);
@@ -546,7 +585,7 @@ fn main() {
     for _ in 0..60 {
         game.native_player_tick();
     }
-    let creature = m::pick_creature(seed, deep[1]).expect("the cool islands keep company");
+    let creature = m::pick_creature(seed, deep[1]).expect("the calm deep keeps its gloomling");
     check!(
         fails,
         "a pocket in the Abyss gets one of the mod's own creatures",
@@ -577,7 +616,7 @@ fn main() {
             kind: m::ITEM_DISPLAY.into(),
             position: game::Vec3 {
                 x: deep[0] + 5.0,
-                y: -210.0,
+                y: deep[1] - 10.0,
                 z: deep[2],
             },
             yaw: m::Creature::Wisp.yaw_code(),
@@ -595,7 +634,7 @@ fn main() {
     );
     // A player who walks away lets the mod's creatures go: every one of them,
     // summoned or adopted, is out of the engine's list on the next deep tick.
-    game.acting.as_mut().expect("a player").position = [500.5, -200.0, 0.5];
+    game.acting.as_mut().expect("a player").position = [500.5, deep[1], 0.5];
     game.native_player_tick();
     check!(
         fails,
@@ -613,7 +652,7 @@ fn main() {
         kind: m::BLOCK_DISPLAY.into(),
         position: game::Vec3 {
             x: deep[0] + 3.0,
-            y: -201.0,
+            y: deep[1] - 1.0,
             z: deep[2],
         },
         yaw: m::Creature::Lantern.yaw_code(),
@@ -624,7 +663,7 @@ fn main() {
         kind: m::ITEM_DISPLAY.into(),
         position: game::Vec3 {
             x: deep[0] + 4.0,
-            y: -201.0,
+            y: deep[1] - 1.0,
             z: deep[2],
         },
         yaw: 33.0,
@@ -643,11 +682,14 @@ fn main() {
         "a display that wears no code of the mod's is let go, not driven",
         game.removed_entities.contains(&998) && !game.moved.iter().any(|(id, _)| *id == 998)
     );
-    // The Abyss's law: no vanilla mob lives under the gate, and the frozen
-    // wastes send a stalker after a player who descends into them - an
-    // invisible, silent vex wearing the mod's shard display as its body.
-    let wastes: [f64; 3] = [0.5, -500.0, 0.5];
-    game.acting.as_mut().expect("a player").position = wastes;
+    // The Abyss's law: no vanilla mob lives under the gate, and every layer
+    // but the calm deep sends its own hunter after a player who descends
+    // into it - an invisible, silent vex wearing an item display of the
+    // layer's shard as its body. The absolute void sends the warden: the
+    // same machine turned up - twice the health, a closer ring, quicker
+    // back.
+    let the_void: [f64; 3] = [0.5, -850.0, 0.5];
+    game.acting.as_mut().expect("a player").position = the_void;
     // A zombie that wandered in under the gate goes, quietly.
     game.mobs.push(game::StubMob {
         id: 900,
@@ -656,15 +698,15 @@ fn main() {
         removed: false,
         spawn: Default::default(),
     });
-    // A display a restart orphaned in the wastes goes too: nothing ambient
-    // lives below the stalker's depth.
+    // A display a restart orphaned in the absolute void goes too: below the
+    // frozen floor, nothing lives that the hunts and the ledger don't know.
     game.others.push(game::OtherEntity {
         id: 777,
         kind: m::ITEM_DISPLAY.into(),
         position: game::Vec3 {
-            x: wastes[0] + 2.0,
-            y: -501.0,
-            z: wastes[2],
+            x: the_void[0] + 2.0,
+            y: -851.0,
+            z: the_void[2],
         },
         yaw: 0.0,
         pitch: 0.0,
@@ -678,18 +720,29 @@ fn main() {
     );
     check!(
         fails,
-        "an orphaned display in the wastes is cleaned up, not adopted",
+        "an orphaned display in the void is cleaned up, not adopted",
         game.removed_entities.contains(&777) && !game.moved.iter().any(|(id, _)| *id == 777)
     );
     check!(
         fails,
-        "the wastes send their stalker: invisible, silent, weightless",
+        "the fall to the void sparkles at the boundary last crossed",
+        game.sent_particles.len() == 2
+            && game.sent_particles[1].1
+                == [
+                    the_void[0],
+                    m::VEIL_BOUNDS[3] as f64 + m::VEIL_LIFT,
+                    the_void[2]
+                ]
+    );
+    check!(
+        fails,
+        "the void sends its warden: invisible, silent, weightless",
         game.spawned_mobs.len() == 1
-            && game.spawned_mobs[0].0 == m::STALKER_KIND
+            && game.spawned_mobs[0].0 == m::HUNT_KIND
             && game.spawned_mobs[0].2.invisible
             && game.spawned_mobs[0].2.silent
             && game.spawned_mobs[0].2.no_gravity
-            && game.spawned_mobs[0].2.health == Some(m::STALKER_HEALTH)
+            && game.spawned_mobs[0].2.health == Some(m::PESTS[4].health)
     );
     check!(
         fails,
@@ -698,32 +751,40 @@ fn main() {
             && game.summoned[summoned].0 == m::ITEM_DISPLAY
             && game.summoned[summoned].2 == m::STALKER_ITEM
     );
-    // The ban spares the stalker itself, and its body rides the mob, faced
+    // The ban spares the warden itself, and its body rides the mob, faced
     // at the player, every tick of the hunt.
-    let stalker = game.spawned_mobs.first().map(|_| 500u32);
+    let warden = game.spawned_mobs.first().map(|_| 500u32);
     let body = game
         .others
         .iter()
         .find(|other| other.kind == m::ITEM_DISPLAY)
         .map(|other| other.id);
+    check!(
+        fails,
+        "the body is posed at the warden's own scale",
+        body.is_some_and(|id| game
+            .posed
+            .iter()
+            .any(|(posed, scale)| *posed == id && scale[0] == m::PESTS[4].scale))
+    );
     game.moved.clear();
     game.native_player_tick();
     check!(
         fails,
-        "the hunt keeps its stalker (the ban spares it) and moves its body",
-        stalker.is_some_and(|id| !game.removed_mobs.contains(&id))
+        "the hunt keeps its warden (the ban spares it) and moves its body",
+        warden.is_some_and(|id| !game.removed_mobs.contains(&id))
             && body.is_some_and(|id| game.moved.iter().any(|(moved, _)| *moved == id))
     );
-    // The stalker's death (API 75's loot hook): its shard drops as the
+    // The warden's death (API 75's loot hook): its shard drops as the
     // trophy, on the ground, with no player's state touched.
     let mut drops = Vec::new();
     game.native_loot_drops(
         &crate::mod_api::NativeLootDrops {
             table: "minecraft:entities/vex",
             dimension: "minecraft:overworld",
-            origin: wastes,
+            origin: the_void,
             block: None,
-            entity: Some((500, m::STALKER_KIND)),
+            entity: Some((500, m::HUNT_KIND)),
             player: Some(7),
             tool: None,
             explosion: None,
@@ -733,7 +794,7 @@ fn main() {
     );
     check!(
         fails,
-        "the stalker's death drops its shard",
+        "the warden's death drops its shard",
         drops == vec![horizon_client::items::ItemStack::new(m::STALKER_ITEM, 1)]
     );
     // An evoker's vex up on the surface is none of the mod's.
@@ -744,7 +805,7 @@ fn main() {
             dimension: "minecraft:overworld",
             origin: [0.5, 70.0, 0.5],
             block: None,
-            entity: Some((999, m::STALKER_KIND)),
+            entity: Some((999, m::HUNT_KIND)),
             player: Some(7),
             tool: None,
             explosion: None,
@@ -757,16 +818,16 @@ fn main() {
         "a surface vex drops nothing of the mod's",
         drops.is_empty()
     );
-    // Nor is an untracked one deep in the wastes: depth alone proves nothing,
+    // Nor is an untracked one deep in the void: depth alone proves nothing,
     // a vanilla vex can chase a player down a dug shaft.
     drops.clear();
     game.native_loot_drops(
         &crate::mod_api::NativeLootDrops {
             table: "minecraft:entities/vex",
             dimension: "minecraft:overworld",
-            origin: wastes,
+            origin: the_void,
             block: None,
-            entity: Some((777, m::STALKER_KIND)),
+            entity: Some((777, m::HUNT_KIND)),
             player: Some(7),
             tool: None,
             explosion: None,
@@ -776,18 +837,31 @@ fn main() {
     );
     check!(
         fails,
-        "an untracked vex in the wastes drops no trophy",
+        "an untracked vex in the void drops no trophy",
         drops.is_empty()
     );
 
-    // The player climbs out: both go at once.
+    // The player climbs out: the warden and its body go at once, and the
+    // layer they drop into starts its own hunt - the cinder's, weaker and
+    // slower than the warden's.
     game.acting.as_mut().expect("a player").position = [0.5, -300.0, 0.5];
     game.native_player_tick();
     check!(
         fails,
-        "climbing out of the wastes ends the hunt",
-        stalker.is_some_and(|id| game.removed_mobs.contains(&id))
+        "climbing out of the void ends the hunt",
+        warden.is_some_and(|id| game.removed_mobs.contains(&id))
             && body.is_some_and(|id| game.removed_entities.contains(&id))
+    );
+    check!(
+        fails,
+        "and the layer landed in sends its own, gentler pest",
+        game.spawned_mobs.len() == 2
+            && game.spawned_mobs[1].2.health == Some(m::PESTS[1].health)
+            && game
+                .summoned
+                .last()
+                .is_some_and(|(kind, _, shown)| kind == m::ITEM_DISPLAY
+                    && shown == m::PESTS[1].body)
     );
 
     // Back at the surface: no summons, and the engine's own spawning is the
@@ -804,19 +878,83 @@ fn main() {
         game.summoned.len() == summoned && game.moved.len() == moves
     );
 
+    // The calm deep's one tameable: a gloomling eats from a HELD void
+    // alloy - every tick within reach of the hand trusts it a little more,
+    // and at FEED_TICKS of them it is the holder's, following them
+    // anywhere, up through the gate included. The alloy is held, not
+    // eaten: the engine has no take-from-inventory API, and the ingot
+    // stays in the hand.
+    game.acting.as_mut().expect("a player").position = deep;
+    game.others.push(game::OtherEntity {
+        id: 995,
+        kind: m::ITEM_DISPLAY.into(),
+        position: game::Vec3 {
+            x: deep[0] + 2.0,
+            y: deep[1] - 1.0,
+            z: deep[2],
+        },
+        yaw: m::Creature::Gloomling.yaw_code(),
+        pitch: 0.0,
+    });
+    game.held = Some((m::ALLOY.into(), 1, false));
+    let given = game.given.len();
+    for _ in 0..m::FEED_TICKS {
+        game.native_player_tick();
+    }
+    check!(
+        fails,
+        "the gloomling is adopted back by its code, and feeds from the hand",
+        m::creature_kind(995) == Some(m::Creature::Gloomling)
+    );
+    game.native_player_tick();
+    check!(
+        fails,
+        "a held alloy tames it, and the alloy stays in the hand",
+        m::creature_kind(995) == Some(m::Creature::Gloom) && game.given.len() == given
+    );
+    check!(
+        fails,
+        "and its yaw now wears the fed code, for any restart to adopt",
+        game
+            .others
+            .iter()
+            .find(|other| other.id == 995)
+            .is_some_and(|other| (other.yaw - m::Creature::Gloom.yaw_code()).abs() <= m::YAW_TOL)
+    );
+    // It follows its player out of the Abyss: driven at any depth, and
+    // never let go - not at the surface, not from far away.
+    game.held = None;
+    game.acting.as_mut().expect("a player").position = [0.5, -60.0, 0.5];
+    game.moved.clear();
+    game.native_player_tick();
+    check!(
+        fails,
+        "the fed one follows its player up through the gate",
+        game.moved.iter().any(|(id, _)| *id == 995)
+            && !game.removed_entities.contains(&995)
+    );
+    game.acting.as_mut().expect("a player").position = [500.5, -60.0, 0.5];
+    game.moved.clear();
+    game.native_player_tick();
+    check!(
+        fails,
+        "and walking away does not let it go",
+        game.moved.iter().any(|(id, _)| *id == 995)
+            && !game.removed_entities.contains(&995)
+    );
+
     // A world closed (API 134): the Overworld's close forgets everything the
     // mod kept for it, so a reopened world starts clean; another dimension's
     // close is none of the mod's business.
     m::clear_creatures();
     m::add_creature(21, m::Creature::Ember, [0.0, -200.0, 0.0], 7);
-    m::set_stalk(
-        7,
-        m::Stalk {
-            mob: Some(3),
-            body: Some(4),
-            quiet: 0,
-        },
-    );
+    let mut hunts = [m::Pest::default(); 5];
+    hunts[4] = m::Pest {
+        mob: Some(3),
+        body: Some(4),
+        quiet: 0,
+    };
+    m::set_pests(7, hunts);
     game.native_level_unload("minecraft:the_nether");
     check!(
         fails,
@@ -827,7 +965,7 @@ fn main() {
     check!(
         fails,
         "the Overworld's close forgets the mod's state",
-        m::creatures_len() == 0 && m::get_stalk(7) == m::Stalk::default()
+        m::creatures_len() == 0 && m::get_pests(7) == [m::Pest::default(); 5]
     );
     // The world reopens - in the same session or after a full game restart,
     // alike: the engine saved the ember's display with the code yaw every

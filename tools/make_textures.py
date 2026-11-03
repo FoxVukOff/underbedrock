@@ -319,7 +319,7 @@ def void_alloy_pickaxe(seed=97):
 
 
 def emberstone(seed=101):
-    """Hot expanse rock: dark iron-brown stone with glowing ember cracks."""
+    """Lava zone rock: dark iron-brown stone with glowing ember cracks."""
     rng = random.Random(seed)
     px = canvas()
     base = [(38, 20, 16, 255), (52, 26, 18, 255), (30, 16, 14, 255), (60, 30, 20, 255)]
@@ -404,6 +404,40 @@ def frost_shard(seed=127):
     put(px, 9, 5, ice[0])
     put(px, 6, 9, ice[3])
     save(px, "item/frost_shard.png")
+
+
+def cinder_shard(seed=137):
+    """A cinder shard: the ember's cooled cousin - a dull grey-black chunk
+    with one faint orange crack still glowing through it."""
+    px = canvas()
+    rng = random.Random(seed)
+    ash = [(58, 54, 52, 255), (44, 41, 40, 255), (74, 68, 64, 255), (30, 28, 27, 255)]
+    glow = [(214, 108, 34, 255), (255, 158, 64, 255)]
+    for y in range(4, 13):
+        w = 5 - abs(y - 8) // 2
+        for x in range(8 - w // 2, 8 + w // 2 + 1):
+            put(px, x, y, ash[rng.randrange(len(ash))])
+    for y in (6, 7, 8, 9):
+        put(px, 8 - (y % 2), y, glow[0 if y % 2 else 1])
+    put(px, 9, 5, ash[2])
+    put(px, 6, 10, ash[3])
+    save(px, "item/cinder_shard.png")
+
+
+def gloom_pearl(seed=139):
+    """A gloom pearl: a round deep-blue pearl with one soft pale light in
+    its belly - the gloomling's own body, and what the deep keeps."""
+    px = canvas()
+    shell = [(38, 52, 92, 255), (26, 36, 66, 255), (52, 72, 122, 255), (18, 24, 46, 255)]
+    core = [(148, 196, 232, 255), (108, 156, 204, 255)]
+    for y in range(4, 13):
+        w = 7 - abs(y - 8)
+        for x in range(8 - w // 2, 8 + w // 2 + 1):
+            d = abs(x - 8) + abs(y - 8)
+            put(px, x, y, shell[min(d // 2, 3)] if d > 2 else core[d % 2])
+    put(px, 7, 6, core[0])
+    put(px, 6, 5, (210, 234, 250, 255))
+    save(px, "item/gloom_pearl.png")
 
 
 def stalker_shard(seed=131):
@@ -521,6 +555,8 @@ if __name__ == "__main__":
     frost_gravel()
     ember_shard()
     frost_shard()
+    cinder_shard()
+    gloom_pearl()
     stalker_shard()
     void_tool("sword", 141)
     void_tool("axe", 142)

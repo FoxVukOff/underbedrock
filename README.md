@@ -3,9 +3,10 @@
 **A world below the bedrock floor, for Horizon (Minecraft 26.3).**
 The bedrock at the bottom of the Overworld is no longer the end of the world:
 a void-alloy pickaxe digs through it and through the voidshell gate under it,
-and half a kilometre of dark world waits underneath — four layers of it, from
-a glowing hot expanse down to frozen wastes where something hunts, with ores,
-ruins, glowing plants and creatures of their own.
+and a kilometre of dark world waits underneath — seven layers of it, from a
+glowing lava zone down to the absolute void where the warden hunts, with
+ores, ruins, glowing plants, creatures of their own — and one beast down
+there that can be tamed.
 
 Under Bedrock ships as three parts that only work together: a content mod
 (`.hmod`), a native mod (`.hnmod`) and a world data pack. The prebuilt files
@@ -16,23 +17,27 @@ for all three live in this repository's `release/` folder.
 ## What it adds
 
 **A taller Overworld.** The data pack replaces the Overworld's dimension type
-and noise settings: the world runs from y −576 to y 319, 896 blocks of height.
+and noise settings: the world runs from y −1008 to y 319, 1328 blocks of height.
 The surface, the oceans and the caves above y −54 are vanilla's own.
 
 **The way down, layer by layer.** Deepslate, then a thin jagged bedrock
 transition (y −64…−59), then **Voidshell** (y −72…−65): a black gate block the
 engine itself never breaks — only the void-alloy pickaxe digs it, exactly the
-way it digs bedrock. Under the gate lies **the Abyss**, four layers of it,
-each colder and darker than the one above:
+way it digs bedrock. Under the gate lies **the Abyss**, seven layers of it,
+each colder and darker than the one above. The boundaries are not walls: each
+one is a blend of the two rocks over a dozen blocks — and crossing one
+sparkles, a veil of end-rod light at the boundary's own height:
 
 | Layer | Depth | What it is |
 | --- | --- | --- |
-| **Hot expanse** | y −73…−168 | A wide open space of magma-like **emberstone** islands (faintly lit) over **small lava lakes**, with glowing lava veins and scorched patches in the rock |
-| **Inactive expanse** | y −169…−280 | Cooled **scorched stone** with ordinary caves, dying lava veins and gravel beds |
-| **Cool islands** | y −281…−420 | **Voidstone** with wide caverns and the mod's decor: ruin bricks on the cave walls, crystal lamps, glowing sprouts, gravel, and the ores — crystal, coal, iron, diamond |
-| **Frozen wastes** | y −421…−564 | Pale **froststone**, sparse silent caves, frost gravel — and nothing living but the stalker |
+| **Lava zone** | y −73…−220 | A wide open space of magma-like **emberstone** islands (faintly lit) over **contained lava basins** — lakes with a stone floor and a rim ring, nothing to fall over — and glowing lava veins in the rock |
+| **Inactive lava zone** | y −221…−360 | Cooled **scorched stone**: the lava here solidified into glowing emberstone veins, with ordinary caves and gravel beds |
+| **World-in-the-depths** | y −361…−500 | The calmest layer: **voidstone** with wide caverns and the mod's decor — ruin bricks, crystal lamps, glowing sprouts, gravel — the ores (crystal, coal, iron, diamond), and one creature of its own, the tameable gloomling |
+| **Cool lands** | y −501…−640 | **Voidstone** caverns and the classic company: wisps, lanterns and the odd watcher |
+| **Frozen wastes** | y −641…−780 | Pale **froststone**, sparse silent caves, frost gravel and frostmotes |
+| **Absolute void** | y −781…−960 | Near-black stone, no ambient life at all — and the warden |
 
-The world's bottom (y −565…−576) is **Abyss Bedrock**, a second bedrock kind
+The world's bottom (y −961…−1008) is **Abyss Bedrock**, a second bedrock kind
 that nothing breaks, pickaxe included: nobody falls out of the world.
 
 **The Abyss's blocks.** Voidstone, Voidstone Bricks, Void Gravel, Void Crystal
@@ -43,11 +48,12 @@ textures, hot layers in ember tones and cold ones in blue-on-black.
 
 **Void crystal.** The ore sits in two places: sparse pockets in the ordinary
 deepslate of the Overworld (y −60…−16), so the pickaxe is craftable long
-before anyone touches bedrock — and pockets in every Abyss layer, richest in
-the cool islands, where coal, iron and diamond ore keep them company.
+before anyone touches bedrock — and pockets in the Abyss layers, where coal,
+iron and diamond ore keep them company.
 Smelting or blasting the ore gives crystals; a crystal and an iron ingot make
 a **Void Alloy Ingot**. Smelting a layer's own stone gives its shard: an
-**Ember Shard** from emberstone, a **Frost Shard** from froststone.
+**Ember Shard** from emberstone, a **Frost Shard** from froststone; the
+inactive layer's **Cinder Shard** comes only from the pest that wears it.
 
 **The Void Alloy Pickaxe.** 2800 durability, mining speed 14, three alloy
 ingots and two sticks to craft. It is the only tool that
@@ -64,26 +70,46 @@ purple shine. The tab lists the dig and the set first, then the materials,
 then the Abyss layer by layer from the voidshell gate down to the Abyss
 bedrock (which joins the tab for builders), and the lamps and sprouts last.
 The **Stalker Shard** sits among the materials as a trophy item (it is also
-what the stalker wears, and what killing one drops — see below).
+what the warden wears, and what killing one drops — see below), and the
+**Gloom Pearl** beside it is what the deep's gloomling shows — a
+creative-tab material, since a tamed creature is nobody's loot.
 
 **Inhabitants.** The Abyss is populated by the mod's **own creatures** — no
 vanilla mob lives down there, and the native mod *enforces* it: every tick,
 any vanilla mob below y −55 that the mod does not track is removed from the
 world (no death, no loot, no sound). Each layer keeps its own company:
-**embers** (the ember shard, a fast flicker) in the hot expanse, drifting
-crystal **wisps**, hanging **lanterns** and the odd **watcher** — a bigger
-crystal that closes in and watches the player — in the cool islands, and
-**frostmotes** (the frost shard, slow and pale) at the cold rim. Up to ten
-per player, saved with the world.
+**embers** (the ember shard, a fast flicker), drifting crystal **wisps** and
+hanging **lanterns** in the lava zone; wisps and lanterns among the cooled
+stone; the shy **gloomling** (a gloom pearl) alone in the
+world-in-the-depths; wisps, lanterns and the odd **watcher** — a bigger
+crystal that closes in and watches the player — in the cool lands; and
+**frostmotes** (the frost shard, slow and pale) in the frozen wastes. The
+absolute void keeps none. Up to ten per player, saved with the world.
 
-**The stalker.** The frozen wastes below y −420 keep no ambient company —
-they hunt. One **stalker** per player takes shape 16 blocks out: an invisible,
-silent, weightless vex of 24 HP that the engine's own flying melee drives
-(through stone, like the ghost it is), wearing an item display of the mod's
-stalker shard as its visible body, faced at the player every tick. It is meant
-to annoy, not to wall: a few swings end it, its shard drops as the trophy, and
-15 seconds later the wastes send another; climb above y −420 and the hunt ends
-at once. Bring the void set.
+**The pests of the layers.** Every layer but the calm deep sends a hunter of
+its own after a player in it — an invisible, silent, weightless vex that the
+engine's flying melee drives (through stone, like the ghost it is), wearing
+an item display of the layer's shard as its visible body, faced at the player
+every tick. They are meant to annoy, not to wall: the **emberling** of the
+lava zone and the **cinder** of the inactive one (16 HP, taking shape 18
+blocks out, a minute of quiet after each), the **shade** of the cool lands
+(18 HP, a 16-block ring) and the **rime** of the frozen wastes (20 HP,
+quicker back). Killing one drops its shard as the trophy; climb out of a
+layer and its hunt ends at once.
+
+**The warden.** The absolute void below y −780 is the one place that hunts in
+earnest. The **warden** is the same machine turned up: 32 HP, taking shape 10
+blocks out, back six seconds after it falls, and a body half as big again —
+the stalker shard display. Bring the void set.
+
+**The gloomling.** The world-in-the-depths keeps one creature, and it can be
+won over: **hold a Void Alloy Ingot** in the hand within five blocks of a
+gloomling and it eats from the hand, tick by tick — two seconds of holding
+and it trusts the player and is theirs. A fed gloomling becomes a **gloom**:
+it follows its player everywhere — through every layer, up through the gate,
+into the daylight — and is never let go, not when they walk away and not
+across a restart (its fed kind rides the same saved yaw code as every
+creature's). The alloy is held, not eaten: the ingot stays in the hand.
 
 **The rest.** English and Russian languages, recipes (smelting, blasting,
 alloy, pickaxe, crystal block both ways, bricks, lamp, sprout), loot tables
@@ -123,7 +149,7 @@ dropping the zip in, or accept that chunks generated earlier keep the old
 floor with void below it.
 
 In game, `/abyss depth` answers
-`This world: y -576 .. 319 (896 blocks). Under Bedrock's Abyss is below the bedrock floor.`
+`This world: y -1008 .. 319 (1328 blocks). Under Bedrock's Abyss is below the bedrock floor.`
 A world without the pack is reported once, in chat, as `NOT tall`.
 
 ---
@@ -140,9 +166,12 @@ A world without the pack is reported once, in chat, as `NOT tall`.
    `Bedrock [##########----------] 50%`. Letting go resets it.
 4. The bedrock disappears — and under it the voidshell gate waits for the same
    treatment (`Voidshell [#####---------------] 25%`). Behind the gate the
-   Abyss opens: the hot expanse glows under the gate, and every layer down
-   is colder and darker. The creatures are the mod's own; below y −420 the
-   stalker hunts — bring the void set.
+   Abyss opens: the lava zone glows under the gate, and every layer down
+   is colder and darker — each crossing sparkles its veil of end-rod light.
+   The creatures are the mod's own; every layer but the calm deep sends its
+   pest, and below y −780 the warden hunts — bring the void set. In the
+   world-in-the-depths, hold an alloy ingot near the gloomling to win it
+   over.
 5. At the very bottom, Abyss Bedrock stops the world. It does not break, for
    anyone, with anything — that is the point of it.
 
@@ -168,7 +197,7 @@ A world without the pack is reported once, in chat, as `NOT tall`.
 
 **Why three parts.** Horizon reads dimension types, noise settings, density
 functions and material rules only from data packs, so the tall world lives in
-`underbedrock_world`: `dimension_type/overworld.json` (min_y −576, height 896, ambient light 0.05
+`underbedrock_world`: `dimension_type/overworld.json` (min_y −1008, height 1328, ambient light 0.05
 so the layers read without torches), the Overworld's `noise_settings` with an
 `aquifers` configuration, one density function, five noises and one material
 rule that builds every depth band.
@@ -184,8 +213,13 @@ cave below y −54 with lava unless the noise settings carry an `aquifers`
 object; with one, its lava function decides — ours is a flat zero, and the
 density under y −54 is plain solid rock, so no fluid cell exists down there
 at all. The only lava in the Abyss is placed by the material rule itself, in
-the hot expanse alone: lake blobs in the bellies of the open space and thin
-veins where the tunnels noise crosses zero. The Abyss's caves are carved by
+the lava zone alone, and only as **contained basins**: a lake floor of stone
+laid under the lava's level, a rim ring of solid at the level itself and the
+lava in the middle of the window — a lake with a floor and walls and nothing
+to fall over, so no drop of it escapes (the uncontained lakes of an earlier
+version were one reason dropped items vanished down there). The inactive
+layer keeps only the cooled memory of lava: emberstone veins in the scorched
+stone. The Abyss's caves are carved by
 the material rule (cheese-and-tunnels noise windows per layer — wide open
 islands in the heat, big caverns in the cool, sparse cuts in the frost) out
 of that solid, after the fill. The pack also replaces the three Overworld carvers with ones that
@@ -227,8 +261,11 @@ crystal lamp (a lantern), through `native_summon`. Every deep tick the mod
 moves each creature along its path (`native_move_entity`) and resends its
 pose — scale and spin — every eight ticks (`native_set_display`; the clients
 ease between the poses); a creature whose player walks 96 blocks away is let
-go (`native_remove_entity`). Every creature wears its kind as a yaw code —
-23° a wisp, 95° an ember, 167° a watcher, 239° a lantern, 311° a frostmote —
+go (`native_remove_entity`) — except a fed gloomling, which is never let go:
+it eases to its player's side instead, at any depth, and the tick's live list
+admits its code even above the gate. Every creature wears its kind as a yaw
+code — 23° a wisp, 95° an ember, 167° a watcher, 183° a gloomling, 215° a
+fed one, 239° a lantern, 311° a frostmote —
 kept on by every move, and the engine saves the yaw with the display's NBT
 (`Rotation`, exact f32 bits) and hands it back when its chunk loads: a world
 reloaded adopts its creatures back as the kinds they were, within a game
@@ -246,25 +283,34 @@ therefore clears its old creatures once, on the first deep tick; the
 replenish brings fresh ones at once, and nothing else in the world is
 touched.)
 
-**The ban and the stalker.** The same tick reads the engine's mob list
-(`native_mobs`, API 37): every mob below y −55 whose id the mod does not track
-as a stalker is removed (`native_remove_mob` — no death, no loot), so the
-Abyss's "no vanilla mobs" is a server-side fact, not a spawning accident. The
-stalker itself is a vex the mod spawns per player below y −420
-(`native_spawn_mob` with the invisible, silent, no-gravity flags and 24 HP):
-the engine's own melee AI does the hunting and the damage, while the mod
-moves its shard-display body onto the mob every tick and faces it at the
-player. A mob the engine no longer lists (killed, gone) takes its body with
-it; the death's drops then gain the stalker shard as a trophy
-(`native_loot_drops`, API 75) — and only a tracked hunt's vex counts: an
-untracked one drops nothing however deep it dies, for depth alone is not
-proof of a hunt. The wastes stay quiet for 300 ticks; a player who climbs out
-dismisses both at once; any display the wastes do not know — a body a restart orphaned — is
-cleaned up, since no ambient creature lives that deep; and a world that
-closes is forgotten whole (`native_level_unload`, API 134): the creatures,
-hunts and players' rhythms the mod kept are dropped, so a reopened world
-starts clean — and loses nothing by it, for every creature's kind rides the
-yaw code the engine saved with its display.
+**The ban, the hunts and the veil.** The same tick reads the engine's mob
+list (`native_mobs`, API 37): every mob below y −55 whose id the mod does not
+track as one of its hunters is removed (`native_remove_mob` — no death, no
+loot), so the Abyss's "no vanilla mobs" is a server-side fact, not a
+spawning accident. The hunters are vexes the mod spawns per player per layer
+(`native_spawn_mob` with the invisible, silent, no-gravity flags and the
+layer's health): the engine's own melee AI does the hunting and the damage,
+while the mod moves the shard-display body onto the mob every tick and faces
+it at the player. A summon that finds no room (peaceful, an unloaded chunk)
+is retried after a pause. A mob the engine no longer lists (killed, gone)
+takes its body with it, and its layer stays quiet for a while — 420 ticks
+for the shallow pests, 120 for the warden; the death's drops then gain the
+layer's shard as a trophy (`native_loot_drops`, API 75) — and only a tracked
+hunt's vex counts: an untracked one drops nothing however deep it dies, for
+depth alone is not proof of a hunt. A player who climbs out of a layer
+dismisses its hunt at once. Below the frozen floor (y −780) nothing lives
+that the hunts and the ledger do not know — a display a restart orphaned
+there is cleaned up. Feeding needs no hook of its own: the same tick reads
+the held item, and an alloy held within five blocks of a gloomling counts a
+tick of trust. And the tick watches each player's depth band: a layer
+boundary crossed sends a burst of end-rod particles at the boundary's own
+height around the player (`native_send_particles`, API 103) — the veil of the
+transition, hysteresis-damped so hovering on a line replays nothing. A world
+that closes is forgotten whole (`native_level_unload`, API 134): the
+creatures, the hunts, the crossing watch and the players' rhythms the mod
+kept are dropped, so a reopened world starts clean — and loses nothing by
+it, for every creature's kind rides the yaw code the engine saved with its
+display.
 
 ---
 
@@ -285,10 +331,10 @@ when editing them.
 Rust enters only the checks, all of them runnable without a Horizon install:
 
 ```sh
-cd native-mod && cargo test                     # the dig, creature and hunt logic, 23 tests
+cd native-mod && cargo test                     # the dig, creature, hunt and tame logic, 31 tests
 cd ../tools/stubcheck && cargo run -- on && cargo run -- off
                                                 # the mod's own sources compiled against
-                                                # Horizon's exact signatures, 48 scenarios twice
+                                                # Horizon's exact signatures, 67 scenarios twice
 cd ../.. && python tools/nativecheck.py release/underbedrock_core.hnmod
                                                 # the bundle read by the registry's own rules
 python tools/check_worldgen.py                  # worldgen JSONs vs Horizon's decoder, plus the
@@ -348,16 +394,18 @@ today, a nightly.
   drives: Horizon has no custom living entity types for mods (a content mod's
   entity types are thrown-item projectiles only), so wisps, lanterns, embers
   and frostmotes are ambience — they drift, hang and watch, but they neither
-  attack nor drop loot. The stalker is the exception that proves the rule: it
-  fights and hurts, because under the shard display it is a real (invisible)
-  vex the engine itself drives. They spawn only near a player in the Abyss,
+  attack nor drop loot. The hunters — the layers' pests and the warden — are
+  the exception that proves the rule: they fight and hurt, because under the
+  shard display each is a real (invisible) vex the engine itself drives. The
+  gloomling, tameable as it is, stays a display: it follows and trusts, but
+  there is no living entity to leash. They spawn only near a player in the Abyss,
   not as part of world generation.
 - Vanilla's own hollows used to leak into the Abyss (mineshafts, amethyst
   geodes), since structure placement knows no depth. The pack now switches
   the mineshaft and ancient-city structure sets off for this world entirely
   (a structure set cannot be depth-gated), and overrides the amethyst
   geode's placement: vanilla anchors its floor six blocks over the world's
-  bottom, which in a world this deep would be y −570, so the override pins
+  bottom, which in a world this deep would be y −1002, so the override pins
   the band vanilla gives a normal world (−58..30, absolute) and keeps every
   other vanilla modifier in place (the 1-in-24 rarity, the in-square jitter,
   the biome filter). The surface loses mineshafts and ancient cities with
@@ -369,5 +417,7 @@ today, a nightly.
 - Worlds created before the data pack was installed keep their old height in
   already-generated chunks. A world re-generated with a new layer stack needs
   a fresh world (or fresh chunks) to show the new layers.
+- Taming the gloomling holds the alloy in the hand: the engine has no API to
+  take an item from a player's inventory, so the ingot is never consumed.
 - The native mod reads one private engine field (the player's dig state); see
   “How it works” for why, and what happens if it ever moves.

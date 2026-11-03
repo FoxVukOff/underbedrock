@@ -77,7 +77,7 @@ def structural_checks(fails):
     surface = json.loads((pack / 'underbedrock/worldgen/material_rule/surface.json').read_text())
     text = json.dumps(surface)
     for anchor, what in (('-64', 'the bedrock transition band'),
-                         ('-564', 'the abyss bedrock floor'),
+                         ('-960', 'the abyss bedrock floor'),
                          ('-65', 'the voidshell gate'),
                          ('-72', 'the carved world')):
         if f'"absolute": {anchor}' not in text:
@@ -85,11 +85,13 @@ def structural_checks(fails):
     if '"minecraft:bedrock"' not in text or '"underbedrock:abyss_bedrock"' not in text \
             or '"underbedrock:voidshell"' not in text or '"underbedrock:voidstone"' not in text:
         fails.append('surface rule: a depth block (bedrock/abyss_bedrock/voidshell/voidstone) is missing')
-    # A layer band is two nested y conditions: y above one anchor and at or
-    # below the other. Swapped, the band is an empty set and the whole layer
-    # falls through to the rule that follows (the 2026-11-03 bug that made
-    # the Abyss one voidshell mass), so every pair must be satisfiable and
-    # the four bands must stack from -73 down to -564 without a gap.
+    # A layer band (or a blend band, or a lake's one-block band) is two
+    # nested y conditions: y above one anchor and at or below the other.
+    # Swapped, the band is an empty set and the whole layer falls through to
+    # the rule that follows (the 2026-11-03 bug that made the Abyss one
+    # voidshell mass), so every pair must be satisfiable; the six layer bands
+    # must stack from -73 down to -960 with exactly one blend band in every
+    # gap between them (the smooth transitions), and nothing else.
     def y_anchor(cond):
         if isinstance(cond, dict) and cond.get('type') == 'minecraft:y_above':
             return ('pos', cond['anchor']['absolute'])
@@ -122,15 +124,24 @@ def structural_checks(fails):
         if neg < pos + 1:
             fails.append(f'surface rule: the band y in ({pos}, {neg}] is empty - '
                          f'the two y anchors are swapped')
-    stack = sorted(((neg, pos + 1) for pos, neg in pairs if neg <= -73),
-                   reverse=True)
-    for (sh_a, de_a), (sh_b, de_b) in zip(stack, stack[1:]):
-        if de_a - 1 != sh_b:
-            fails.append(f'surface rule: a gap between the band ending at '
-                         f'{de_a} and the one starting at {sh_b}')
-    if len(stack) != 4 or stack[0][0] != -73 or stack[-1][1] != -564:
-        fails.append('surface rule: the layer stack must be four bands '
-                     'reaching from -73 down to -564')
+    bands = sorted(((neg, pos + 1) for pos, neg in pairs
+                    if neg <= -73 and neg - (pos + 1) >= 60), reverse=True)
+    blends = sorted(((neg, pos + 1) for pos, neg in pairs
+                     if neg <= -73 and 8 <= neg - (pos + 1) <= 20), reverse=True)
+    for (sh_a, de_a), (sh_b, de_b) in zip(bands, bands[1:]):
+        want = (de_a - 1, sh_b + 1)
+        if want not in blends:
+            fails.append(f'surface rule: no blend band {want[0]}..{want[1]} '
+                         f'between the layer ending at {de_a} and the one '
+                         f'starting at {sh_b}')
+    if (len(bands) != 6 or bands[0][0] != -86 or bands[-1][1] != -960
+            or (-73, -85) not in blends):
+        fails.append('surface rule: the layer stack must be six bands '
+                     'reaching from -86 down to -960 under the gate blend '
+                     'at -73..-85')
+    if len(blends) != 6:
+        fails.append('surface rule: the gate and every layer gap want '
+                     'exactly one blend band each (six in all)')
 
     # A vertical gradient is true at every depth below its band: before any
     # block rule under one, a y_above condition must narrow it to a window, or
@@ -147,18 +158,21 @@ def structural_checks(fails):
             if node.get('type') == 'minecraft:block':
                 return False
         return True
-    def find_gradients(node, where):
+    def find_gradients(node, where, narrowed_parent=False):
         if isinstance(node, dict):
+            here = narrowed_parent or (
+                node.get('type') == 'minecraft:condition'
+                and node.get('if_true', {}).get('type') in ('minecraft:y_above', 'minecraft:not'))
             if node.get('type') == 'minecraft:condition' \
                     and node.get('if_true', {}).get('type') == 'minecraft:vertical_gradient' \
-                    and not narrowed(node.get('then_run')):
+                    and not here and not narrowed(node.get('then_run')):
                 fails.append(f'{where}: a vertical_gradient condition reaches a block rule '
                              f'with no y_above window: it would paint every depth below its band')
             for value in node.values():
-                find_gradients(value, where)
+                find_gradients(value, where, here)
         elif isinstance(node, list):
             for child in node:
-                find_gradients(child, where)
+                find_gradients(child, where, narrowed_parent)
     find_gradients(surface, 'surface rule')
 
     for name in ('cave', 'cave_extra_underground', 'canyon'):
@@ -263,8 +277,8 @@ def structural_checks(fails):
     for path in sorted(df.glob('*.json')):
         refs(json.loads(path.read_text()), path.name)
     refs(surface, 'surface rule')
-    # The lava ban, revised by the user 2026-11: the hot expanse layer keeps
-    # small lava lakes and glowing veins, so the surface material rule may
+    # The lava ban, revised by the user 2026-11: the lava zone keeps its
+    # contained basins and glowing veins, so the surface material rule may
     # name lava - and only it. Everywhere else lava stays banned, and the
     # aquifer's lava level stays a flat zero.
     lava_ok = {ROOT / 'datapack' / 'underbedrock_world' / 'data' / 'underbedrock'
@@ -276,7 +290,7 @@ def structural_checks(fails):
             text = path.read_text()
             if 'minecraft:lava' in text:
                 fails.append(f'{path.relative_to(ROOT)}: mentions minecraft:lava '
-                             f'(only the hot expanse band of the surface rule may)')
+                             f'(only the lava zone band of the surface rule may)')
 
 
 def main():

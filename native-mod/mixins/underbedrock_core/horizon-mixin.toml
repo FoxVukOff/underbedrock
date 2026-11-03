@@ -100,7 +100,7 @@ bindings = [
   { name = "dimension", ty = "&str", value = "dimension" },
 ]
 
-# A death's drops: the Abyss's stalker leaves its shard as a trophy (API 75).
+# A death's drops: a layer's hunter leaves its shard as a trophy (API 75).
 [[injection]]
 id = "loot-drops"
 kind = "HEAD"
