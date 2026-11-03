@@ -602,8 +602,11 @@ fn main() {
         "walking away lets every creature go",
         game.others.is_empty() && game.removed_entities.len() == m::CREATURE_CAP
     );
-    // What a world saved and a restart lost: the engine has a display the
-    // mod's list doesn't know; the next deep tick adopts it and drives it.
+    // What a world saved and a restart lost: the engine has displays the
+    // mod's list doesn't know. One wears the lantern's yaw code - the code
+    // rides the display's saved NBT - and is adopted back and driven; the
+    // other wears no code of the mod's (a /summon, another mod's) and is
+    // let go, never driven.
     game.acting.as_mut().expect("a player").position = deep;
     game.others.push(game::OtherEntity {
         id: 999,
@@ -613,15 +616,32 @@ fn main() {
             y: -201.0,
             z: deep[2],
         },
-        yaw: 0.0,
+        yaw: m::Creature::Lantern.yaw_code(),
+        pitch: 0.0,
+    });
+    game.others.push(game::OtherEntity {
+        id: 998,
+        kind: m::ITEM_DISPLAY.into(),
+        position: game::Vec3 {
+            x: deep[0] + 4.0,
+            y: -201.0,
+            z: deep[2],
+        },
+        yaw: 33.0,
         pitch: 0.0,
     });
     game.moved.clear();
     game.native_player_tick();
     check!(
         fails,
-        "a display a world saved is adopted and driven",
+        "a display a world saved is adopted by its yaw code and driven",
         game.moved.iter().any(|(id, _)| *id == 999)
+            && m::creature_kind(999) == Some(m::Creature::Lantern)
+    );
+    check!(
+        fails,
+        "a display that wears no code of the mod's is let go, not driven",
+        game.removed_entities.contains(&998) && !game.moved.iter().any(|(id, _)| *id == 998)
     );
     // The Abyss's law: no vanilla mob lives under the gate, and the frozen
     // wastes send a stalker after a player who descends into them - an
@@ -809,9 +829,10 @@ fn main() {
         "the Overworld's close forgets the mod's state",
         m::creatures_len() == 0 && m::get_stalk(7) == m::Stalk::default()
     );
-    // The world reopens in the same session: the engine still holds the
-    // ember's display where its chunk saved it, and the first deep tick
-    // adopts it back as the ember it was - not as a generic wisp.
+    // The world reopens - in the same session or after a full game restart,
+    // alike: the engine saved the ember's display with the code yaw every
+    // move kept, hands it back when the chunk loads, and the first deep tick
+    // adopts it back as the ember it was. The mod itself remembers nothing.
     game.acting.as_mut().expect("a player").position = [0.5, -200.0, 0.5];
     game.others.push(game::OtherEntity {
         id: 21,
@@ -821,7 +842,7 @@ fn main() {
             y: -200.0,
             z: 0.0,
         },
-        yaw: 0.0,
+        yaw: m::Creature::Ember.yaw_code(),
         pitch: 0.0,
     });
     game.native_player_tick();

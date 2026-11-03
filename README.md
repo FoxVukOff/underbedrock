@@ -227,11 +227,15 @@ crystal lamp (a lantern), through `native_summon`. Every deep tick the mod
 moves each creature along its path (`native_move_entity`) and resends its
 pose — scale and spin — every eight ticks (`native_set_display`; the clients
 ease between the poses); a creature whose player walks 96 blocks away is let
-go (`native_remove_entity`), and a display a reloaded world saved with its
-chunks is adopted and driven again — a world reopened within the same game
-session even brings its creatures back as the kinds they were (the mod
-snapshots them when the world closes); only a cold restart, with nothing to
-read back, adopts an item display as a plain wisp.
+go (`native_remove_entity`). Every creature wears its kind as a yaw code —
+0° a wisp, 72° an ember, 144° a watcher, 216° a lantern, 288° a frostmote —
+kept on by every move, and the engine saves the yaw with the display's NBT
+(`Rotation`) and hands it back when its chunk loads: a world reloaded adopts
+its creatures back as the kinds they were, within a game session and across a
+full restart alike, with no memory of the mod's own. A display under the gate
+that wears no code — a `/summon` of someone's, another mod's — is not the
+mod's to drive and is let go as well: the Abyss keeps nothing under its gate
+that isn't on the mod's ledger.
 
 **The ban and the stalker.** The same tick reads the engine's mob list
 (`native_mobs`, API 37): every mob below y −55 whose id the mod does not track
@@ -250,7 +254,8 @@ dismisses both at once; any display the wastes do not know — a body a restart 
 cleaned up, since no ambient creature lives that deep; and a world that
 closes is forgotten whole (`native_level_unload`, API 134): the creatures,
 hunts and players' rhythms the mod kept are dropped, so a reopened world
-starts clean.
+starts clean — and loses nothing by it, for every creature's kind rides the
+yaw code the engine saved with its display.
 
 ---
 

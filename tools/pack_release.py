@@ -24,6 +24,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = ROOT / 'release'
 
+# A fixed stamp for every archive entry: the same sources pack to the same
+# bytes on every run, so a rebuild that changed nothing leaves the release
+# hashes alone.
+STAMP = (2026, 1, 1, 0, 0, 0)
+
+
+def put(archive, src, name):
+    """One file into the archive, with the fixed stamp and plain permissions."""
+    info = zipfile.ZipInfo(name, date_time=STAMP)
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.external_attr = 0o644 << 16
+    archive.writestr(info, src.read_bytes())
+
 def pack_hmod():
     """The content mod: a zip with its manifest first, then every file, sorted."""
     src = ROOT / 'content-mod'
@@ -36,7 +49,7 @@ def pack_hmod():
     out = RELEASE / 'underbedrock.hmod'
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as archive:
         for name in names:
-            archive.write(src / name, name)
+            put(archive, src / name, name)
     return out
 
 
@@ -58,7 +71,7 @@ def pack_datapack():
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(src.rglob('*')):
             if path.is_file():
-                archive.write(path, path.relative_to(src).as_posix())
+                put(archive, path, path.relative_to(src).as_posix())
     return out
 
 

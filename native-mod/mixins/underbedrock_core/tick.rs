@@ -10,8 +10,12 @@
 // While a player is down in the Abyss, the mod also keeps it inhabited — with
 // its OWN creatures, never a vanilla mob: display entities showing the mod's
 // shards and crystal lamp, which the engine keeps without simulating and the
-// mod drives from here. Every tick they follow the engine's list (a world
-// reloaded adopts what its chunks saved), take a step of their paths, and the
+// mod drives from here. Every creature wears its kind as a yaw code, which
+// the engine saves with the display's NBT and hands back on load: a world
+// reloaded - or the game restarted - adopts its creatures back as the kinds
+// they were, and a display that wears no code of the mod's is not the mod's
+// to drive and is let go. Every tick the creatures follow the engine's list,
+// take a step of their paths, and the
 // ones their player walked away from are let go; on the mod's rhythm a look
 // goes out for a dark pocket to summon the next one into, the layer at the
 // player's depth picking the kind (embers in the hot expanse, frostmotes at
@@ -42,32 +46,39 @@ fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
     let dimension = player.dimension.clone();
     // The displays the engine keeps in the Abyss: the mod's creatures, as the
     // engine has them (owned copies, so the engine is free for the calls
-    // below). Up top there are none of the mod's, and it does nothing.
+    // below), each with the yaw it wears - the stalker's body is the hunt's
+    // own and stays out of the list. Up top there are none of the mod's, and
+    // it does nothing.
     let deep = at[1] < m::SPAWN_BELOW_Y;
-    let live: Vec<(u32, String, [f64; 3])> = if deep {
+    let stalker_body = m::get_stalk(uuid).body;
+    let live: Vec<(u32, String, f32, [f64; 3])> = if deep {
         game.others
             .iter()
+            .filter(|other| Some(other.id) != stalker_body)
             .map(|other| {
                 (
                     other.id,
                     other.kind.clone(),
+                    other.yaw,
                     [other.position.x, other.position.y, other.position.z],
                 )
             })
-            .filter(|(_, kind, pos)| m::is_ours(kind, *pos))
+            .filter(|(_, kind, _, pos)| m::is_ours(kind, *pos))
             .collect()
     } else {
         Vec::new()
     };
     if deep {
         // One step of every creature: the list follows the engine, the paths
-        // move, the poses go out on the mod's rhythm, the far ones are let go.
-        let seen: Vec<(u32, &str, [f64; 3])> = live
+        // move (each with its kind's code yaw kept on), the poses go out on
+        // the mod's rhythm, the far ones - and the displays that wear no code
+        // of the mod's - are let go.
+        let seen: Vec<(u32, &str, f32, [f64; 3])> = live
             .iter()
-            .map(|(id, kind, pos)| (*id, kind.as_str(), *pos))
+            .map(|(id, kind, yaw, pos)| (*id, kind.as_str(), *yaw, *pos))
             .collect();
         let step = m::step_creatures(at, uuid, &seen);
-        for id in step.cull {
+        for id in step.cull.into_iter().chain(step.purge) {
             game.native_remove_entity(&dimension, id);
         }
         for (id, kind, angle) in step.poses {
@@ -203,7 +214,7 @@ fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
         if deep && m::spawn_due(uuid) {
             let near = live
                 .iter()
-                .filter(|(_, _, pos)| m::counts_towards_cap(*pos, at))
+                .filter(|(_, _, _, pos)| m::counts_towards_cap(*pos, at))
                 .count();
             let seed = uuid as u64 ^ (at[0] as i64 as u64).wrapping_mul(0x2545_F491);
             let plan = m::spawn_plan(seed, at, near, |cell| game.native_block(cell) == m::AIR);
@@ -245,6 +256,9 @@ fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
                         teleport: 0,
                     };
                     game.native_set_display(&dimension, id, &pose);
+                    // Its code yaw at once, so the very first save already
+                    // keeps what the creature is.
+                    game.native_move_entity(&dimension, id, spot, creature.yaw_code(), 0.0);
                 }
             }
         }

@@ -114,6 +114,12 @@ pub const POSE_EVERY: u32 = 8;
 pub const WATCHER_NEAR: f64 = 16.0;
 pub const WATCHER_KEEP: f64 = 4.0;
 
+/// How close a display's yaw has to sit to a kind's code to read as that
+/// kind. The codes are 72 degrees apart and a yaw round-trips through the
+/// engine's save as the same float it went in with, so the window is wide
+/// and nothing lands in two of them.
+pub const YAW_TOL: f32 = 18.0;
+
 /// The kinds of creature the Abyss gets.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Creature {
@@ -157,8 +163,9 @@ impl Creature {
             Self::Frostmote => 0.85,
         }
     }
-    /// The creature a display of `display_kind` is: a watcher found again
-    /// after a restart comes back a wisp (it drifts the same, only smaller).
+    /// Whether a display kind is one the mod's creatures ride: the item
+    /// display (a wisp by default) and the block display (the lantern).
+    /// Which creature a display is says its yaw code, not its kind.
     pub fn of(display_kind: &str) -> Option<Self> {
         match display_kind {
             BLOCK_DISPLAY => Some(Self::Lantern),
@@ -166,6 +173,39 @@ impl Creature {
             _ => None,
         }
     }
+    /// The yaw this kind wears. The engine saves a display's yaw with its
+    /// NBT (`Rotation`) and hands it back when the chunk loads, and the
+    /// visible spin of a creature is its transformation, not its yaw - so
+    /// the yaw is free, and the mod writes its kinds into it: a memory of
+    /// what every creature was, kept by the engine itself, good across a
+    /// world reload and a full game restart alike.
+    pub fn yaw_code(self) -> f32 {
+        match self {
+            Self::Wisp => 0.0,
+            Self::Ember => 72.0,
+            Self::Watcher => 144.0,
+            Self::Lantern => 216.0,
+            Self::Frostmote => 288.0,
+        }
+    }
+}
+
+/// The creature a display of `display_kind` turned to `yaw` is: the kind
+/// whose code the yaw reads as, on a display kind that carries it. A yaw
+/// that reads as no code is no creature of the mod's - a display the mod
+/// never summoned (or one an older version of it left behind) is not the
+/// mod's to drive.
+pub fn kind_from_yaw(display_kind: &str, yaw: f32) -> Option<Creature> {
+    use Creature::{Ember, Frostmote, Lantern, Watcher, Wisp};
+    Creature::of(display_kind)?;
+    let yaw = yaw.rem_euclid(360.0);
+    let near = |code: f32| {
+        let d = (yaw - code).abs().rem_euclid(360.0);
+        d.min(360.0 - d) <= YAW_TOL
+    };
+    [Wisp, Ember, Watcher, Lantern, Frostmote]
+        .into_iter()
+        .find(|kind| kind.display() == display_kind && near(kind.yaw_code()))
 }
 
 /// What the pickaxe digs: the bedrock floor, or the voidshell gate under it.
@@ -537,9 +577,6 @@ pub struct CreatureState {
     pub id: u32,
     pub kind: Creature,
     pub anchor: [f64; 3],
-    /// Where the display actually is, as of the last step: what a saved
-    /// world reopens with, and what the kind snapshot keys on.
-    pub last: [f64; 3],
     pub phase: f32,
     pub owner: u128,
     pub pose_in: u32,
@@ -550,6 +587,10 @@ pub struct CreatureState {
 pub struct CreatureStep {
     /// `native_remove_entity`: let go, their player walked away.
     pub cull: Vec<u32>,
+    /// `native_remove_entity`: a display under the gate that wears no yaw
+    /// code of the mod's - not a creature of the mod's, and the Abyss keeps
+    /// nothing under its gate that isn't on the mod's ledger.
+    pub purge: Vec<u32>,
     /// `native_move_entity`: the id, where to, facing which yaw.
     pub moves: Vec<(u32, [f64; 3], f32)>,
     /// `native_set_display`: the id, the kind (for its scale) and the spin.
@@ -559,26 +600,6 @@ pub struct CreatureStep {
 thread_local! {
     /// The creatures the mod drives, in the world in place.
     static CREATURES: RefCell<Vec<CreatureState>> = const { RefCell::new(Vec::new()) };
-    /// What each creature was, by its block position, when the world last
-    /// closed: a world reopened in the same session adopts its saved displays
-    /// back as the kinds they were, not as generic wisps. A game restart
-    /// leaves nothing to read, and adoption falls back to the wisp.
-    static KINDS: RefCell<Vec<([i32; 3], Creature)>> = const { RefCell::new(Vec::new()) };
-}
-
-/// Where a creature sits in the snapshot's keys: its position, blocked off.
-fn spot_key(pos: [f64; 3]) -> [i32; 3] {
-    [pos[0] as i32, pos[1] as i32, pos[2] as i32]
-}
-
-/// The kind a saved display at `pos` was when the world closed, if the mod
-/// still remembers it.
-pub fn remembered_kind(pos: [f64; 3]) -> Option<Creature> {
-    KINDS.with(|kinds| {
-        let mut kinds = kinds.borrow_mut();
-        let at = kinds.iter().position(|(spot, _)| *spot == spot_key(pos))?;
-        Some(kinds.remove(at).1)
-    })
 }
 
 /// The kind the mod drives `id` as, if it drives it at all.
@@ -611,7 +632,6 @@ pub fn add_creature(id: u32, kind: Creature, anchor: [f64; 3], owner: u128) {
             id,
             kind,
             anchor,
-            last: anchor,
             phase: 0.0,
             owner,
             pose_in: 0,
@@ -620,42 +640,45 @@ pub fn add_creature(id: u32, kind: Creature, anchor: [f64; 3], owner: u128) {
 }
 
 /// One tick of the creatures, given the displays the engine has in the Abyss
-/// (`live`: the id, the display kind and the position of each) and the player
-/// whose tick this is. The engine's list is the truth: a state whose display
-/// is gone drops off (a world reloaded, a `/kill`), and a display the list
-/// doesn't know is adopted (the engine saved it with its chunk in an earlier
-/// session): a world reopened in the same session brings its kinds back from
-/// the mod's snapshot; a cold restart adopts item displays as wisps). The
-/// rest take a step of their path
+/// (`live`: the id, the display kind, the yaw and the position of each) and
+/// the player whose tick this is. The engine's list is the truth: a state
+/// whose display is gone drops off (a world reloaded, a `/kill`). A display
+/// the list doesn't know is read by its yaw: one wearing a kind's code is a
+/// creature of the mod's, saved with an earlier session - the engine keeps
+/// the code in the display's NBT and hands it back on load, so a reopened
+/// world brings its kinds back through a reload and a full game restart
+/// alike - and one wearing no code was never the mod's, and is purged: the
+/// Abyss keeps nothing under its gate that isn't on the mod's ledger. The
+/// rest take a step of their paths
 /// — watchers easing toward the player — and one whose own player is beyond
-/// [`CREATURE_CULL`] of its anchor is let go. Each player's tick steps every
-/// creature once, so a LAN game's creatures run a little faster the more
-/// players are down there; one player's is exact.
+/// [`CREATURE_CULL`] of its anchor is let go. Every move keeps a creature's
+/// code on it, so the memory the engine saves is always current. Each
+/// player's tick steps every creature once, so a LAN game's creatures run a
+/// little faster the more players are down there; one player's is exact.
 pub fn step_creatures(
     player: [f64; 3],
     owner: u128,
-    live: &[(u32, &str, [f64; 3])],
+    live: &[(u32, &str, f32, [f64; 3])],
 ) -> CreatureStep {
     let mut step = CreatureStep::default();
     CREATURES.with(|cell| {
         let mut creatures = cell.borrow_mut();
-        creatures.retain(|creature| live.iter().any(|(id, _, _)| *id == creature.id));
-        for (id, display_kind, pos) in live {
+        creatures.retain(|creature| live.iter().any(|(id, _, _, _)| *id == creature.id));
+        for (id, display_kind, yaw, pos) in live {
             if creatures.iter().any(|creature| creature.id == *id) {
                 continue;
             }
-            let Some(fallback) = Creature::of(display_kind) else {
-                continue;
-            };
-            creatures.push(CreatureState {
-                id: *id,
-                kind: remembered_kind(*pos).unwrap_or(fallback),
-                anchor: *pos,
-                last: *pos,
-                phase: *id as f32 * 0.7,
-                owner,
-                pose_in: 0,
-            });
+            match kind_from_yaw(display_kind, *yaw) {
+                Some(kind) => creatures.push(CreatureState {
+                    id: *id,
+                    kind,
+                    anchor: *pos,
+                    phase: *id as f32 * 0.7,
+                    owner,
+                    pose_in: 0,
+                }),
+                None => step.purge.push(*id),
+            }
         }
         creatures.retain_mut(|creature| {
             if creature.owner == owner {
@@ -673,12 +696,8 @@ pub fn step_creatures(
             }
             creature.phase += PHASE_STEP;
             let pos = drift(creature.kind, creature.anchor, creature.phase);
-            let yaw = match creature.kind {
-                Creature::Watcher => face_yaw(pos, player),
-                _ => (creature.phase * 30.0).rem_euclid(360.0),
-            };
-            step.moves.push((creature.id, pos, yaw));
-            creature.last = pos;
+            step.moves
+                .push((creature.id, pos, creature.kind.yaw_code()));
             if creature.pose_in == 0 {
                 step.poses
                     .push((creature.id, creature.kind, creature.phase));
@@ -874,20 +893,14 @@ pub fn decode_dig(data: &[u8]) -> Option<([i32; 3], Dig)> {
 /// forgets everything the mod keeps for it - the creatures, the hunts, the
 /// players' rhythms and the shape it announced - so a world reopened (or
 /// another one) starts clean and no stale engine id is ever moved again.
-/// Another dimension's close is none of the mod's business.
+/// Nothing is lost by it: every creature's kind rides the yaw code the
+/// engine saves with its display, so the reopened world's first deep tick
+/// adopts the saved displays back as the kinds they were. Another
+/// dimension's close is none of the mod's business.
 pub fn forget_world(dimension: &str) -> bool {
     if dimension != "minecraft:overworld" {
         return false;
     }
-    KINDS.with(|kinds| {
-        let mut kinds = kinds.borrow_mut();
-        kinds.clear();
-        CREATURES.with(|creatures| {
-            for creature in creatures.borrow().iter() {
-                kinds.push((spot_key(creature.last), creature.kind));
-            }
-        });
-    });
     clear_creatures();
     clear_stalks();
     SHAPE.with(|cell| cell.set(None));
@@ -1159,35 +1172,65 @@ mod tests {
         clear_creatures();
         let player = [0.0, -200.0, 0.0];
         let owner = 0x0BED_0007;
-        // A display the list doesn't know is adopted and driven at once...
-        let step = step_creatures(player, owner, &[(11, ITEM_DISPLAY, [3.0, -201.0, 3.0])]);
+        let code = Creature::Wisp.yaw_code();
+        // A display the list doesn't know but whose yaw wears the mod's code
+        // is adopted and driven at once...
+        let step = step_creatures(
+            player,
+            owner,
+            &[(11, ITEM_DISPLAY, code, [3.0, -201.0, 3.0])],
+        );
         assert_eq!(creatures_len(), 1);
+        assert_eq!(creature_kind(11), Some(Creature::Wisp));
         assert_eq!(step.moves.len(), 1);
         assert_eq!(step.moves[0].0, 11);
+        assert_eq!(step.moves[0].2, code, "every move keeps the code on");
         assert_eq!(step.poses.len(), 1, "a fresh creature poses at once");
-        assert!(step.cull.is_empty());
+        assert!(step.cull.is_empty() && step.purge.is_empty());
         // ...its pose comes again on the mod's rhythm...
         let mut poses = 0;
         for _ in 0..POSE_EVERY {
-            let step = step_creatures(player, owner, &[(11, ITEM_DISPLAY, [3.0, -201.0, 3.0])]);
+            let step = step_creatures(
+                player,
+                owner,
+                &[(11, ITEM_DISPLAY, code, [3.0, -201.0, 3.0])],
+            );
             poses += step.poses.len();
             assert_eq!(step.moves.len(), 1);
         }
         assert_eq!(poses, 1);
+        // ...a display wearing no code is not the mod's: it goes, undriven...
+        let step = step_creatures(
+            player,
+            owner,
+            &[(14, ITEM_DISPLAY, 33.0, [3.0, -201.0, 3.0])],
+        );
+        assert_eq!(step.purge, [14]);
+        assert!(creature_kind(14).is_none());
+        assert!(step.moves.iter().all(|(id, _, _)| *id != 14));
         // ...one the engine no longer has drops off the list...
         let step = step_creatures(player, owner, &[]);
         assert_eq!(creatures_len(), 0);
-        assert!(step.moves.is_empty() && step.poses.is_empty() && step.cull.is_empty());
+        assert!(
+            step.moves.is_empty()
+                && step.poses.is_empty()
+                && step.cull.is_empty()
+                && step.purge.is_empty()
+        );
         // ...and one whose own player walks away is let go.
         add_creature(12, Creature::Wisp, [0.0, -200.0, 0.0], owner);
         let far = [500.0, -200.0, 0.0];
-        let step = step_creatures(far, owner, &[(12, ITEM_DISPLAY, [0.0, -200.0, 0.0])]);
+        let step = step_creatures(far, owner, &[(12, ITEM_DISPLAY, code, [0.0, -200.0, 0.0])]);
         assert_eq!(step.cull, [12]);
         assert_eq!(creatures_len(), 0);
         assert!(step.moves.is_empty());
         // Another player's creature is left alone by this player's tick.
         add_creature(13, Creature::Wisp, [0.0, -200.0, 0.0], owner);
-        let step = step_creatures(far, owner + 1, &[(13, ITEM_DISPLAY, [0.0, -200.0, 0.0])]);
+        let step = step_creatures(
+            far,
+            owner + 1,
+            &[(13, ITEM_DISPLAY, code, [0.0, -200.0, 0.0])],
+        );
         assert!(step.cull.is_empty());
         assert_eq!(creatures_len(), 1);
         clear_creatures();
@@ -1377,30 +1420,72 @@ mod tests {
     }
 
     #[test]
+    fn a_creatures_kind_rides_its_yaw() {
+        // Every kind reads back from its own code, with room on both sides,
+        // and its code on the wrong display kind reads as nothing.
+        for kind in [
+            Creature::Wisp,
+            Creature::Lantern,
+            Creature::Watcher,
+            Creature::Ember,
+            Creature::Frostmote,
+        ] {
+            let code = kind.yaw_code();
+            assert_eq!(kind_from_yaw(kind.display(), code), Some(kind));
+            assert_eq!(kind_from_yaw(kind.display(), code + 12.0), Some(kind));
+            assert_eq!(kind_from_yaw(kind.display(), code - 12.0), Some(kind));
+            let other = if kind.display() == ITEM_DISPLAY {
+                BLOCK_DISPLAY
+            } else {
+                ITEM_DISPLAY
+            };
+            assert_eq!(kind_from_yaw(other, code), None);
+        }
+        // The wisp's code straddles zero: a yaw the engine saved as 359.5
+        // reads back as the wisp.
+        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 359.5), Some(Creature::Wisp));
+        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 0.5), Some(Creature::Wisp));
+        // A yaw that is no code, and a display kind the mod doesn't ride:
+        // nothing of the mod's.
+        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 33.0), None);
+        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 180.0), None);
+        assert_eq!(kind_from_yaw(BLOCK_DISPLAY, 0.0), None);
+        assert_eq!(kind_from_yaw("minecraft:text_display", 0.0), None);
+        assert_eq!(kind_from_yaw("minecraft:marker", 72.0), None);
+    }
+
+    #[test]
     fn a_reopened_world_adopts_its_kinds_back() {
         clear_creatures();
-        KINDS.with(|kinds| kinds.borrow_mut().clear());
         add_creature(11, Creature::Ember, [3.0, -100.0, 3.0], 7);
-        // The world closes: the snapshot keeps what the ember was, where it was.
+        // The world closes: the mod forgets what it drove.
         assert!(forget_world("minecraft:overworld"));
         assert_eq!(creatures_len(), 0);
-        // The engine still holds the display where the chunk saved it, and the
-        // reopen's first deep tick adopts it back - as an ember, not a wisp.
+        // The engine saved the display with the code yaw every move kept,
+        // and hands it back when the chunk loads - a world reloaded in the
+        // same session or the whole game restarted, alike: the first deep
+        // tick adopts it back as the ember it was.
         step_creatures(
             [0.0, -100.0, 0.0],
             7,
-            &[(11, ITEM_DISPLAY, [3.0, -100.0, 3.0])],
+            &[(
+                11,
+                ITEM_DISPLAY,
+                Creature::Ember.yaw_code(),
+                [3.0, -100.0, 3.0],
+            )],
         );
         assert_eq!(creature_kind(11), Some(Creature::Ember));
-        // The spot answered once: a second stranger there is a plain wisp.
-        step_creatures(
+        // A stranger's display - a /summon, another mod's - wears no code:
+        // it is let go, never driven.
+        let step = step_creatures(
             [0.0, -100.0, 0.0],
             7,
-            &[(12, ITEM_DISPLAY, [3.0, -100.0, 3.0])],
+            &[(12, ITEM_DISPLAY, 41.0, [3.0, -100.0, 3.0])],
         );
-        assert_eq!(creature_kind(12), Some(Creature::Wisp));
+        assert_eq!(step.purge, [12]);
+        assert_eq!(creature_kind(12), None);
         clear_creatures();
-        KINDS.with(|kinds| kinds.borrow_mut().clear());
     }
 
     #[test]
