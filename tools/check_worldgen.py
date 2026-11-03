@@ -192,13 +192,28 @@ def structural_checks(fails):
                 fails.append(f'{where}: the carver\'s y must be a height provider whose '
                              f'anchors are maps ({{"absolute": N}}), never bare integers')
             if node.get('type') == 'minecraft:height_range':
-                # a placement modifier carries its provider as `distribution`,
-                # a block predicate as `height`
-                provider = node.get('distribution', node.get('height'))
-                if provider is None or not height_provider_ok(provider):
-                    fails.append(f'{where}: height_range must carry a height provider '
-                                 f'whose anchors are maps ({{"absolute": N}}), never '
-                                 f'bare integers')
+                # A placement modifier's height_range carries its provider as
+                # `height` (placement.rs: required(&object, "height")); a
+                # block predicate's takes min_inclusive/max_inclusive with no
+                # wrapper at all. A `distribution` key is a silent feature
+                # killer: the decode fails and the whole placed feature goes.
+                if 'distribution' in node:
+                    fails.append(f'{where}: height_range must carry its provider as '
+                                 f'"height" - a "distribution" key fails the engine '
+                                 f'decode and drops the whole feature')
+                elif 'height' in node:
+                    if not height_provider_ok(node['height']):
+                        fails.append(f'{where}: height_range must carry a height provider '
+                                     f'whose anchors are maps ({{"absolute": N}}), never '
+                                     f'bare integers')
+                elif 'min_inclusive' in node or 'max_inclusive' in node:
+                    for key in ('min_inclusive', 'max_inclusive'):
+                        if key in node and not anchor_ok(node[key]):
+                            fails.append(f'{where}: height_range {key} must be an anchor '
+                                         f'map ({{"absolute": N}}), never a bare integer')
+                else:
+                    fails.append(f'{where}: height_range carries neither a "height" '
+                                 f'provider nor direct min_inclusive/max_inclusive')
             for value in node.values():
                 check_providers(value, where)
         elif isinstance(node, list):

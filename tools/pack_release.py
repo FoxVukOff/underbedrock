@@ -15,6 +15,7 @@
 (make_content.py, make_textures.py) нужно только правки ради.
 """
 import hashlib
+import json
 import shutil
 import subprocess
 import sys
@@ -54,9 +55,20 @@ def pack_hmod():
 
 
 def pack_hnmod():
-    """The native mod, by the bundle's own packager (source-only .hnmod)."""
-    subprocess.run([sys.executable, 'tools/package.py'], cwd=ROOT / 'native-mod', check=True)
-    built = sorted((ROOT / 'native-mod' / 'target').glob('underbedrock_core-*.hnmod'))[-1]
+    """The native mod, by the bundle's own packager (source-only .hnmod).
+    The packager prints the artifact it just wrote as JSON; taking the path
+    from its own mouth is exact - a glob-and-sort over target/ could pick up
+    a stale build of another version."""
+    done = subprocess.run(
+        [sys.executable, 'tools/package.py'],
+        cwd=ROOT / 'native-mod',
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    built = Path(json.loads(done.stdout)['file'])
+    if not built.is_file():
+        raise SystemExit(f'package.py named no file on disk: {built}')
     out = RELEASE / 'underbedrock_core.hnmod'
     shutil.copyfile(built, out)
     return out

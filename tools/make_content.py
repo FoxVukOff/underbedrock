@@ -851,8 +851,9 @@ write(PACK / "data/minecraft/worldgen/carver/cave_extra_underground.json", {
 # gate, so the mineshafts (and the ancient cities, whose deep dark columns
 # reach the whole stack) are switched off for this world entirely - the
 # surface keeps every other structure. Amethyst geodes are a placed feature,
-# and those do take a height range: the vanilla one has none, so geodes grew
-# at any depth; this keeps them where vanilla puts them, above the floor.
+# and those do take a height range - but vanilla anchors its floor to the
+# world's bottom, which in this world sinks it into the wastes (the fix is
+# just below).
 EMPTY_SET = {
     "structures": [],
     "placement": {
@@ -864,16 +865,30 @@ EMPTY_SET = {
 }
 write(PACK / "data/minecraft/worldgen/structure_set/mineshafts.json", EMPTY_SET)
 write(PACK / "data/minecraft/worldgen/structure_set/ancient_cities.json", EMPTY_SET)
+# Vanilla's geode placement hangs its floor on `above_bottom: 6` - six over
+# the world's bottom, which in a -64 world is -58 but in this -576 world
+# would be -570, deep in the frozen wastes. The override pins the same band
+# vanilla gives a normal world (absolute -58..30) and keeps every other
+# vanilla modifier in place (rarity 24, the in-square jitter, the biome
+# filter - which Horizon decodes as "minecraft:biome"); the provider key of
+# a placement height_range is "height", as placement.rs and the engine's own
+# content fixtures have it (a "distribution" key fails the decode and drops
+# the whole feature).
 write(PACK / "data/minecraft/worldgen/placed_feature/amethyst_geode.json", {
     "feature": "minecraft:amethyst_geode",
-    "placement": [{
-        "type": "minecraft:height_range",
-        "distribution": {
-            "type": "minecraft:uniform",
-            "min_inclusive": {"absolute": -58},
-            "max_inclusive": {"absolute": 30},
+    "placement": [
+        {"type": "minecraft:rarity_filter", "chance": 24},
+        {"type": "minecraft:in_square"},
+        {
+            "type": "minecraft:height_range",
+            "height": {
+                "type": "minecraft:uniform",
+                "min_inclusive": {"absolute": -58},
+                "max_inclusive": {"absolute": 30},
+            },
         },
-    }],
+        {"type": "minecraft:biome"},
+    ],
 })
 
 write(PACK / "data/minecraft/worldgen/carver/canyon.json", {

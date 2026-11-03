@@ -228,14 +228,23 @@ moves each creature along its path (`native_move_entity`) and resends its
 pose — scale and spin — every eight ticks (`native_set_display`; the clients
 ease between the poses); a creature whose player walks 96 blocks away is let
 go (`native_remove_entity`). Every creature wears its kind as a yaw code —
-0° a wisp, 72° an ember, 144° a watcher, 216° a lantern, 288° a frostmote —
+23° a wisp, 95° an ember, 167° a watcher, 239° a lantern, 311° a frostmote —
 kept on by every move, and the engine saves the yaw with the display's NBT
-(`Rotation`) and hands it back when its chunk loads: a world reloaded adopts
-its creatures back as the kinds they were, within a game session and across a
-full restart alike, with no memory of the mod's own. A display under the gate
-that wears no code — a `/summon` of someone's, another mod's — is not the
-mod's to drive and is let go as well: the Abyss keeps nothing under its gate
-that isn't on the mod's ledger.
+(`Rotation`, exact f32 bits) and hands it back when its chunk loads: a world
+reloaded adopts its creatures back as the kinds they were, within a game
+session and across a full restart alike, with no memory of the mod's own. The
+codes sit on odd values away from the cardinals and the zero a plain
+`/summon` writes, and the reading window is tight (±2°), so a foreign
+display has to wear a code almost to the degree to pass — an accepted
+residual risk, for the API lets a mod write a display's NBT but never read
+one back, and the yaw is the only identity channel that survives a restart.
+A display under the gate that wears no code — a `/summon` of someone's,
+another mod's, or one an older Under Bedrock saved before codes existed — is
+not the mod's to drive and is let go as well: the Abyss keeps nothing under
+its gate that isn't on the mod's ledger. (An update from a code-less version
+therefore clears its old creatures once, on the first deep tick; the
+replenish brings fresh ones at once, and nothing else in the world is
+touched.)
 
 **The ban and the stalker.** The same tick reads the engine's mob list
 (`native_mobs`, API 37): every mob below y −55 whose id the mod does not track
@@ -346,10 +355,13 @@ today, a nightly.
 - Vanilla's own hollows used to leak into the Abyss (mineshafts, amethyst
   geodes), since structure placement knows no depth. The pack now switches
   the mineshaft and ancient-city structure sets off for this world entirely
-  (a structure set cannot be depth-gated), and gives the amethyst geode its
-  vanilla height range back, so geodes stay above the floor where vanilla
-  puts them. The surface loses mineshafts and ancient cities with them;
-  every other structure keeps spawning as usual.
+  (a structure set cannot be depth-gated), and overrides the amethyst
+  geode's placement: vanilla anchors its floor six blocks over the world's
+  bottom, which in a world this deep would be y −570, so the override pins
+  the band vanilla gives a normal world (−58..30, absolute) and keeps every
+  other vanilla modifier in place (the 1-in-24 rarity, the in-square jitter,
+  the biome filter). The surface loses mineshafts and ancient cities with
+  them; every other structure keeps spawning as usual.
 - In chunks the engine has not generated yet, the sky can show through the
   Abyss's rock (a glimpse of bright "unloaded" above the head). That is chunk
   streaming, not light — it closes as the chunks load; a bigger render

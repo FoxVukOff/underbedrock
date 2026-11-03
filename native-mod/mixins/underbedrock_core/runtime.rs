@@ -115,10 +115,12 @@ pub const WATCHER_NEAR: f64 = 16.0;
 pub const WATCHER_KEEP: f64 = 4.0;
 
 /// How close a display's yaw has to sit to a kind's code to read as that
-/// kind. The codes are 72 degrees apart and a yaw round-trips through the
-/// engine's save as the same float it went in with, so the window is wide
-/// and nothing lands in two of them.
-pub const YAW_TOL: f32 = 18.0;
+/// kind. The round-trip is exact - the move keeps the code as it is, the
+/// engine saves it as the same f32 bits (`Rotation` in the display's NBT) and
+/// hands those bits back on load - so the window is tight, and a foreign
+/// display has to wear a code almost to the degree to be taken for one of
+/// the mod's.
+pub const YAW_TOL: f32 = 2.0;
 
 /// The kinds of creature the Abyss gets.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -178,14 +180,17 @@ impl Creature {
     /// visible spin of a creature is its transformation, not its yaw - so
     /// the yaw is free, and the mod writes its kinds into it: a memory of
     /// what every creature was, kept by the engine itself, good across a
-    /// world reload and a full game restart alike.
+    /// world reload and a full game restart alike. The codes sit 72 degrees
+    /// apart on odd values, away from the cardinal points and from the zero
+    /// a `/summon` without a rotation writes: a foreign display is much
+    /// likelier to wear those than a code.
     pub fn yaw_code(self) -> f32 {
         match self {
-            Self::Wisp => 0.0,
-            Self::Ember => 72.0,
-            Self::Watcher => 144.0,
-            Self::Lantern => 216.0,
-            Self::Frostmote => 288.0,
+            Self::Wisp => 23.0,
+            Self::Ember => 95.0,
+            Self::Watcher => 167.0,
+            Self::Lantern => 239.0,
+            Self::Frostmote => 311.0,
         }
     }
 }
@@ -1432,8 +1437,8 @@ mod tests {
         ] {
             let code = kind.yaw_code();
             assert_eq!(kind_from_yaw(kind.display(), code), Some(kind));
-            assert_eq!(kind_from_yaw(kind.display(), code + 12.0), Some(kind));
-            assert_eq!(kind_from_yaw(kind.display(), code - 12.0), Some(kind));
+            assert_eq!(kind_from_yaw(kind.display(), code + 1.5), Some(kind));
+            assert_eq!(kind_from_yaw(kind.display(), code - 1.5), Some(kind));
             let other = if kind.display() == ITEM_DISPLAY {
                 BLOCK_DISPLAY
             } else {
@@ -1441,17 +1446,20 @@ mod tests {
             };
             assert_eq!(kind_from_yaw(other, code), None);
         }
-        // The wisp's code straddles zero: a yaw the engine saved as 359.5
-        // reads back as the wisp.
-        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 359.5), Some(Creature::Wisp));
-        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 0.5), Some(Creature::Wisp));
-        // A yaw that is no code, and a display kind the mod doesn't ride:
+        // Just outside the window: nothing.
+        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 23.0 + 2.5), None);
+        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 23.0 - 2.5), None);
+        // A yaw that is no code - above all the zero a plain /summon writes
+        // and the cardinal points - and a display kind the mod doesn't ride:
         // nothing of the mod's.
-        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 33.0), None);
+        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 0.0), None);
+        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 90.0), None);
         assert_eq!(kind_from_yaw(ITEM_DISPLAY, 180.0), None);
+        assert_eq!(kind_from_yaw(ITEM_DISPLAY, 33.0), None);
         assert_eq!(kind_from_yaw(BLOCK_DISPLAY, 0.0), None);
-        assert_eq!(kind_from_yaw("minecraft:text_display", 0.0), None);
-        assert_eq!(kind_from_yaw("minecraft:marker", 72.0), None);
+        assert_eq!(kind_from_yaw(BLOCK_DISPLAY, 239.0 + 40.0), None);
+        assert_eq!(kind_from_yaw("minecraft:text_display", 23.0), None);
+        assert_eq!(kind_from_yaw("minecraft:marker", 95.0), None);
     }
 
     #[test]

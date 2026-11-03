@@ -2,8 +2,15 @@
   "feature": "minecraft:amethyst_geode",
   "placement": [
     {
+      "type": "minecraft:rarity_filter",
+      "chance": 24
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
       "type": "minecraft:height_range",
-      "distribution": {
+      "height": {
         "type": "minecraft:uniform",
         "min_inclusive": {
           "absolute": -58
@@ -12,6 +19,9 @@
           "absolute": 30
         }
       }
+    },
+    {
+      "type": "minecraft:biome"
     }
   ]
 }

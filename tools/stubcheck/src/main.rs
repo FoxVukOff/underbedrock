@@ -580,7 +580,7 @@ fn main() {
                 y: -210.0,
                 z: deep[2],
             },
-            yaw: 0.0,
+            yaw: m::Creature::Wisp.yaw_code(),
             pitch: 0.0,
         });
     }
