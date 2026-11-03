@@ -190,17 +190,30 @@ def crystal_lamp(seed=61):
 
 
 def crystal_sprout(seed=71):
+    """A void sprout: two teal stems with broad leaves and a crystal tip,
+    readable at a glance against the dark stone it grows on."""
     px = canvas()
     stem = (36, 84, 108, 255)
-    for y in range(10, 16):
+    leaf = (52, 116, 140, 255)
+    # The main stem, two pixels wide so it survives the block's cross model.
+    for y in range(8, 16):
+        put(px, 7, y, stem)
         put(px, 8, y, stem)
-    put(px, 7, 12, stem)
-    put(px, 9, 13, stem)
-    # A small crystal fan on top.
-    for x, y, c in ((8, 9, BLUE_MID), (8, 8, BLUE_BRIGHT), (8, 7, BLUE_WHITE),
-                    (7, 9, BLUE_MID), (7, 8, BLUE_BRIGHT), (6, 8, BLUE_DEEP),
-                    (9, 9, BLUE_MID), (9, 8, BLUE_BRIGHT), (10, 8, BLUE_DEEP),
-                    (8, 6, BLUE_BRIGHT), (7, 5, BLUE_DEEP), (9, 5, BLUE_DEEP)):
+    # A side shoot.
+    for y in range(11, 16):
+        put(px, 11, y, stem)
+    # Broad leaves, one per stem.
+    for x, y in ((5, 10), (4, 9), (5, 9), (6, 10), (10, 12), (12, 11), (12, 12)):
+        put(px, x, y, leaf)
+    put(px, 4, 8, BLUE_DEEP)
+    put(px, 13, 10, BLUE_DEEP)
+    # The crystal fan on the main tip: a bright spike with two shoulders.
+    for x, y, c in ((7, 7, BLUE_BRIGHT), (8, 7, BLUE_BRIGHT),
+                    (7, 6, BLUE_WHITE), (8, 6, BLUE_BRIGHT),
+                    (7, 5, BLUE_WHITE), (8, 4, BLUE_WHITE),
+                    (6, 7, BLUE_MID), (9, 7, BLUE_MID),
+                    (6, 6, BLUE_DEEP), (9, 6, BLUE_DEEP),
+                    (11, 10, BLUE_MID), (11, 9, BLUE_BRIGHT), (11, 8, BLUE_WHITE)):
         put(px, x, y, c)
     save(px, "block/crystal_sprout.png")
 
@@ -251,14 +264,27 @@ def void_crystal(seed=83):
 
 
 def void_alloy(seed=89):
+    """The ingot: a bevelled bar with a bright poured top and a blue glow line
+    through its dark body - an ingot's shape, not a flat plate."""
     px = canvas()
-    for y, row in enumerate(range(6, 11)):
-        for x in range(3, 13):
-            c = BLUE_WHITE if y == 0 else BLUE_BRIGHT if y == 1 else \
-                (60, 66, 92, 255) if y == 2 else (44, 48, 68, 255) if y == 3 else (32, 34, 50, 255)
-            put(px, x, row, c)
-    put(px, 4, 6, BLUE_WHITE)
-    put(px, 11, 8, BLUE_DEEP)
+    body = [(60, 66, 92, 255), (44, 48, 68, 255), (32, 34, 50, 255)]
+    for x in range(4, 12):
+        put(px, x, 5, BLUE_MID)          # the bevel's top edge
+    for x in range(3, 13):
+        put(px, x, 6, BLUE_WHITE)        # the poured top face
+        put(px, x, 7, BLUE_BRIGHT)
+        put(px, x, 8, body[0])
+        put(px, x, 9, body[1])
+        put(px, x, 10, body[2])
+    for x in range(4, 12):
+        put(px, x, 11, (22, 24, 36, 255))  # the bevel's bottom edge
+    # The glow line the void leaves in the pour.
+    for x in range(4, 12):
+        put(px, x, 8, BLUE_MID if x % 2 else BLUE_BRIGHT)
+    put(px, 5, 6, BLUE_WHITE)
+    put(px, 10, 7, BLUE_WHITE)
+    put(px, 3, 8, BLUE_DEEP)
+    put(px, 12, 9, BLUE_DEEP)
     save(px, "item/void_alloy.png")
 
 
@@ -357,16 +383,55 @@ def ember_shard(seed=113):
 
 
 def frost_shard(seed=127):
-    save(_shard([(214, 236, 246, 255), (146, 182, 202, 255), (232, 246, 252, 255), (98, 128, 150, 255)], seed),
-         "item/frost_shard.png")
+    """A frost shard: one pale icicle, white at the core and icy at the edges,
+    instead of a rough blob."""
+    px = canvas()
+    ice = [(232, 246, 252, 255), (214, 236, 246, 255), (146, 182, 202, 255), (98, 128, 150, 255)]
+    put(px, 8, 3, ice[0])
+    for y in range(4, 7):
+        put(px, 8, y, ice[0])
+        put(px, 7, y, ice[1])
+    for y in range(7, 11):
+        put(px, 8, y, ice[0])
+        put(px, 7, y, ice[1])
+        put(px, 9, y, ice[2])
+        put(px, 6, y, ice[3])
+    for y in range(11, 14):
+        put(px, 8, y, ice[1])
+        put(px, 7, y, ice[2])
+        put(px, 9, y, ice[3])
+    put(px, 8, 14, ice[2])
+    put(px, 9, 5, ice[0])
+    put(px, 6, 9, ice[3])
+    save(px, "item/frost_shard.png")
 
 
 def stalker_shard(seed=131):
-    """The stalker's shard: near-black with a red eye line, for its visible body."""
-    px = _shard([(24, 10, 14, 255), (48, 12, 18, 255), (12, 6, 8, 255), (70, 16, 22, 255)], seed)
-    for x in range(6, 11):
-        put(px, x, 9, (226, 40, 46, 255))
-    put(px, 8, 9, (255, 120, 110, 255))
+    """The stalker's shard: a jagged near-black spike with one red eye slit
+    down its face - the hunter's own colour, for its visible body."""
+    px = canvas()
+    dark = [(24, 10, 14, 255), (48, 12, 18, 255), (12, 6, 8, 255), (70, 16, 22, 255)]
+    put(px, 8, 2, dark[3])
+    for y in range(3, 6):
+        put(px, 8, y, dark[1])
+        put(px, 7, y, dark[2])
+    for y in range(6, 11):
+        put(px, 7, y, dark[0])
+        put(px, 8, y, dark[1])
+        put(px, 9, y, dark[2])
+        put(px, 6, y, dark[2])
+    for y in range(11, 14):
+        put(px, 7, y, dark[2])
+        put(px, 8, y, dark[0])
+        put(px, 9, y, dark[2])
+        put(px, 10, y, dark[2])
+    put(px, 8, 14, dark[2])
+    # The eye slit, and a jag on each side.
+    for y in range(6, 11):
+        put(px, 8, y, (226, 40, 46, 255))
+    put(px, 8, 8, (255, 120, 110, 255))
+    put(px, 5, 8, dark[3])
+    put(px, 11, 10, dark[3])
     save(px, "item/stalker_shard.png")
 
 

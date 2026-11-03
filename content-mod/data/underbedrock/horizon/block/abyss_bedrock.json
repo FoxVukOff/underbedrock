@@ -5,5 +5,5 @@
     "explosion_resistance": 3600000.0,
     "sounds": "minecraft:stone"
   },
-  "item": false
+  "item": true
 }

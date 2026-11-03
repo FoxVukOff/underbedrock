@@ -49,8 +49,8 @@ Smelting or blasting the ore gives crystals; a crystal and an iron ingot make
 a **Void Alloy Ingot**. Smelting a layer's own stone gives its shard: an
 **Ember Shard** from emberstone, a **Frost Shard** from froststone.
 
-**The Void Alloy Pickaxe.** 2800 durability, mining speed 14, enchantment
-glint, three alloy ingots and two sticks to craft. It is the only tool that
+**The Void Alloy Pickaxe.** 2800 durability, mining speed 14, three alloy
+ingots and two sticks to craft. It is the only tool that
 takes bedrock and voidshell: hold the attack key on the block and a progress
 bar fills over the hotbar — three seconds by default — then the block goes
 and, if enabled, drops itself. Only the player who holds the pickaxe digs;
@@ -58,8 +58,12 @@ everyone else, and every other tool, gets an unbreakable block.
 
 **The full void set.** The pickaxe is not alone: a void-alloy **sword, axe,
 hoe and shovel** and a **helmet, chestplate, leggings and boots** — netherite-
-tier stats, enchantment glint, repaired with void alloy ingots, eight shaped
-recipes. The **Stalker Shard** completes the tab as a trophy item (it is also
+tier stats, repaired with void alloy ingots, eight shaped recipes, and no
+enchantment glint anywhere: the set reads by its own textures, not by a
+purple shine. The tab lists the dig and the set first, then the materials,
+then the Abyss layer by layer from the voidshell gate down to the Abyss
+bedrock (which joins the tab for builders), and the lamps and sprouts last.
+The **Stalker Shard** sits among the materials as a trophy item (it is also
 what the stalker wears, and what killing one drops — see below).
 
 **Inhabitants.** The Abyss is populated by the mod's **own creatures** — no
@@ -73,12 +77,13 @@ crystal that closes in and watches the player — in the cool islands, and
 per player, saved with the world.
 
 **The stalker.** The frozen wastes below y −420 keep no ambient company —
-they hunt. One **stalker** per player takes shape 14 blocks out: an invisible,
-silent, weightless vex of 60 HP that the engine's own flying melee drives
+they hunt. One **stalker** per player takes shape 16 blocks out: an invisible,
+silent, weightless vex of 24 HP that the engine's own flying melee drives
 (through stone, like the ghost it is), wearing an item display of the mod's
-stalker shard as its visible body, faced at the player every tick. Kill it and
-its shard drops as the trophy, the wastes are quiet for 30 seconds, then send
-another; climb above y −420 and the hunt ends at once. Bring the void set.
+stalker shard as its visible body, faced at the player every tick. It is meant
+to annoy, not to wall: a few swings end it, its shard drops as the trophy, and
+15 seconds later the wastes send another; climb above y −420 and the hunt ends
+at once. Bring the void set.
 
 **The rest.** English and Russian languages, recipes (smelting, blasting,
 alloy, pickaxe, crystal block both ways, bricks, lamp, sprout), loot tables
@@ -230,7 +235,7 @@ chunks is adopted and driven again.
 as a stalker is removed (`native_remove_mob` — no death, no loot), so the
 Abyss's "no vanilla mobs" is a server-side fact, not a spawning accident. The
 stalker itself is a vex the mod spawns per player below y −420
-(`native_spawn_mob` with the invisible, silent, no-gravity flags and 60 HP):
+(`native_spawn_mob` with the invisible, silent, no-gravity flags and 24 HP):
 the engine's own melee AI does the hunting and the damage, while the mod
 moves its shard-display body onto the mob every tick and faces it at the
 player. A mob the engine no longer lists (killed, gone) takes its body with
@@ -332,9 +337,13 @@ today, a nightly.
   fights and hurts, because under the shard display it is a real (invisible)
   vex the engine itself drives. They spawn only near a player in the Abyss,
   not as part of world generation.
-- Vanilla structures are placed by biome, not by depth, so a mineshaft can
-  leak its wooden supports into the top of the Abyss (seen around y −256).
-  There is no cheap data-pack fix; the layers below are clean.
+- Vanilla's own hollows used to leak into the Abyss (mineshafts, amethyst
+  geodes), since structure placement knows no depth. The pack now switches
+  the mineshaft and ancient-city structure sets off for this world entirely
+  (a structure set cannot be depth-gated), and gives the amethyst geode its
+  vanilla height range back, so geodes stay above the floor where vanilla
+  puts them. The surface loses mineshafts and ancient cities with them;
+  every other structure keeps spawning as usual.
 - In chunks the engine has not generated yet, the sky can show through the
   Abyss's rock (a glimpse of bright "unloaded" above the head). That is chunk
   streaming, not light — it closes as the chunks load; a bigger render

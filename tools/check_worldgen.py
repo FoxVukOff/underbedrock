@@ -85,6 +85,53 @@ def structural_checks(fails):
     if '"minecraft:bedrock"' not in text or '"underbedrock:abyss_bedrock"' not in text \
             or '"underbedrock:voidshell"' not in text or '"underbedrock:voidstone"' not in text:
         fails.append('surface rule: a depth block (bedrock/abyss_bedrock/voidshell/voidstone) is missing')
+    # A layer band is two nested y conditions: y above one anchor and at or
+    # below the other. Swapped, the band is an empty set and the whole layer
+    # falls through to the rule that follows (the 2026-11-03 bug that made
+    # the Abyss one voidshell mass), so every pair must be satisfiable and
+    # the four bands must stack from -73 down to -564 without a gap.
+    def y_anchor(cond):
+        if isinstance(cond, dict) and cond.get('type') == 'minecraft:y_above':
+            return ('pos', cond['anchor']['absolute'])
+        if (isinstance(cond, dict) and cond.get('type') == 'minecraft:not'
+                and isinstance(cond.get('invert'), dict)
+                and cond['invert'].get('type') == 'minecraft:y_above'):
+            return ('neg', cond['invert']['anchor']['absolute'])
+        return None
+
+    def band_pairs(node, out):
+        if isinstance(node, dict):
+            top = y_anchor(node.get('if_true'))
+            inner = node.get('then_run')
+            if top and isinstance(inner, dict) \
+                    and inner.get('type') == 'minecraft:condition':
+                bottom = y_anchor(inner.get('if_true'))
+                if bottom and {top[0], bottom[0]} == {'pos', 'neg'}:
+                    pos = top[1] if top[0] == 'pos' else bottom[1]
+                    neg = top[1] if top[0] == 'neg' else bottom[1]
+                    out.append((pos, neg))
+            for value in node.values():
+                band_pairs(value, out)
+        elif isinstance(node, list):
+            for value in node:
+                band_pairs(value, out)
+
+    pairs = []
+    band_pairs(surface, pairs)
+    for pos, neg in pairs:
+        if neg < pos + 1:
+            fails.append(f'surface rule: the band y in ({pos}, {neg}] is empty - '
+                         f'the two y anchors are swapped')
+    stack = sorted(((neg, pos + 1) for pos, neg in pairs if neg <= -73),
+                   reverse=True)
+    for (sh_a, de_a), (sh_b, de_b) in zip(stack, stack[1:]):
+        if de_a - 1 != sh_b:
+            fails.append(f'surface rule: a gap between the band ending at '
+                         f'{de_a} and the one starting at {sh_b}')
+    if len(stack) != 4 or stack[0][0] != -73 or stack[-1][1] != -564:
+        fails.append('surface rule: the layer stack must be four bands '
+                     'reaching from -73 down to -564')
+
     # A vertical gradient is true at every depth below its band: before any
     # block rule under one, a y_above condition must narrow it to a window, or
     # the block paints the whole world below the band (the old "infinite
@@ -144,10 +191,14 @@ def structural_checks(fails):
                     and 'y' in node and not height_provider_ok(node['y']):
                 fails.append(f'{where}: the carver\'s y must be a height provider whose '
                              f'anchors are maps ({{"absolute": N}}), never bare integers')
-            if node.get('type') == 'minecraft:height_range' \
-                    and not height_provider_ok(node.get('height')):
-                fails.append(f'{where}: height_range must carry a height provider whose '
-                             f'anchors are maps ({{"absolute": N}}), never bare integers')
+            if node.get('type') == 'minecraft:height_range':
+                # a placement modifier carries its provider as `distribution`,
+                # a block predicate as `height`
+                provider = node.get('distribution', node.get('height'))
+                if provider is None or not height_provider_ok(provider):
+                    fails.append(f'{where}: height_range must carry a height provider '
+                                 f'whose anchors are maps ({{"absolute": N}}), never '
+                                 f'bare integers')
             for value in node.values():
                 check_providers(value, where)
         elif isinstance(node, list):

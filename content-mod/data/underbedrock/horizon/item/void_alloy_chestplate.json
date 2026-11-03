@@ -3,7 +3,6 @@
   "rarity": "epic",
   "components": {
     "minecraft:max_damage": 1000,
-    "minecraft:enchantment_glint_override": true,
     "minecraft:enchantable": {
       "value": 22
     },

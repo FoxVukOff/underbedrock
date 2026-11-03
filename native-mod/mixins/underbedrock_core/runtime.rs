@@ -662,18 +662,20 @@ pub fn step_creatures(
 // Above the wastes the pair is dismissed at once; when the stalker falls, the
 // wastes are quiet for a while, then send another.
 
-/// The mob the stalker rides, its health, and what its body shows.
+/// The mob the stalker rides, its health, and what its body shows. The hunt
+/// is meant to annoy, not to kill: a few swings end it, and it comes back
+/// soon after - long enough to dig, too short to settle in.
 pub const STALKER_KIND: &str = "minecraft:vex";
-pub const STALKER_HEALTH: f32 = 60.0;
+pub const STALKER_HEALTH: f32 = 24.0;
 pub const STALKER_ITEM: &str = "underbedrock:stalker_shard";
 /// The body's scale, and how far over the mob it hangs.
 pub const STALKER_SCALE: f32 = 1.4;
 pub const STALKER_LIFT: f64 = 0.45;
 /// How far off the player the hunter takes shape.
-pub const STALKER_RING: f64 = 14.0;
+pub const STALKER_RING: f64 = 16.0;
 /// The quiet after a stalker falls, and the pause before a summon that found
 /// no room (peaceful, an unloaded chunk) is tried again, in ticks.
-pub const STALK_QUIET: u32 = 600;
+pub const STALK_QUIET: u32 = 300;
 pub const STALK_RETRY: u32 = 40;
 
 /// One player's hunt: the mob's and its body's engine ids, and the ticks of

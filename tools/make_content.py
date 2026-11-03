@@ -180,7 +180,8 @@ BLOCKS = {
         },
         "item": True,
     },
-    # The world's bottom: unbreakable for everyone, pickaxe included.
+    # The world's bottom: unbreakable for everyone, pickaxe included. It has
+    # an item form only for the creative tab and builders' /give.
     "abyss_bedrock": {
         "template": "minecraft:bedrock",
         "properties": {
@@ -188,7 +189,7 @@ BLOCKS = {
             "explosion_resistance": 3600000.0,
             "sounds": "minecraft:stone",
         },
-        "item": False,
+        "item": True,
     },
 }
 for name, body in BLOCKS.items():
@@ -207,7 +208,6 @@ write(MOD / f"data/{ID}/horizon/item/void_alloy_pickaxe.json", {
     "rarity": "epic",
     "components": {
         "minecraft:max_damage": 2800,
-        "minecraft:enchantment_glint_override": True,
         "minecraft:enchantable": {"value": 22},
         "minecraft:repairable": {"items": f"{ID}:void_alloy"},
         "minecraft:tool": {
@@ -221,7 +221,8 @@ write(MOD / f"data/{ID}/horizon/item/void_alloy_pickaxe.json", {
 })
 
 # The full void gear set: every tool and armor piece, netherite-tier from the
-# template, repaired with void alloy and wearing the set's glint.
+# template and repaired with void alloy. No enchantment glint: the purple
+# shine made the set read as enchanted netherite, so the texture speaks alone.
 GEAR = {
     "void_alloy_sword": ("minecraft:netherite_sword", 2200),
     "void_alloy_axe": ("minecraft:netherite_axe", 2100),
@@ -238,7 +239,6 @@ for gear_name, (gear_template, gear_damage) in GEAR.items():
         "rarity": "epic",
         "components": {
             "minecraft:max_damage": gear_damage,
-            "minecraft:enchantment_glint_override": True,
             "minecraft:enchantable": {"value": 22},
             "minecraft:repairable": {"items": f"{ID}:void_alloy"},
         },
@@ -258,33 +258,37 @@ write(MOD / f"data/{ID}/horizon/creative_tab/{ID}.json", {
     "title": f"itemGroup.{ID}",
     "icon": f"{ID}:void_alloy_pickaxe",
     "items": [
+        # the dig and the set it digs with
         f"{ID}:void_alloy_pickaxe",
-        f"{ID}:void_alloy",
-        f"{ID}:void_crystal",
-        f"{ID}:void_crystal_ore",
-        f"{ID}:void_crystal_block",
-        f"{ID}:crystal_lamp",
-        f"{ID}:crystal_sprout",
-        f"{ID}:voidstone",
-        f"{ID}:voidstone_bricks",
-        f"{ID}:void_gravel",
         f"{ID}:void_alloy_sword",
         f"{ID}:void_alloy_axe",
-        f"{ID}:void_alloy_hoe",
         f"{ID}:void_alloy_shovel",
+        f"{ID}:void_alloy_hoe",
         f"{ID}:void_alloy_helmet",
         f"{ID}:void_alloy_chestplate",
         f"{ID}:void_alloy_leggings",
         f"{ID}:void_alloy_boots",
+        # what the set is made of
+        f"{ID}:void_crystal_ore",
+        f"{ID}:void_crystal",
+        f"{ID}:void_alloy",
         f"{ID}:ember_shard",
         f"{ID}:frost_shard",
         f"{ID}:stalker_shard",
+        # the Abyss, layer by layer, top down
+        f"{ID}:voidshell",
         f"{ID}:emberstone",
         f"{ID}:scorched_stone",
+        f"{ID}:voidstone",
+        f"{ID}:voidstone_bricks",
+        f"{ID}:void_gravel",
         f"{ID}:froststone",
         f"{ID}:frost_gravel",
-        f"{ID}:voidshell",
         f"{ID}:abyss_bedrock",
+        # and what grows or glows down there
+        f"{ID}:void_crystal_block",
+        f"{ID}:crystal_lamp",
+        f"{ID}:crystal_sprout",
     ],
 })
 
@@ -716,8 +720,12 @@ def when(cond, body):
     return {"type": "minecraft:condition", "if_true": cond, "then_run": body}
 
 
-def yband(lo, hi, body):
-    return when(at_least(lo), when(at_most(hi), body))
+def yband(shallow, deep, body):
+    """The band from the `shallow` end down to the `deep` one: y at or below
+    the shallow anchor and at or above the deep one. The other way round
+    (at_least the shallow, at_most the deep) is an empty set - the bug that
+    made the whole Abyss voidshell on 2026-11-03."""
+    return when(at_most(shallow), when(at_least(deep), body))
 
 
 def noise_win(noise, lo, hi):
@@ -837,6 +845,35 @@ write(PACK / "data/minecraft/worldgen/carver/cave_extra_underground.json", {
     "vertical_radius_multiplier": {"type": "minecraft:constant", "value": 1.0},
     "room_vertical_radius_multiplier": {"type": "minecraft:constant", "value": 1.0},
 })
+# Vanilla's own hollows, kept out of the Abyss. Structure sets have no depth
+# gate, so the mineshafts (and the ancient cities, whose deep dark columns
+# reach the whole stack) are switched off for this world entirely - the
+# surface keeps every other structure. Amethyst geodes are a placed feature,
+# and those do take a height range: the vanilla one has none, so geodes grew
+# at any depth; this keeps them where vanilla puts them, above the floor.
+EMPTY_SET = {
+    "structures": [],
+    "placement": {
+        "type": "minecraft:random_spread",
+        "spacing": 4096,
+        "separation": 4095,
+        "salt": 1024,
+    },
+}
+write(PACK / "data/minecraft/worldgen/structure_set/mineshafts.json", EMPTY_SET)
+write(PACK / "data/minecraft/worldgen/structure_set/ancient_cities.json", EMPTY_SET)
+write(PACK / "data/minecraft/worldgen/placed_feature/amethyst_geode.json", {
+    "feature": "minecraft:amethyst_geode",
+    "placement": [{
+        "type": "minecraft:height_range",
+        "distribution": {
+            "type": "minecraft:uniform",
+            "min_inclusive": {"absolute": -58},
+            "max_inclusive": {"absolute": 30},
+        },
+    }],
+})
+
 write(PACK / "data/minecraft/worldgen/carver/canyon.json", {
     "type": "minecraft:canyon",
     "probability": 0.0,
