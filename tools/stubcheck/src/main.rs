@@ -28,32 +28,6 @@ pub mod text {
     pub const GOLD: u32 = 0xFFAA00;
 }
 
-/// `horizon_client::particles` (`crates/horizon-client-core/src/particle_type.rs`):
-/// the shapes the mod's sources touch, with the real names.
-pub mod particles {
-    #[derive(Clone, Copy, Debug, PartialEq)]
-    pub struct ParticleType(&'static str);
-
-    #[allow(non_upper_case_globals)]
-    impl ParticleType {
-        pub const EndRod: Self = Self("minecraft:end_rod");
-        pub fn name(self) -> &'static str {
-            self.0
-        }
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct ParticleOptions {
-        pub ty: ParticleType,
-    }
-
-    impl ParticleOptions {
-        pub fn simple(ty: ParticleType) -> Self {
-            Self { ty }
-        }
-    }
-}
-
 /// `horizon_world::registry` (the state ids `native_set_block` takes).
 pub mod registry {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -556,18 +530,53 @@ fn main() {
         "no pocket in the rock, no creature",
         game.summoned.is_empty()
     );
-    // The descent itself: the gate's boundary sparkled once, at its own
-    // height around the player - the veil of the crossing (API 103's
-    // server-side particles).
+    // The descent itself: the gate's crossing went to the player's client
+    // over the veil channel - and the window's half, handed the very same
+    // message, plays the ring of blue sparks at the boundary's own height.
+    let veils = |game: &Game| {
+        game.net_sent
+            .iter()
+            .filter(|(_, channel, _)| channel == m::VEIL_CHANNEL)
+            .count()
+    };
     check!(
         fails,
-        "the crossing of the gate sparkles at the boundary itself",
-        game.sent_particles.len() == 1
-            && game.sent_particles[0].0 == "minecraft:end_rod"
-            && game.sent_particles[0].1
-                == [deep[0], m::VEIL_BOUNDS[0] as f64 + m::VEIL_LIFT, deep[2]]
-            && game.sent_particles[0].2 == m::VEIL_SPREAD
-            && game.sent_particles[0].4 == m::VEIL_COUNT
+        "the crossing of the gate is told to the player's client",
+        veils(&game) == 1
+            && game.net_sent.last().is_some_and(|(who, channel, data)| {
+                *who == 7
+                    && channel == m::VEIL_CHANNEL
+                    && m::decode_veil(data) == Some((0, [0, 0]))
+            })
+    );
+    let sparks = game.particles.len();
+    let (vchannel, vdata) = game
+        .net_sent
+        .last()
+        .map(|(_, channel, data)| (channel.clone(), data.clone()))
+        .expect("the veil's message");
+    game.native_net_from_server(&vchannel, &vdata);
+    check!(
+        fails,
+        "and the client plays the veil's ring at the boundary itself",
+        game.particles.len() == sparks + m::VEIL_SPARKS
+            && game.particles[sparks..].iter().all(|(at, soul)| {
+                *soul
+                    && at[1] == m::VEIL_BOUNDS[0] as f64 + m::VEIL_LIFT
+                    && (((at[0] - deep[0].floor()).powi(2)
+                        + (at[2] - deep[2].floor()).powi(2))
+                        .sqrt()
+                        - m::VEIL_RING)
+                        .abs()
+                        < 1.0e-9
+            })
+    );
+    // Torn bytes on the veil channel play nothing, as on the dig's.
+    game.native_net_from_server(m::VEIL_CHANNEL, &[9, 9]);
+    check!(
+        fails,
+        "torn veil bytes play nothing",
+        game.particles.len() == sparks + m::VEIL_SPARKS
     );
     let seed = 7u64 ^ (deep[0] as i64 as u64).wrapping_mul(0x2545_F491);
     let [dx, dy, dz] = m::candidate_offset(seed, 0);
@@ -725,14 +734,11 @@ fn main() {
     );
     check!(
         fails,
-        "the fall to the void sparkles at the boundary last crossed",
-        game.sent_particles.len() == 2
-            && game.sent_particles[1].1
-                == [
-                    the_void[0],
-                    m::VEIL_BOUNDS[3] as f64 + m::VEIL_LIFT,
-                    the_void[2]
-                ]
+        "the fall to the void is told to the client as its own crossing",
+        veils(&game) == 2
+            && game.net_sent.last().is_some_and(|(_, channel, data)| {
+                channel == m::VEIL_CHANNEL && m::decode_veil(data) == Some((3, [0, 0]))
+            })
     );
     check!(
         fails,

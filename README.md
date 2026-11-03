@@ -26,7 +26,8 @@ engine itself never breaks — only the void-alloy pickaxe digs it, exactly the
 way it digs bedrock. Under the gate lies **the Abyss**, seven layers of it,
 each colder and darker than the one above. The boundaries are not walls: each
 one is a blend of the two rocks over a dozen blocks — and crossing one
-sparkles, a veil of end-rod light at the boundary's own height:
+sparkles on your own client: a ring of blue soul-flame sparks at the
+boundary's own height:
 
 | Layer | Depth | What it is |
 | --- | --- | --- |
@@ -303,9 +304,11 @@ that the hunts and the ledger do not know — a display a restart orphaned
 there is cleaned up. Feeding needs no hook of its own: the same tick reads
 the held item, and an alloy held within five blocks of a gloomling counts a
 tick of trust. And the tick watches each player's depth band: a layer
-boundary crossed sends a burst of end-rod particles at the boundary's own
-height around the player (`native_send_particles`, API 103) — the veil of the
-transition, hysteresis-damped so hovering on a line replays nothing. A world
+boundary crossed is told to the crossing player's client over the mod's own
+net channel (the dig feedback's bridge, API 40), and the window plays the
+veil there — a ring of blue soul-flame sparks at the boundary's own height
+around the player, for particles only ever play in the window's game; the
+watch is hysteresis-damped, so hovering on a line replays nothing. A world
 that closes is forgotten whole (`native_level_unload`, API 134): the
 creatures, the hunts, the crossing watch and the players' rhythms the mod
 kept are dropped, so a reopened world starts clean — and loses nothing by
@@ -368,13 +371,13 @@ tools/check_worldgen.py     the worldgen JSONs vs Horizon's decoder and the mod'
 tools/build_all.sh          everything above, in order
 ```
 
-Built and checked against Horizon `ea55997` (game 26.3) and horizon-mixins
+Built and checked against Horizon `2944480` (game 26.3) and horizon-mixins
 `ddd9700`; every file format was verified against that revision's sources.
-The sources pin that revision on purpose: the 2026-11-03 nightly's
-horizon-client `lib.rs` carries `#![recursion_limit = "256"]`, which the mixin
-compiler reads as an unexpanded attribute macro and refuses to patch under
-(`E_UNSUPPORTED_MACRO`), while every hook point this mod binds exists at the
-pin with the same signature. What the mod RUNS on is newer: it declares hook
+The sources pin that revision on purpose: it is the first nightly whose
+horizon-client `lib.rs` carries no `#![recursion_limit]` inner attribute
+(upstream #8169) — the attribute made the mixin compiler refuse every nightly
+that carried it — and every hook point this mod binds exists there with the
+same signature. What the mod RUNS on is newer or equal: it declares hook
 points v164, so the launcher loads it only on a Horizon at v164 or later -
 today, a nightly.
 

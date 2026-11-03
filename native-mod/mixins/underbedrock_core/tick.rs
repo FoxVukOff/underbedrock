@@ -32,11 +32,11 @@
 // floor nothing lives that the hunts and the ledger don't know. And the ban
 // is real: every tick, any vanilla mob under the gate that isn't a tracked
 // hunter is taken out of the world with no death and no loot. Where the
-// layers meet, the crossing itself sparkles: a veil of end rods at the
-// boundary's own height, the moment a player passes it.
+// layers meet, the crossing itself sparkles: a veil of blue sparks at the
+// boundary's own height, played on the crossing player's client the moment
+// they pass it.
 fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
     use crate::game::underbedrock_core as m;
-    use horizon_client::particles::{ParticleOptions, ParticleType};
     use horizon_client::text::Text;
     use horizon_world::nbt::Tag;
     if !game.native_on(m::ID) {
@@ -54,25 +54,20 @@ fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
     }
     let at = player.position;
     let dimension = player.dimension.clone();
-    // The transition veil: a boundary just crossed sparkles at its own
-    // height around the player. The band watch runs in every dimension (a
-    // trip through the Nether leaves no stale band behind), but the veil
-    // plays only in the Overworld, where the Abyss's boundaries are.
-    let crossed = m::veil_crossing(uuid, at[1]);
-    if let (Some(bound), true) = (crossed, dimension == "minecraft:overworld") {
-        let veil = ParticleOptions::simple(ParticleType::EndRod);
-        game.native_send_particles(
-            &veil,
-            None,
-            [
-                at[0],
-                m::VEIL_BOUNDS[bound] as f64 + m::VEIL_LIFT,
-                at[2],
-            ],
-            m::VEIL_SPREAD,
-            0.0,
-            m::VEIL_COUNT,
-        );
+    // The transition veil: a boundary just crossed is told to the player's
+    // own client, and the window's half plays the sparkles there - a ring of
+    // blue soul flames at the boundary's own height. Sounds and particles
+    // only ever play in the window's game, so the mod's net channel is the
+    // bridge (the same one the dig's feedback crosses). The band watch runs
+    // in every dimension (a trip through the Nether leaves no stale band
+    // behind), but the veil plays only in the Overworld, where the Abyss's
+    // boundaries are; a refused message loses nothing, for the veil is
+    // cosmetic.
+    if let (Some(bound), true) = (
+        m::veil_crossing(uuid, at[1]),
+        dimension == "minecraft:overworld",
+    ) {
+        let _ = game.native_net_send_to_player(uuid, m::VEIL_CHANNEL, &m::encode_veil(bound, at));
     }
     // The displays the engine keeps: the mod's creatures, as the engine has
     // them (owned copies, so the engine is free for the calls below), each

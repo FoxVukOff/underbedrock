@@ -3,17 +3,17 @@ id = "underbedrock_core"
 version = "0.0.1"
 priority = 100
 
-# The revision its sources compile against, and why not the newest nightly:
-# the nightly's horizon-client lib.rs gained `#![recursion_limit = "256"]`, an
-# attribute the mixin compiler (horizon-mixins ddd9700) reads as an unexpanded
-# macro and refuses to patch anything under (E_UNSUPPORTED_MACRO) - every hook
-# point this mod binds exists here with the same signature, so this stays the
-# pin until the compiler learns the attribute. The game it RUNS on is another
-# matter: `hooks` 164 in horizon-native.json names the newest hook point it
-# uses, and the launcher builds and loads it only on a Horizon whose hook
-# points are that version or later - a recent nightly.
+# The revision its sources compile against: the 2026-11-03 nightly, the first
+# whose horizon-client lib.rs carries no `#![recursion_limit = "256"]` inner
+# attribute (upstream #8169) - the attribute made the mixin compiler
+# (horizon-mixins ddd9700) refuse every nightly that carried it, which is why
+# the revisions in between (f42ef42 among them) stay unpinnable. Every hook
+# point this mod binds exists here with the signature the bindings name. The
+# game it RUNS on is another matter: `hooks` 164 in horizon-native.json names
+# the newest hook point it uses, and the launcher builds and loads it only on
+# a Horizon whose hook points are that version or later - a recent nightly.
 [compatibility]
-horizon_revision = "ea5599757087a6f2ee0702dd469b79aa21bfb199"
+horizon_revision = "294448014fba585f8d5d09dd8886f482493b6417"
 
 # The mod's own logic and state, added to the game as `crate::game::underbedrock_core`.
 [[module]]
@@ -112,8 +112,9 @@ bindings = [
   { name = "drops", ty = "&mut Vec<horizon_client::items::ItemStack>", value = "drops" },
 ]
 
-# The dig's feedback, heard on the client: the sound and the blue sparks of a
-# break the server sent over the net bridge (API 40).
+# The dig's feedback and the transition veils, heard on the client: the
+# sound and the blue sparks of a break, the ring of sparks at a layer
+# boundary - all sent over the mod's net bridge (API 40).
 [[injection]]
 id = "net-from-server"
 kind = "HEAD"

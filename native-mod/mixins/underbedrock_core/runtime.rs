@@ -31,6 +31,9 @@ pub const AIR: &str = "minecraft:air";
 /// player's client, and the client half plays a slowed deepslate break (the
 /// floor is bedrock) and a burst of soul flames - the void's own blue.
 pub const DUG_CHANNEL: &str = "underbedrock_core:dug";
+/// The veil's channel: the server's tick names the boundary a player
+/// crossed and where they crossed it; the window plays the sparkles.
+pub const VEIL_CHANNEL: &str = "underbedrock_core:veil";
 pub const DIG_SOUND: &str = "minecraft:block.deepslate.break";
 pub const DIG_VOLUME: f32 = 1.5;
 pub const DIG_PITCH: f32 = 0.5;
@@ -133,11 +136,12 @@ pub const GLOOMLING_REACH: f64 = 5.0;
 /// The crossing has to be this far past a boundary before its veil plays:
 /// a player hovering on the line gets no burst every tick.
 pub const VEIL_HYSTERESIS: f64 = 2.0;
-/// The veil's sparkles: end rods at the boundary's own height, in a disc
-/// around the player's x and z (the burst's lift, spread and count).
+/// The veil's sparkles, played on the crossing player's client: a ring of
+/// blue soul flames, this many of them, this wide, a lift over the
+/// boundary's own y, around the x and z the server's message names.
 pub const VEIL_LIFT: f64 = 1.0;
-pub const VEIL_SPREAD: [f64; 3] = [3.0, 0.6, 3.0];
-pub const VEIL_COUNT: i32 = 48;
+pub const VEIL_RING: f64 = 2.5;
+pub const VEIL_SPARKS: usize = 12;
 
 /// How close a display's yaw has to sit to a kind's code to read as that
 /// kind. The round-trip is exact - the move keeps the code as it is, the
@@ -1126,6 +1130,45 @@ pub fn decode_dig(data: &[u8]) -> Option<([i32; 3], Dig)> {
     Some((pos, dig))
 }
 
+/// The veil's message: which boundary was crossed (one byte) and the
+/// player's x and z in blocks (four bytes each, little endian) - the window
+/// knows how to sparkle but not where its player stands.
+pub fn encode_veil(bound: usize, at: [f64; 3]) -> [u8; 9] {
+    let mut data = [0u8; 9];
+    data[0] = bound as u8;
+    data[1..5].copy_from_slice(&(at[0].floor() as i32).to_le_bytes());
+    data[5..9].copy_from_slice(&(at[2].floor() as i32).to_le_bytes());
+    data
+}
+
+/// The veil unpacked; anything else (torn bytes, a boundary past the end)
+/// is nothing.
+pub fn decode_veil(data: &[u8]) -> Option<(usize, [i32; 2])> {
+    if data.len() != 9 || data[0] as usize >= VEIL_BOUNDS.len() {
+        return None;
+    }
+    Some((
+        data[0] as usize,
+        [
+            i32::from_le_bytes(data[1..5].try_into().ok()?),
+            i32::from_le_bytes(data[5..9].try_into().ok()?),
+        ],
+    ))
+}
+
+/// The ring a crossing plays on the player's client: [`VEIL_SPARKS`] points
+/// on a circle of [`VEIL_RING`] blocks around (x, z), [`VEIL_LIFT`] over the
+/// boundary's own y - blue soul flames, the void's own colour.
+pub fn veil_ring(x: f64, z: f64, bound: usize) -> Vec<[f64; 3]> {
+    let y = VEIL_BOUNDS[bound] as f64 + VEIL_LIFT;
+    (0..VEIL_SPARKS)
+        .map(|i| {
+            let turn = i as f64 * std::f64::consts::TAU / VEIL_SPARKS as f64;
+            [x + VEIL_RING * turn.cos(), y, z + VEIL_RING * turn.sin()]
+        })
+        .collect()
+}
+
 /// The band of boundaries a y sits in: 0 above the gate, then one per
 /// layer down to 6, the absolute void.
 pub fn veil_band(y: f64) -> usize {
@@ -1771,6 +1814,26 @@ mod tests {
         // Right on top of its player, it holds exactly where it is.
         let eye = [player[0], player[1] + 1.0, player[2]];
         assert_eq!(follow_anchor(eye, player), eye);
+    }
+
+    #[test]
+    fn a_veil_message_carries_its_boundary_and_place() {
+        let at = [12.7, -230.0, -4.2];
+        let data = encode_veil(1, at);
+        assert_eq!(decode_veil(&data), Some((1, [12, -5])));
+        // Torn bytes, or a boundary past the end: nothing.
+        assert_eq!(decode_veil(&data[..8]), None);
+        assert_eq!(decode_veil(&[6, 0, 0, 0, 0, 0, 0, 0, 0]), None);
+        assert_eq!(decode_veil(&[]), None);
+        // The ring the window plays: on the boundary's own height, a circle
+        // of the ring's width around the place the message named.
+        let ring = veil_ring(12.0, -5.0, 1);
+        assert_eq!(ring.len(), VEIL_SPARKS);
+        for p in &ring {
+            assert_eq!(p[1], VEIL_BOUNDS[1] as f64 + VEIL_LIFT);
+            let away = ((p[0] - 12.0).powi(2) + (p[2] + 5.0).powi(2)).sqrt();
+            assert!((away - VEIL_RING).abs() < 1.0e-9, "{away}");
+        }
     }
 
     #[test]

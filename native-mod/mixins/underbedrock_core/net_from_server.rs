@@ -1,14 +1,30 @@
-// The dig's feedback, heard on the client (API 40's bridge): the server's
-// tick sent what broke, and the window's half plays the sound and the blue
-// sparks there - the only place they can play at all. One function, as a
-// mixin helper file must hold exactly one.
+// The dig's feedback and the transition veils, heard on the client (API
+// 40's bridge): the server's tick sent what broke, or which layer boundary
+// the player crossed and where, and the window's half plays it there - the
+// slowed deepslate break and the blue sparks of a dig, the ring of blue
+// sparks at a boundary - the only place they can play at all. One function,
+// as a mixin helper file must hold exactly one.
 fn underbedrock_core_net_from_server(
     game: &mut crate::game::Game<'_>,
     channel: &str,
     data: &[u8],
 ) {
     use crate::game::underbedrock_core as m;
-    if !game.native_on(m::ID) || channel != m::DUG_CHANNEL {
+    if !game.native_on(m::ID) {
+        return;
+    }
+    if channel == m::VEIL_CHANNEL {
+        // A layer boundary the server saw this player cross: its ring of
+        // blue sparks, at the boundary's own height around the x and z the
+        // message names (the window keeps no position of its own to read).
+        if let Some((bound, [x, z])) = m::decode_veil(data) {
+            for at in m::veil_ring(x as f64, z as f64, bound) {
+                game.native_flame_particle(at, true);
+            }
+        }
+        return;
+    }
+    if channel != m::DUG_CHANNEL {
         return;
     }
     let Some((pos, _dig)) = m::decode_dig(data) else {
