@@ -10,7 +10,7 @@ fn underbedrock_core_loot_drops(
     if !game.native_on(m::ID) {
         return;
     }
-    if m::stalker_drops(context.dimension, context.entity, context.origin[1]) {
+    if m::stalker_drops(context.dimension, context.entity) {
         drops.push(horizon_client::items::ItemStack::new(m::STALKER_ITEM, 1));
     }
 }

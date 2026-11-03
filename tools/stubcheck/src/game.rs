@@ -282,6 +282,9 @@ pub struct Game<'a> {
     pub net_sent: Vec<(u128, String, Vec<u8>)>,
     pub sounds: Vec<(String, [f64; 3], f32, f32, i32)>,
     pub particles: Vec<([f64; 3], bool)>,
+    /// The harness's switch for a net bridge that refuses, so the dig's
+    /// feedback failure path gets exercised too.
+    pub net_broken: bool,
 
     pub marker: std::marker::PhantomData<&'a ()>,
 }
@@ -327,6 +330,7 @@ impl<'a> Game<'a> {
             net_sent: Vec::new(),
             sounds: Vec::new(),
             particles: Vec::new(),
+            net_broken: false,
             marker: std::marker::PhantomData,
         }
     }
@@ -701,6 +705,9 @@ impl Game<'_> {
     ) -> Result<(), String> {
         if !self.level_open {
             return Err("no level is open".to_owned());
+        }
+        if self.net_broken {
+            return Err("the bridge is off in this stub".to_owned());
         }
         self.net_sent
             .push((player, channel.to_owned(), data.to_vec()));

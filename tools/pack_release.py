@@ -9,10 +9,6 @@
     release/underbedrock_core.hnmod    нативный мод (тем же packager'ом, что и в native-mod/tools)
     release/underbedrock_world.zip     датапак мира, pack.mcmeta в корне архива: кладётся в datapacks/ как есть
 
-С `--install` сверх того собирает release/underbedrock-install.zip (все три
-плюс INSTALL.txt одной скачиваемой пачкой) — транспортный архив для передачи
-мода игроку, в репозиторий его не коммитят.
-
 Нужен только Python 3.11+ (tomllib). Раст не обязателен: он нужен лишь проверкам
 (cargo test в native-mod, stubcheck), но не самим файлам мода. Исходники блоков,
 рецептов и мира уже лежат в content-mod/ и datapack/ — генерировать их заново
@@ -27,23 +23,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = ROOT / 'release'
-
-INSTALL_TXT = """Under Bedrock (Horizon 26.3) — install. Full guide: the mod's README / GitHub page.
-
-1. underbedrock.hmod        -> horizon-mods/         (create the folder; enable in Options -> Mods -> Under Bedrock)
-2. underbedrock_core.hnmod  -> horizon-native-mods/  (enable there too; the launcher compiles a modded game once, needs internet)
-3. underbedrock_world.zip   -> saves/<NEW world>/datapacks/ as it is, pack.mcmeta is at the zip's root; world datapacks enable themselves
-
-Create the world AFTER the data pack lands: older chunks keep the old floor with void below it.
-In game: /abyss depth  ->  "y -576 .. 319". Hold the attack key on bedrock (or the voidshell under it) with the void-alloy pickaxe, ~3 s. The abyss bedrock at the very bottom breaks for nobody.
-
---- RU ---
-1. underbedrock.hmod        -> в horizon-mods/        (включить: Настройки -> Моды -> Under Bedrock)
-2. underbedrock_core.hnmod  -> в horizon-native-mods/ (включить там же)
-3. underbedrock_world.zip   -> как есть в saves/<НОВЫЙ мир>/datapacks/ (pack.mcmeta в корне архива)
-Мир создавать ПОСЛЕ датапака. Проверка: /abyss depth -> "y -576 .. 319". Держать ЛКМ на бедроке (или на панцире пустоты под ним) с киркой из пустотного сплава, ~3 c. Бедрок бездны на самом дне не ломается ничем.
-"""
-
 
 def pack_hmod():
     """The content mod: a zip with its manifest first, then every file, sorted."""
@@ -83,20 +62,9 @@ def pack_datapack():
     return out
 
 
-def pack_install(parts):
-    out = RELEASE / 'underbedrock-install.zip'
-    with zipfile.ZipFile(out, 'w', zipfile.ZIP_STORED) as archive:
-        archive.writestr('INSTALL.txt', INSTALL_TXT)
-        for part in parts:
-            archive.write(part, part.name)
-    return out
-
-
 def main():
     RELEASE.mkdir(exist_ok=True)
     parts = [pack_hmod(), pack_hnmod(), pack_datapack()]
-    if '--install' in sys.argv[1:]:
-        parts.append(pack_install(parts))
     for part in parts:
         digest = hashlib.sha256(part.read_bytes()).hexdigest()
         print(f'{part.relative_to(ROOT)}  {part.stat().st_size} bytes  sha256 {digest[:16]}')

@@ -1,5 +1,4 @@
 # Build outputs and local artifacts. The three prebuilt files in release/
-# are repository content; only the transport install bundle stays out.
+# are repository content, exactly as they ship.
 target/
 __pycache__/
-release/underbedrock-install.zip

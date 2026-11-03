@@ -501,6 +501,22 @@ fn main() {
         ran && feedback(&game, mark).contains("no /abyss fly")
     );
 
+    // A bridge that refuses the message is not silent: the break still
+    // happens, and the player is told why nothing played.
+    game.blocks.insert(bedrock, "minecraft:bedrock".into());
+    game.net_broken = true;
+    let (told, sent) = (game.told.len(), game.net_sent.len());
+    game.start_dig(bedrock, third_dig);
+    game.native_player_tick();
+    game.net_broken = false;
+    check!(
+        fails,
+        "a refused feedback tells the player instead of vanishing",
+        game.block_at(bedrock) == "minecraft:air"
+            && game.told.len() == told + 1
+            && game.net_sent.len() == sent
+    );
+
     // The Abyss keeps its own company, with the mod's OWN creatures: deep
     // enough, with a pocket to hang in, the mod summons one of its displays;
     // at the cap, or up top, it doesn't. No vanilla mob is ever spawned.
@@ -721,6 +737,28 @@ fn main() {
         "a surface vex drops nothing of the mod's",
         drops.is_empty()
     );
+    // Nor is an untracked one deep in the wastes: depth alone proves nothing,
+    // a vanilla vex can chase a player down a dug shaft.
+    drops.clear();
+    game.native_loot_drops(
+        &crate::mod_api::NativeLootDrops {
+            table: "minecraft:entities/vex",
+            dimension: "minecraft:overworld",
+            origin: wastes,
+            block: None,
+            entity: Some((777, m::STALKER_KIND)),
+            player: Some(7),
+            tool: None,
+            explosion: None,
+            used: false,
+        },
+        &mut drops,
+    );
+    check!(
+        fails,
+        "an untracked vex in the wastes drops no trophy",
+        drops.is_empty()
+    );
 
     // The player climbs out: both go at once.
     game.acting.as_mut().expect("a player").position = [0.5, -300.0, 0.5];
@@ -750,7 +788,7 @@ fn main() {
     // mod kept for it, so a reopened world starts clean; another dimension's
     // close is none of the mod's business.
     m::clear_creatures();
-    m::add_creature(21, m::Creature::Wisp, [0.0, -200.0, 0.0], 7);
+    m::add_creature(21, m::Creature::Ember, [0.0, -200.0, 0.0], 7);
     m::set_stalk(
         7,
         m::Stalk {
@@ -770,6 +808,27 @@ fn main() {
         fails,
         "the Overworld's close forgets the mod's state",
         m::creatures_len() == 0 && m::get_stalk(7) == m::Stalk::default()
+    );
+    // The world reopens in the same session: the engine still holds the
+    // ember's display where its chunk saved it, and the first deep tick
+    // adopts it back as the ember it was - not as a generic wisp.
+    game.acting.as_mut().expect("a player").position = [0.5, -200.0, 0.5];
+    game.others.push(game::OtherEntity {
+        id: 21,
+        kind: m::ITEM_DISPLAY.into(),
+        position: game::Vec3 {
+            x: 0.0,
+            y: -200.0,
+            z: 0.0,
+        },
+        yaw: 0.0,
+        pitch: 0.0,
+    });
+    game.native_player_tick();
+    check!(
+        fails,
+        "a reopened world adopts its creatures back as their own kinds",
+        m::creature_kind(21) == Some(m::Creature::Ember)
     );
 
     // A disabled mod does nothing at all.

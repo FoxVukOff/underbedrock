@@ -30,12 +30,7 @@ cd native-mod
 cargo test --quiet
 cargo fmt -- --check
 cargo clippy --quiet --all-targets -- -D warnings
-python3 tools/package.py
 cd ..
-cp native-mod/target/underbedrock_core-*.hnmod release/underbedrock_core.hnmod
-
-echo "== the native mod's bundle, read the way Horizon's registry reads it =="
-python3 tools/nativecheck.py release/underbedrock_core.hnmod
 
 echo "== the native mod's sources, compiled and run against a stub of the game =="
 cd tools/stubcheck
@@ -46,6 +41,9 @@ cd ../..
 
 echo "== the distributable set: hmod, hnmod, datapack zip (pack.mcmeta at its root) =="
 python3 tools/pack_release.py
+
+echo "== the native mod's bundle, read the way Horizon's registry reads it =="
+python3 tools/nativecheck.py release/underbedrock_core.hnmod
 
 echo "== all built =="
 ls -l release/

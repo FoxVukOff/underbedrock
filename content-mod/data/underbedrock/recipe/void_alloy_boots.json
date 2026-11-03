@@ -4,8 +4,7 @@
   "group": "void_alloy_boots",
   "pattern": [
     "A A",
-    "AAA",
-    "AAA"
+    "A A"
   ],
   "key": {
     "A": "underbedrock:void_alloy"

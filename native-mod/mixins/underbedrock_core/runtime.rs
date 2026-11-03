@@ -537,6 +537,9 @@ pub struct CreatureState {
     pub id: u32,
     pub kind: Creature,
     pub anchor: [f64; 3],
+    /// Where the display actually is, as of the last step: what a saved
+    /// world reopens with, and what the kind snapshot keys on.
+    pub last: [f64; 3],
     pub phase: f32,
     pub owner: u128,
     pub pose_in: u32,
@@ -556,6 +559,37 @@ pub struct CreatureStep {
 thread_local! {
     /// The creatures the mod drives, in the world in place.
     static CREATURES: RefCell<Vec<CreatureState>> = const { RefCell::new(Vec::new()) };
+    /// What each creature was, by its block position, when the world last
+    /// closed: a world reopened in the same session adopts its saved displays
+    /// back as the kinds they were, not as generic wisps. A game restart
+    /// leaves nothing to read, and adoption falls back to the wisp.
+    static KINDS: RefCell<Vec<([i32; 3], Creature)>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Where a creature sits in the snapshot's keys: its position, blocked off.
+fn spot_key(pos: [f64; 3]) -> [i32; 3] {
+    [pos[0] as i32, pos[1] as i32, pos[2] as i32]
+}
+
+/// The kind a saved display at `pos` was when the world closed, if the mod
+/// still remembers it.
+pub fn remembered_kind(pos: [f64; 3]) -> Option<Creature> {
+    KINDS.with(|kinds| {
+        let mut kinds = kinds.borrow_mut();
+        let at = kinds.iter().position(|(spot, _)| *spot == spot_key(pos))?;
+        Some(kinds.remove(at).1)
+    })
+}
+
+/// The kind the mod drives `id` as, if it drives it at all.
+pub fn creature_kind(id: u32) -> Option<Creature> {
+    CREATURES.with(|creatures| {
+        creatures
+            .borrow()
+            .iter()
+            .find(|creature| creature.id == id)
+            .map(|creature| creature.kind)
+    })
 }
 
 /// Empties the creature list: a world closed, or the harness runs again.
@@ -577,6 +611,7 @@ pub fn add_creature(id: u32, kind: Creature, anchor: [f64; 3], owner: u128) {
             id,
             kind,
             anchor,
+            last: anchor,
             phase: 0.0,
             owner,
             pose_in: 0,
@@ -589,7 +624,9 @@ pub fn add_creature(id: u32, kind: Creature, anchor: [f64; 3], owner: u128) {
 /// whose tick this is. The engine's list is the truth: a state whose display
 /// is gone drops off (a world reloaded, a `/kill`), and a display the list
 /// doesn't know is adopted (the engine saved it with its chunk in an earlier
-/// session; a watcher comes back a wisp). The rest take a step of their path
+/// session): a world reopened in the same session brings its kinds back from
+/// the mod's snapshot; a cold restart adopts item displays as wisps). The
+/// rest take a step of their path
 /// — watchers easing toward the player — and one whose own player is beyond
 /// [`CREATURE_CULL`] of its anchor is let go. Each player's tick steps every
 /// creature once, so a LAN game's creatures run a little faster the more
@@ -607,13 +644,14 @@ pub fn step_creatures(
             if creatures.iter().any(|creature| creature.id == *id) {
                 continue;
             }
-            let Some(kind) = Creature::of(display_kind) else {
+            let Some(fallback) = Creature::of(display_kind) else {
                 continue;
             };
             creatures.push(CreatureState {
                 id: *id,
-                kind,
+                kind: remembered_kind(*pos).unwrap_or(fallback),
                 anchor: *pos,
+                last: *pos,
                 phase: *id as f32 * 0.7,
                 owner,
                 pose_in: 0,
@@ -640,6 +678,7 @@ pub fn step_creatures(
                 _ => (creature.phase * 30.0).rem_euclid(360.0),
             };
             step.moves.push((creature.id, pos, yaw));
+            creature.last = pos;
             if creature.pose_in == 0 {
                 step.poses
                     .push((creature.id, creature.kind, creature.phase));
@@ -840,6 +879,15 @@ pub fn forget_world(dimension: &str) -> bool {
     if dimension != "minecraft:overworld" {
         return false;
     }
+    KINDS.with(|kinds| {
+        let mut kinds = kinds.borrow_mut();
+        kinds.clear();
+        CREATURES.with(|creatures| {
+            for creature in creatures.borrow().iter() {
+                kinds.push((spot_key(creature.last), creature.kind));
+            }
+        });
+    });
     clear_creatures();
     clear_stalks();
     SHAPE.with(|cell| cell.set(None));
@@ -849,17 +897,23 @@ pub fn forget_world(dimension: &str) -> bool {
 }
 
 /// Whether a death's drops (API 75's `native_loot_drops`) are the stalker's:
-/// a vex of the Overworld that a hunt tracks - or one that died deep in the
-/// frozen wastes, which only ever is a stalker (the ban takes any other mob
-/// below the gate, and a restart's orphan is a stalker too). The shard the
-/// hunt wears drops as the trophy.
-pub fn stalker_drops(dimension: &str, entity: Option<(u32, &str)>, origin_y: f64) -> bool {
+/// a vex of the Overworld that a hunt tracks right now. Depth alone is not
+/// proof - a vanilla vex can chase a player down a dug shaft and die in the
+/// wastes, and that death owes nobody a trophy - so an untracked vex drops
+/// nothing however deep it falls.
+pub fn stalker_drops(dimension: &str, entity: Option<(u32, &str)>) -> bool {
     let Some((id, kind)) = entity else {
         return false;
     };
-    kind == STALKER_KIND
-        && dimension == "minecraft:overworld"
-        && (is_stalker_mob(id) || origin_y < STALK_BELOW_Y)
+    kind == STALKER_KIND && dimension == "minecraft:overworld" && is_stalker_mob(id)
+}
+
+/// The line a player hears when the dig's feedback cannot reach their client
+/// (the net bridge refused it): the break stays silent, and this says why.
+pub fn feedback_failed(why: &str) -> String {
+    format!(
+        "Under Bedrock: the dig feedback could not reach your client ({why});          the break sound and sparks stay off."
+    )
 }
 
 #[cfg(test)]
@@ -1301,34 +1355,52 @@ mod tests {
         );
         assert!(stalker_drops(
             "minecraft:overworld",
-            Some((31, STALKER_KIND)),
-            -300.0
+            Some((31, STALKER_KIND))
         ));
-        // An untracked vex deep in the wastes - a restart's orphan - is one too.
-        assert!(stalker_drops(
-            "minecraft:overworld",
-            Some((99, STALKER_KIND)),
-            -500.0
-        ));
-        // Nothing else ever is: an untracked vex up high (an evoker's), another
+        // Nothing else ever is: an untracked vex, however deep - even one that
+        // chased a player down into the wastes owes nobody a trophy - another
         // mob, another dimension, a block's drops.
         assert!(!stalker_drops(
             "minecraft:overworld",
-            Some((99, STALKER_KIND)),
-            -300.0
+            Some((99, STALKER_KIND))
         ));
         assert!(!stalker_drops(
             "minecraft:overworld",
-            Some((31, "minecraft:zombie")),
-            -500.0
+            Some((31, "minecraft:zombie"))
         ));
         assert!(!stalker_drops(
             "minecraft:the_nether",
-            Some((31, STALKER_KIND)),
-            -500.0
+            Some((31, STALKER_KIND))
         ));
-        assert!(!stalker_drops("minecraft:overworld", None, -500.0));
+        assert!(!stalker_drops("minecraft:overworld", None));
         clear_stalks();
+    }
+
+    #[test]
+    fn a_reopened_world_adopts_its_kinds_back() {
+        clear_creatures();
+        KINDS.with(|kinds| kinds.borrow_mut().clear());
+        add_creature(11, Creature::Ember, [3.0, -100.0, 3.0], 7);
+        // The world closes: the snapshot keeps what the ember was, where it was.
+        assert!(forget_world("minecraft:overworld"));
+        assert_eq!(creatures_len(), 0);
+        // The engine still holds the display where the chunk saved it, and the
+        // reopen's first deep tick adopts it back - as an ember, not a wisp.
+        step_creatures(
+            [0.0, -100.0, 0.0],
+            7,
+            &[(11, ITEM_DISPLAY, [3.0, -100.0, 3.0])],
+        );
+        assert_eq!(creature_kind(11), Some(Creature::Ember));
+        // The spot answered once: a second stranger there is a plain wisp.
+        step_creatures(
+            [0.0, -100.0, 0.0],
+            7,
+            &[(12, ITEM_DISPLAY, [3.0, -100.0, 3.0])],
+        );
+        assert_eq!(creature_kind(12), Some(Creature::Wisp));
+        clear_creatures();
+        KINDS.with(|kinds| kinds.borrow_mut().clear());
     }
 
     #[test]

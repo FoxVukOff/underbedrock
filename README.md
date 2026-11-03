@@ -228,7 +228,10 @@ moves each creature along its path (`native_move_entity`) and resends its
 pose — scale and spin — every eight ticks (`native_set_display`; the clients
 ease between the poses); a creature whose player walks 96 blocks away is let
 go (`native_remove_entity`), and a display a reloaded world saved with its
-chunks is adopted and driven again.
+chunks is adopted and driven again — a world reopened within the same game
+session even brings its creatures back as the kinds they were (the mod
+snapshots them when the world closes); only a cold restart, with nothing to
+read back, adopts an item display as a plain wisp.
 
 **The ban and the stalker.** The same tick reads the engine's mob list
 (`native_mobs`, API 37): every mob below y −55 whose id the mod does not track
@@ -240,10 +243,10 @@ the engine's own melee AI does the hunting and the damage, while the mod
 moves its shard-display body onto the mob every tick and faces it at the
 player. A mob the engine no longer lists (killed, gone) takes its body with
 it; the death's drops then gain the stalker shard as a trophy
-(`native_loot_drops`, API 75) — and a vex that dies below y −420 counts as
-the stalker even when a server restart orphaned the mod's record of it. The
-wastes stay quiet for 600 ticks; a player who climbs out dismisses both at
-once; any display the wastes do not know — a body a restart orphaned — is
+(`native_loot_drops`, API 75) — and only a tracked hunt's vex counts: an
+untracked one drops nothing however deep it dies, for depth alone is not
+proof of a hunt. The wastes stay quiet for 300 ticks; a player who climbs out
+dismisses both at once; any display the wastes do not know — a body a restart orphaned — is
 cleaned up, since no ambient creature lives that deep; and a world that
 closes is forgotten whole (`native_level_unload`, API 134): the creatures,
 hunts and players' rhythms the mod kept are dropped, so a reopened world
@@ -261,9 +264,7 @@ python tools/pack_release.py
 
 which writes `release/`: the `.hmod`, the `.hnmod` and the data pack zip
 (`pack.mcmeta` at its root) — the three prebuilt files the repository carries.
-`python tools/pack_release.py --install` adds a bundle of the three with an
-`INSTALL.txt` (a transport archive for handing the mod to a player; it stays
-out of the repository). Regenerating textures or worldgen data (`make_textures.py`,
+Regenerating textures or worldgen data (`make_textures.py`,
 `make_content.py`, both plain Python as well — no Pillow, no Rust) is only needed
 when editing them.
 

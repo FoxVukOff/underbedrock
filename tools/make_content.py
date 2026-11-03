@@ -395,8 +395,10 @@ for gear_name in GEAR:
         pattern, key = ["A", "A", "S"], {"A": f"{ID}:void_alloy", "S": "minecraft:stick"}
     elif kind in ("helmet",):
         pattern, key = ["AAA", "A A"], {"A": f"{ID}:void_alloy"}
-    elif kind in ("chestplate", "boots"):
+    elif kind in ("chestplate",):
         pattern, key = ["A A", "AAA", "AAA"], {"A": f"{ID}:void_alloy"}
+    elif kind in ("boots",):
+        pattern, key = ["A A", "A A"], {"A": f"{ID}:void_alloy"}
     elif kind in ("leggings",):
         pattern, key = ["AAA", "A A", "A A"], {"A": f"{ID}:void_alloy"}
     else:  # axe, hoe, shovel: head of two ingots on a stick, axe mirrored
