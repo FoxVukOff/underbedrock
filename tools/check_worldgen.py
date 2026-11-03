@@ -197,12 +197,20 @@ def structural_checks(fails):
     for path in sorted(df.glob('*.json')):
         refs(json.loads(path.read_text()), path.name)
     refs(surface, 'surface rule')
+    # The lava ban, revised by the user 2026-11: the hot expanse layer keeps
+    # small lava lakes and glowing veins, so the surface material rule may
+    # name lava - and only it. Everywhere else lava stays banned, and the
+    # aquifer's lava level stays a flat zero.
+    lava_ok = {ROOT / 'datapack' / 'underbedrock_world' / 'data' / 'underbedrock'
+               / 'worldgen' / 'material_rule' / 'surface.json'}
     for base in (ROOT / 'content-mod' / 'data', ROOT / 'datapack'):
         for path in sorted(base.rglob('*.json')):
+            if path in lava_ok:
+                continue
             text = path.read_text()
             if 'minecraft:lava' in text:
                 fails.append(f'{path.relative_to(ROOT)}: mentions minecraft:lava '
-                             f'(the Abyss must have none)')
+                             f'(only the hot expanse band of the surface rule may)')
 
 
 def main():

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "underbedrock:block/scorched_stone"
+    }
+  }
+}

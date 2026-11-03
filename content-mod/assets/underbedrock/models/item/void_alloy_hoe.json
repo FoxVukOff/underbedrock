@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "underbedrock:item/void_alloy_hoe"
+  }
+}

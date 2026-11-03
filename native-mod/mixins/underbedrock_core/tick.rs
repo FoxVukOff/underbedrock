@@ -9,11 +9,18 @@
 //
 // While a player is down in the Abyss, the mod also keeps it inhabited — with
 // its OWN creatures, never a vanilla mob: display entities showing the mod's
-// void crystal and crystal lamp, which the engine keeps without simulating
-// and the mod drives from here. Every tick they follow the engine's list (a
-// world reloaded adopts what its chunks saved), take a step of their paths,
-// and the ones their player walked away from are let go; on the mod's rhythm
-// a look goes out for a dark pocket to summon the next one into.
+// shards and crystal lamp, which the engine keeps without simulating and the
+// mod drives from here. Every tick they follow the engine's list (a world
+// reloaded adopts what its chunks saved), take a step of their paths, and the
+// ones their player walked away from are let go; on the mod's rhythm a look
+// goes out for a dark pocket to summon the next one into, the layer at the
+// player's depth picking the kind (embers in the hot expanse, frostmotes at
+// the cold rim). The frozen wastes keep no ambient company: they are the
+// stalker's hunting ground, and a player who descends into them is hunted by
+// one — an invisible, silent vex the engine's own melee drives, wearing an
+// item display of the stalker shard as its visible body. And the ban is real:
+// every tick, any vanilla mob under the gate that isn't a tracked stalker is
+// taken out of the world with no death and no loot.
 fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
     use crate::game::underbedrock_core as m;
     use horizon_client::text::Text;
@@ -79,6 +86,101 @@ fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
             game.native_move_entity(&dimension, id, pos, yaw, 0.0);
         }
     }
+    // The Abyss's law: no vanilla mob lives under the gate. Any that wanders
+    // in is taken out of the world quietly (no death, no loot); the only mob
+    // the ban spares is a stalker the mod tracks.
+    let mobs = game.native_mobs(&dimension);
+    for mob in &mobs {
+        if mob.pos[1] < m::BAN_BELOW_Y && !m::is_stalker_mob(mob.id) {
+            game.native_remove_mob(&dimension, mob.id);
+        }
+    }
+    // The frozen wastes hunt: one stalker per player down there, dismissed
+    // the moment they climb out. The engine's list of mobs is the truth —
+    // a stalker that fell (or a world that reloaded without the pair) shows
+    // as gone, and the hunt reacts.
+    let in_zone = at[1] < m::STALK_BELOW_Y;
+    let stalker_mob = m::get_stalk(uuid).mob;
+    let mob_at = stalker_mob.and_then(|id| {
+        mobs.iter()
+            .find(|mob| mob.id == id)
+            .map(|mob| mob.pos)
+    });
+    let (mut stalk, order) = m::stalk_tick(m::get_stalk(uuid), in_zone, mob_at, at);
+    if let Some(id) = order.dismiss_mob {
+        game.native_remove_mob(&dimension, id);
+    }
+    if let Some(id) = order.dismiss_body {
+        game.native_remove_entity(&dimension, id);
+    }
+    // The wastes keep nothing the hunt doesn't know: a body a restart
+    // orphaned goes too (no ambient display lives below the stalker's depth).
+    if in_zone {
+        let strays: Vec<u32> = game
+            .others
+            .iter()
+            .filter(|other| {
+                other.position.y < m::STALK_BELOW_Y
+                    && Some(other.id) != stalk.body
+                    && matches!(other.kind.as_str(), m::ITEM_DISPLAY | m::BLOCK_DISPLAY)
+            })
+            .map(|other| other.id)
+            .collect();
+        for id in strays {
+            game.native_remove_entity(&dimension, id);
+        }
+    }
+    // The hunter takes shape on its ring when the order says so.
+    let mut body_at = mob_at.map(|pos| [pos[0], pos[1] + m::STALKER_LIFT, pos[2]]);
+    if order.summon && stalk.mob.is_none() {
+        let seed = uuid as u64 ^ (at[2] as i64 as u64).wrapping_mul(0x9E37_79B9);
+        let spot = m::stalker_spot(seed, at);
+        let spawn = crate::game::native_mobs::NativeSpawn {
+            health: Some(m::STALKER_HEALTH),
+            invisible: true,
+            silent: true,
+            no_gravity: true,
+            ..Default::default()
+        };
+        if let Some(mob) = game.native_spawn_mob(&dimension, m::STALKER_KIND, spot, &spawn) {
+            stalk.mob = Some(mob);
+            stalk.quiet = 0;
+            body_at = Some([spot[0], spot[1] + m::STALKER_LIFT, spot[2]]);
+        }
+    }
+    // Its body: the shard display, summoned once per hunt (and again for a
+    // mob whose body summon failed) and posed at the stalker's scale.
+    if stalk.mob.is_some() && stalk.body.is_none() {
+        if let Some(spot) = body_at {
+            let mut nbt = horizon_world::nbt::Compound::new();
+            nbt.insert(
+                "item".into(),
+                Tag::compound([
+                    ("id", Tag::String(m::STALKER_ITEM.into())),
+                    ("count", Tag::Int(1)),
+                ]),
+            );
+            nbt.insert("billboard".into(), Tag::String("center".into()));
+            if let Some(body) = game.native_summon(&dimension, m::ITEM_DISPLAY, spot, nbt) {
+                let scale = m::STALKER_SCALE;
+                let pose = crate::game::native_entities::NativeDisplay {
+                    translation: [0.0; 3],
+                    left_rotation: [0.0, 0.0, 0.0, 1.0],
+                    scale: [scale, scale, scale],
+                    right_rotation: [0.0, 0.0, 0.0, 1.0],
+                    interpolation: 0,
+                    teleport: 0,
+                };
+                game.native_set_display(&dimension, body, &pose);
+                stalk.body = Some(body);
+            }
+        }
+    }
+    // The body rides the mob, faced at the player.
+    if let (Some((pos, yaw)), Some(body)) = (order.follow, stalk.body) {
+        game.native_move_entity(&dimension, body, pos, yaw, 0.0);
+    }
+    m::set_stalk(uuid, stalk);
     // The dig in place, when it is one the mod's pickaxe digs: bedrock or
     // voidshell, held.
     let dig = game.mining.as_ref().map(|dig| (dig.pos, dig.ticks));
@@ -116,7 +218,10 @@ fn underbedrock_core_tick(game: &mut crate::game::Game<'_>) {
                             Tag::compound([("Name", Tag::String(m::LANTERN_BLOCK.into()))]),
                         );
                     }
-                    m::Creature::Wisp | m::Creature::Watcher => {
+                    m::Creature::Wisp
+                    | m::Creature::Watcher
+                    | m::Creature::Ember
+                    | m::Creature::Frostmote => {
                         nbt.insert(
                             "item".into(),
                             Tag::compound([

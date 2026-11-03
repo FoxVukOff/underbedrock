@@ -1,6 +1,0 @@
-{
-  "type": "neoforge:add_features",
-  "biomes": "#minecraft:is_overworld",
-  "features": "underbedrock:ore_void_crystal_overworld",
-  "step": "underground_ores"
-}

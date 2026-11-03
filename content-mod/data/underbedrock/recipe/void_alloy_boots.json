@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "void_alloy_boots",
+  "pattern": [
+    "A A",
+    "AAA",
+    "AAA"
+  ],
+  "key": {
+    "A": "underbedrock:void_alloy"
+  },
+  "result": {
+    "id": "underbedrock:void_alloy_boots"
+  }
+}

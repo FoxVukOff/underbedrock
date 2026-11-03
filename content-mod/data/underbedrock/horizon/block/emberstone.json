@@ -1,0 +1,11 @@
+{
+  "template": "minecraft:netherrack",
+  "properties": {
+    "hardness": 2.5,
+    "explosion_resistance": 6.0,
+    "requires_tool": true,
+    "light": 4,
+    "sounds": "minecraft:netherrack"
+  },
+  "item": true
+}

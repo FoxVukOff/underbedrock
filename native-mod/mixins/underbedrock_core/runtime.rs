@@ -55,12 +55,25 @@ pub const HELP: &str = "Under Bedrock: /abyss give (the pickaxe), /abyss depth (
 pub const WISP_ITEM: &str = "underbedrock:void_crystal";
 /// What a lantern's display shows: the mod's own crystal lamp block.
 pub const LANTERN_BLOCK: &str = "underbedrock:crystal_lamp";
+/// What an ember's display shows: the mod's ember shard of the hot expanse.
+pub const EMBER_ITEM: &str = "underbedrock:ember_shard";
+/// What a frostmote's display shows: the mod's frost shard of the cold rim.
+pub const FROSTMOTE_ITEM: &str = "underbedrock:frost_shard";
 /// The display entity kinds the creatures ride.
 pub const ITEM_DISPLAY: &str = "minecraft:item_display";
 pub const BLOCK_DISPLAY: &str = "minecraft:block_display";
 
 /// A player below this y is in the Abyss, and gets its company.
 pub const SPAWN_BELOW_Y: f64 = -80.0;
+/// The layer floors, as the datapack bands them: under each y the next,
+/// colder layer starts (the hot expanse, the inactive one, the cool islands,
+/// the frozen wastes). The wastes under [`STALK_BELOW_Y`] are the stalker's
+/// hunting ground: no ambient creature lives there.
+pub const INACTIVE_BELOW_Y: f64 = -168.0;
+pub const COOL_BELOW_Y: f64 = -280.0;
+pub const STALK_BELOW_Y: f64 = -420.0;
+/// No vanilla mob lives under the gate: the ban takes out any that wanders in.
+pub const BAN_BELOW_Y: f64 = -55.0;
 /// The most of the mod's creatures within reach of one player at a time.
 pub const CREATURE_CAP: usize = 10;
 /// Creatures are looked for this many blocks around the player.
@@ -90,6 +103,10 @@ pub enum Creature {
     /// A bigger crystal that closes on a player who comes near, keeps its
     /// distance, and watches them.
     Watcher,
+    /// An ember of the hot expanse: a fast flicker of the ember shard.
+    Ember,
+    /// A frostmote of the cold rim: the frost shard, drifting slow.
+    Frostmote,
 }
 
 impl Creature {
@@ -97,13 +114,15 @@ impl Creature {
     pub fn display(self) -> &'static str {
         match self {
             Self::Lantern => BLOCK_DISPLAY,
-            Self::Wisp | Self::Watcher => ITEM_DISPLAY,
+            Self::Wisp | Self::Watcher | Self::Ember | Self::Frostmote => ITEM_DISPLAY,
         }
     }
     /// The item or block its display shows: the mod's own.
     pub fn shows(self) -> &'static str {
         match self {
             Self::Lantern => LANTERN_BLOCK,
+            Self::Ember => EMBER_ITEM,
+            Self::Frostmote => FROSTMOTE_ITEM,
             Self::Wisp | Self::Watcher => WISP_ITEM,
         }
     }
@@ -113,6 +132,8 @@ impl Creature {
             Self::Wisp => 0.9,
             Self::Lantern => 0.55,
             Self::Watcher => 1.5,
+            Self::Ember => 0.8,
+            Self::Frostmote => 0.85,
         }
     }
     /// The creature a display of `display_kind` is: a watcher found again
@@ -349,20 +370,43 @@ pub fn candidate_offset(seed: u64, attempt: u32) -> [i32; 3] {
     [dx, dy, dz]
 }
 
-/// The creature the `seed`'s summon is: wisps the oftenest, then watchers,
-/// and a lantern here and there.
-pub fn pick_creature(seed: u64) -> Creature {
-    match mix(seed ^ 0xAB55_5EED) % 10 {
-        0..=4 => Creature::Wisp,
-        5..=7 => Creature::Watcher,
-        _ => Creature::Lantern,
+/// The creature the `seed`'s summon is, for the layer at `y`: embers flicker
+/// in the hot expanse, the classic company keeps the cool islands (a frostmote
+/// here and there, the cold ahead), and the frozen wastes below
+/// [`STALK_BELOW_Y`] are the stalker's ground - no ambient creature there.
+pub fn pick_creature(seed: u64, y: f64) -> Option<Creature> {
+    if y < STALK_BELOW_Y {
+        return None;
     }
+    let roll = mix(seed ^ 0xAB55_5EED) % 10;
+    Some(if y < COOL_BELOW_Y {
+        match roll {
+            0..=3 => Creature::Wisp,
+            4..=6 => Creature::Watcher,
+            7..=8 => Creature::Lantern,
+            _ => Creature::Frostmote,
+        }
+    } else if y < INACTIVE_BELOW_Y {
+        match roll {
+            0..=3 => Creature::Ember,
+            4..=7 => Creature::Wisp,
+            _ => Creature::Lantern,
+        }
+    } else {
+        match roll {
+            0..=5 => Creature::Ember,
+            6..=7 => Creature::Lantern,
+            _ => Creature::Wisp,
+        }
+    })
 }
 
 /// Whether a display entity is one of the mod's creatures: a display kind,
-/// under the bedrock floor (nothing up top is the mod's).
+/// under the bedrock floor (nothing up top is the mod's) and above the frozen
+/// wastes - down there the only display the mod keeps is the stalker's body,
+/// which the hunt tracks itself.
 pub fn is_ours(display_kind: &str, pos: [f64; 3]) -> bool {
-    Creature::of(display_kind).is_some() && pos[1] < SPAWN_BELOW_Y
+    Creature::of(display_kind).is_some() && pos[1] < SPAWN_BELOW_Y && pos[1] > STALK_BELOW_Y
 }
 
 /// Whether a creature is near enough to the player to count against the cap.
@@ -400,7 +444,8 @@ pub fn spawn_plan(
         {
             continue;
         }
-        return Some((pick_creature(seed.wrapping_add(attempt as u64)), spot));
+        let creature = pick_creature(seed.wrapping_add(attempt as u64), at[1])?;
+        return Some((creature, spot));
     }
     None
 }
@@ -413,6 +458,8 @@ pub fn drift(kind: Creature, anchor: [f64; 3], phase: f32) -> [f64; 3] {
         Creature::Wisp => (2.5f32, 0.7, 0.6, 1.0),
         Creature::Lantern => (0.35, 0.25, 0.25, 1.8),
         Creature::Watcher => (1.4, 1.1, 0.4, 1.2),
+        Creature::Ember => (2.2, 1.3, 0.9, 1.0),
+        Creature::Frostmote => (1.8, 0.35, 0.5, 1.4),
     };
     let turn = phase * spin;
     [
@@ -584,6 +631,152 @@ pub fn step_creatures(
     step
 }
 
+// --- the stalker of the frozen wastes ----------------------------------------
+// The bottom layer hunts. When a player descends into the frozen wastes, the
+// mod sends one killer after them: a vex (API 37) - the engine's own flying
+// melee that walks through stone - spawned invisible, silent and weightless,
+// so what the player sees is the body the mod keeps for it: an item display
+// of the stalker shard, moved onto the mob every tick and faced at them. The
+// engine's melee does the damage; the mod only shows, tracks and cleans up.
+// Above the wastes the pair is dismissed at once; when the stalker falls, the
+// wastes are quiet for a while, then send another.
+
+/// The mob the stalker rides, its health, and what its body shows.
+pub const STALKER_KIND: &str = "minecraft:vex";
+pub const STALKER_HEALTH: f32 = 60.0;
+pub const STALKER_ITEM: &str = "underbedrock:stalker_shard";
+/// The body's scale, and how far over the mob it hangs.
+pub const STALKER_SCALE: f32 = 1.4;
+pub const STALKER_LIFT: f64 = 0.45;
+/// How far off the player the hunter takes shape.
+pub const STALKER_RING: f64 = 14.0;
+/// The quiet after a stalker falls, and the pause before a summon that found
+/// no room (peaceful, an unloaded chunk) is tried again, in ticks.
+pub const STALK_QUIET: u32 = 600;
+pub const STALK_RETRY: u32 = 40;
+
+/// One player's hunt: the mob's and its body's engine ids, and the ticks of
+/// quiet left before the wastes send another.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Stalk {
+    pub mob: Option<u32>,
+    pub body: Option<u32>,
+    pub quiet: u32,
+}
+
+/// What one tick of a hunt asks the engine to do.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct StalkOrder {
+    /// `native_remove_mob`: the hunt is over.
+    pub dismiss_mob: Option<u32>,
+    /// `native_remove_entity`: a body to let go.
+    pub dismiss_body: Option<u32>,
+    /// `native_spawn_mob`: send the hunter in.
+    pub summon: bool,
+    /// `native_summon`: the mob hunts but shows no body (a summon that
+    /// failed) - make one at the mob.
+    pub summon_body: bool,
+    /// `native_move_entity`: where the body goes (over the mob) and the yaw
+    /// it faces (the player).
+    pub follow: Option<([f64; 3], f32)>,
+}
+
+/// Where the hunter takes shape: on a ring around the player, at their depth
+/// (it flies, and walks through stone).
+pub fn stalker_spot(seed: u64, at: [f64; 3]) -> [f64; 3] {
+    let turn = (mix(seed) % 36_000) as f64 * std::f64::consts::TAU / 36_000.0;
+    [
+        at[0] + STALKER_RING * turn.cos(),
+        at[1],
+        at[2] + STALKER_RING * turn.sin(),
+    ]
+}
+
+/// One tick of a player's hunt: `in_zone` is whether they are in the wastes,
+/// `mob_at` where the engine has their vex this tick (None once it is gone -
+/// killed, or a ban of a world the mod lost track of). The order is what the
+/// engine must do; the state that comes back is what the caller keeps, with
+/// the ids a successful summon hands out written over it.
+pub fn stalk_tick(
+    stalk: Stalk,
+    in_zone: bool,
+    mob_at: Option<[f64; 3]>,
+    player: [f64; 3],
+) -> (Stalk, StalkOrder) {
+    let mut order = StalkOrder::default();
+    if !in_zone {
+        // Out of the wastes: the hunt is over, at once and quietly.
+        order.dismiss_mob = stalk.mob;
+        order.dismiss_body = stalk.body;
+        return (Stalk::default(), order);
+    }
+    let mut stalk = Stalk {
+        quiet: stalk.quiet.saturating_sub(1),
+        ..stalk
+    };
+    match (stalk.mob, mob_at) {
+        (Some(_), Some(pos)) => {
+            let body_at = [pos[0], pos[1] + STALKER_LIFT, pos[2]];
+            if stalk.body.is_some() {
+                let eye = [player[0], player[1] + 1.0, player[2]];
+                order.follow = Some((body_at, face_yaw(body_at, eye)));
+            } else {
+                order.summon_body = true;
+            }
+        }
+        (Some(_), None) => {
+            // It fell (or went): the body follows, and the wastes are quiet.
+            order.dismiss_body = stalk.body;
+            stalk = Stalk {
+                mob: None,
+                body: None,
+                quiet: STALK_QUIET,
+            };
+        }
+        (None, _) => {
+            if stalk.quiet == 0 {
+                order.summon = true;
+                stalk.quiet = STALK_RETRY;
+            }
+        }
+    }
+    (stalk, order)
+}
+
+thread_local! {
+    /// Each player's hunt, in the world in place.
+    static STALKS: RefCell<HashMap<u128, Stalk>> = RefCell::new(HashMap::new());
+}
+
+/// The hunt the mod keeps for `uuid` (the default when it keeps none).
+pub fn get_stalk(uuid: u128) -> Stalk {
+    STALKS.with(|stalks| stalks.borrow().get(&uuid).copied().unwrap_or_default())
+}
+
+/// Keeps `uuid`'s hunt; the default clears it, so a finished hunt leaves no
+/// entry behind.
+pub fn set_stalk(uuid: u128, stalk: Stalk) {
+    STALKS.with(|stalks| {
+        let mut stalks = stalks.borrow_mut();
+        if stalk == Stalk::default() {
+            stalks.remove(&uuid);
+        } else {
+            stalks.insert(uuid, stalk);
+        }
+    });
+}
+
+/// Whether mob `id` is a stalker the mod tracks (any player's): the ban under
+/// the gate spares exactly these.
+pub fn is_stalker_mob(id: u32) -> bool {
+    STALKS.with(|stalks| stalks.borrow().values().any(|stalk| stalk.mob == Some(id)))
+}
+
+/// Empties the hunts: a world closed, or the harness runs again.
+pub fn clear_stalks() {
+    STALKS.with(|stalks| stalks.borrow_mut().clear());
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -673,6 +866,8 @@ mod tests {
     #[test]
     fn a_spawn_plan_needs_a_pocket_and_room_under_the_cap() {
         let at = [0.5, -200.0, 0.5];
+        // The frozen wastes are the stalker's ground: no ambient plan there.
+        assert_eq!(spawn_plan(7, [0.5, -500.0, 0.5], 0, |_| true), None);
         // Everything open: no floor under any feet, so no plan.
         assert_eq!(spawn_plan(7, at, 0, |_| true), None);
         // At the cap: no plan even with a pocket.
@@ -689,7 +884,10 @@ mod tests {
         assert_eq!(spawn_plan(7, at, CREATURE_CAP, pocket), None);
         // With room and a floor: the first attempt's creature and spot.
         let (creature, spot) = spawn_plan(7, at, CREATURE_CAP - 1, pocket).expect("a plan");
-        assert_eq!(creature, pick_creature(7));
+        assert_eq!(
+            creature,
+            pick_creature(7, at[1]).expect("a cool-layer pick")
+        );
         let [dx, dy, dz] = candidate_offset(7, 0);
         assert_eq!(
             spot,
@@ -702,21 +900,34 @@ mod tests {
     }
 
     #[test]
-    fn picked_creatures_are_the_mods_own() {
-        let mut seen = [0u32; 3];
-        for seed in 0..400u64 {
-            match pick_creature(seed) {
-                Creature::Wisp => seen[0] += 1,
-                Creature::Watcher => seen[1] += 1,
-                Creature::Lantern => seen[2] += 1,
+    fn each_layer_picks_its_own_company() {
+        let mut seen = [0u32; 5];
+        for seed in 0..600u64 {
+            // The hot expanse: embers, lanterns and the odd wisp.
+            match pick_creature(seed, -100.0).expect("the hot layer picks") {
+                Creature::Ember => seen[0] += 1,
+                Creature::Lantern => seen[1] += 1,
+                Creature::Wisp => seen[2] += 1,
+                other => panic!("the hot layer picked {other:?}"),
+            }
+            // The cool islands: the classic company, and frostmotes at the rim.
+            match pick_creature(seed, -350.0).expect("the cool layer picks") {
+                Creature::Wisp => seen[2] += 1,
+                Creature::Watcher => seen[3] += 1,
+                Creature::Lantern => seen[1] += 1,
+                Creature::Frostmote => seen[4] += 1,
+                other => panic!("the cool layer picked {other:?}"),
             }
         }
         assert!(seen.iter().all(|count| *count > 0), "{seen:?}");
-        // A wisp and a watcher show the mod's item; a lantern its block.
-        assert_eq!(Creature::Wisp.shows(), WISP_ITEM);
-        assert_eq!(Creature::Watcher.display(), ITEM_DISPLAY);
-        assert_eq!(Creature::Lantern.shows(), LANTERN_BLOCK);
-        assert_eq!(Creature::Lantern.display(), BLOCK_DISPLAY);
+        // The frozen wastes: nothing ambient, only the stalker.
+        assert_eq!(pick_creature(7, -500.0), None);
+        assert_eq!(pick_creature(7, -421.0), None);
+        // What each shows and rides.
+        assert_eq!(Creature::Ember.shows(), EMBER_ITEM);
+        assert_eq!(Creature::Frostmote.shows(), FROSTMOTE_ITEM);
+        assert_eq!(Creature::Ember.display(), ITEM_DISPLAY);
+        assert_eq!(Creature::Frostmote.display(), ITEM_DISPLAY);
         assert_eq!(Creature::of(BLOCK_DISPLAY), Some(Creature::Lantern));
         assert_eq!(Creature::of(ITEM_DISPLAY), Some(Creature::Wisp));
         assert_eq!(Creature::of("minecraft:text_display"), None);
@@ -729,6 +940,9 @@ mod tests {
         assert!(is_ours(BLOCK_DISPLAY, [-30.0, -90.0, 20.0]));
         // Above the floor, or not a display the mod rides: not the mod's.
         assert!(!is_ours(ITEM_DISPLAY, [10.0, -70.0, 0.0]));
+        // The frozen wastes keep no ambient display: the stalker's body is
+        // the hunt's own, not a creature's.
+        assert!(!is_ours(ITEM_DISPLAY, [10.0, -500.0, 0.0]));
         assert!(!is_ours("minecraft:text_display", [10.0, -210.0, 0.0]));
         assert!(!is_ours("minecraft:marker", [10.0, -210.0, 0.0]));
         // Near enough to count against the cap, and too far.
@@ -739,7 +953,13 @@ mod tests {
     #[test]
     fn creatures_drift_on_their_paths_around_their_anchors() {
         let anchor = [100.0, -200.0, 100.0];
-        for kind in [Creature::Wisp, Creature::Lantern, Creature::Watcher] {
+        for kind in [
+            Creature::Wisp,
+            Creature::Lantern,
+            Creature::Watcher,
+            Creature::Ember,
+            Creature::Frostmote,
+        ] {
             let mut phase = 0.0;
             for _ in 0..2000 {
                 let pos = drift(kind, anchor, phase);
@@ -840,6 +1060,114 @@ mod tests {
         let dues: Vec<bool> = (0..SPAWN_EVERY * 2 + 1).map(|_| spawn_due(uuid)).collect();
         assert_eq!(dues.iter().filter(|d| **d).count(), 2);
         assert!(dues[SPAWN_EVERY as usize - 1]);
+    }
+
+    #[test]
+    fn the_wastes_send_a_stalker_and_take_it_back() {
+        let player = [0.0, -500.0, 0.0];
+        let mob = [10.0, -500.0, 10.0];
+        // In the wastes with the quiet over: a summon is ordered, and the
+        // retry waits in case it finds no room (peaceful, an unloaded chunk).
+        let (stalk, order) = stalk_tick(Stalk::default(), true, None, player);
+        assert!(order.summon && stalk.quiet == STALK_RETRY);
+        assert!(!order.summon_body && order.follow.is_none());
+        let mut stalk = stalk;
+        for _ in 0..STALK_RETRY - 1 {
+            let (next, order) = stalk_tick(stalk, true, None, player);
+            assert!(!order.summon, "the retry waits its pause");
+            stalk = next;
+        }
+        let (_, order) = stalk_tick(stalk, true, None, player);
+        assert!(order.summon, "the retry comes");
+        // The caller wrote the ids in: the body follows the mob, faced at
+        // the player.
+        let hunting = Stalk {
+            mob: Some(5),
+            body: Some(6),
+            quiet: 0,
+        };
+        let (kept, order) = stalk_tick(hunting, true, Some(mob), player);
+        assert_eq!(kept, hunting);
+        let (at, yaw) = order.follow.expect("the body follows");
+        assert!((at[1] - (mob[1] + STALKER_LIFT)).abs() < 1.0e-9);
+        assert_eq!(yaw, face_yaw(at, [player[0], player[1] + 1.0, player[2]]));
+        // A mob with no body (a summon that failed): the body is asked for.
+        let (_, order) = stalk_tick(
+            Stalk {
+                mob: Some(5),
+                body: None,
+                quiet: 0,
+            },
+            true,
+            Some(mob),
+            player,
+        );
+        assert!(order.summon_body && order.follow.is_none());
+        // It fell: the body goes with it, and the wastes are quiet.
+        let (after, order) = stalk_tick(hunting, true, None, player);
+        assert_eq!(order.dismiss_body, Some(6));
+        assert!(order.dismiss_mob.is_none() && !order.summon);
+        assert_eq!(
+            after,
+            Stalk {
+                mob: None,
+                body: None,
+                quiet: STALK_QUIET
+            }
+        );
+        let (_, order) = stalk_tick(after, true, None, player);
+        assert!(!order.summon, "the quiet holds");
+        // The player climbs out mid-hunt: both go, at once.
+        let (after, order) = stalk_tick(hunting, false, Some(mob), [0.0, -300.0, 0.0]);
+        assert_eq!(order.dismiss_mob, Some(5));
+        assert_eq!(order.dismiss_body, Some(6));
+        assert_eq!(after, Stalk::default());
+        // Out of the wastes with nothing to take back: no orders at all.
+        let (after, order) = stalk_tick(Stalk::default(), false, None, player);
+        assert_eq!(after, Stalk::default());
+        assert_eq!(order, StalkOrder::default());
+    }
+
+    #[test]
+    fn a_stalker_takes_shape_on_its_ring() {
+        for seed in [1u64, 99, 0xF00D] {
+            let at = [0.5, -500.0, 0.5];
+            let spot = stalker_spot(seed, at);
+            let away = ((spot[0] - at[0]).powi(2) + (spot[2] - at[2]).powi(2)).sqrt();
+            assert!((away - STALKER_RING).abs() < 1.0e-9, "{away} off the ring");
+            assert_eq!(spot[1], at[1], "at the player's depth");
+        }
+        assert_ne!(stalker_spot(1, [0.0; 3]), stalker_spot(2, [0.0; 3]));
+    }
+
+    #[test]
+    fn a_stalker_is_known_by_its_mob() {
+        clear_stalks();
+        set_stalk(
+            1,
+            Stalk {
+                mob: Some(9),
+                body: Some(10),
+                quiet: 0,
+            },
+        );
+        set_stalk(
+            2,
+            Stalk {
+                mob: Some(19),
+                body: None,
+                quiet: 3,
+            },
+        );
+        assert!(is_stalker_mob(9) && is_stalker_mob(19));
+        assert!(!is_stalker_mob(11));
+        assert_eq!(get_stalk(2).quiet, 3);
+        // The default clears: a finished hunt leaves no entry.
+        set_stalk(2, Stalk::default());
+        assert!(!is_stalker_mob(19));
+        assert_eq!(get_stalk(2), Stalk::default());
+        clear_stalks();
+        assert!(!is_stalker_mob(9));
     }
 
     #[test]

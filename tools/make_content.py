@@ -126,6 +126,49 @@ BLOCKS = {
         },
         "item": True,
     },
+    # The hot expanse: magma-like rock with ember cracks, faintly lit.
+    "emberstone": {
+        "template": "minecraft:netherrack",
+        "properties": {
+            "hardness": 2.5,
+            "explosion_resistance": 6.0,
+            "requires_tool": True,
+            "light": 4,
+            "sounds": "minecraft:netherrack",
+        },
+        "item": True,
+    },
+    # The inactive hot expanse: cooled ash-grey rock.
+    "scorched_stone": {
+        "template": "minecraft:stone",
+        "properties": {
+            "hardness": 3.0,
+            "explosion_resistance": 6.0,
+            "requires_tool": True,
+            "sounds": "minecraft:basalt",
+        },
+        "item": True,
+    },
+    # The frozen wastes: pale ice stone.
+    "froststone": {
+        "template": "minecraft:calcite",
+        "properties": {
+            "hardness": 3.0,
+            "explosion_resistance": 6.0,
+            "requires_tool": True,
+            "sounds": "minecraft:calcite",
+        },
+        "item": True,
+    },
+    "frost_gravel": {
+        "template": "minecraft:gravel",
+        "properties": {
+            "hardness": 1.2,
+            "explosion_resistance": 1.2,
+            "sounds": "minecraft:gravel",
+        },
+        "item": True,
+    },
     # The gate under the bedrock floor: the engine never breaks it (hardness
     # -1); the native half lets the void-alloy pickaxe dig it, as bedrock.
     "voidshell": {
@@ -177,6 +220,39 @@ write(MOD / f"data/{ID}/horizon/item/void_alloy_pickaxe.json", {
     },
 })
 
+# The full void gear set: every tool and armor piece, netherite-tier from the
+# template, repaired with void alloy and wearing the set's glint.
+GEAR = {
+    "void_alloy_sword": ("minecraft:netherite_sword", 2200),
+    "void_alloy_axe": ("minecraft:netherite_axe", 2100),
+    "void_alloy_hoe": ("minecraft:netherite_hoe", 2000),
+    "void_alloy_shovel": ("minecraft:netherite_shovel", 2100),
+    "void_alloy_helmet": ("minecraft:netherite_helmet", 700),
+    "void_alloy_chestplate": ("minecraft:netherite_chestplate", 1000),
+    "void_alloy_leggings": ("minecraft:netherite_leggings", 900),
+    "void_alloy_boots": ("minecraft:netherite_boots", 800),
+}
+for gear_name, (gear_template, gear_damage) in GEAR.items():
+    write(MOD / f"data/{ID}/horizon/item/{gear_name}.json", {
+        "template": gear_template,
+        "rarity": "epic",
+        "components": {
+            "minecraft:max_damage": gear_damage,
+            "minecraft:enchantment_glint_override": True,
+            "minecraft:enchantable": {"value": 22},
+            "minecraft:repairable": {"items": f"{ID}:void_alloy"},
+        },
+    })
+
+# Layer shards: trophies of the hot and frozen expanse, and the stalker's own
+# shard (the native half renders it as the stalker's visible body).
+write(MOD / f"data/{ID}/horizon/item/ember_shard.json",
+      {"template": "minecraft:diamond", "rarity": "uncommon"})
+write(MOD / f"data/{ID}/horizon/item/frost_shard.json",
+      {"template": "minecraft:diamond", "rarity": "uncommon"})
+write(MOD / f"data/{ID}/horizon/item/stalker_shard.json",
+      {"template": "minecraft:echo_shard", "rarity": "epic"})
+
 # --------------------------------------------------------------------------- creative tab
 write(MOD / f"data/{ID}/horizon/creative_tab/{ID}.json", {
     "title": f"itemGroup.{ID}",
@@ -192,6 +268,21 @@ write(MOD / f"data/{ID}/horizon/creative_tab/{ID}.json", {
         f"{ID}:voidstone",
         f"{ID}:voidstone_bricks",
         f"{ID}:void_gravel",
+        f"{ID}:void_alloy_sword",
+        f"{ID}:void_alloy_axe",
+        f"{ID}:void_alloy_hoe",
+        f"{ID}:void_alloy_shovel",
+        f"{ID}:void_alloy_helmet",
+        f"{ID}:void_alloy_chestplate",
+        f"{ID}:void_alloy_leggings",
+        f"{ID}:void_alloy_boots",
+        f"{ID}:ember_shard",
+        f"{ID}:frost_shard",
+        f"{ID}:stalker_shard",
+        f"{ID}:emberstone",
+        f"{ID}:scorched_stone",
+        f"{ID}:froststone",
+        f"{ID}:frost_gravel",
         f"{ID}:voidshell",
         f"{ID}:abyss_bedrock",
     ],
@@ -210,7 +301,8 @@ def drops_itself(name):
     }
 
 for name in ("voidstone", "voidstone_bricks", "void_gravel", "void_crystal_block",
-             "crystal_lamp", "crystal_sprout", "voidshell"):
+             "crystal_lamp", "crystal_sprout", "voidshell",
+             "emberstone", "scorched_stone", "froststone", "frost_gravel"):
     write(MOD / f"data/{ID}/loot_table/blocks/{name}.json", drops_itself(name))
 write(MOD / f"data/{ID}/loot_table/blocks/void_crystal_ore.json", {
     "type": "minecraft:block",
@@ -293,6 +385,47 @@ write(MOD / f"data/{ID}/recipe/crystal_sprout.json", {
     "result": {"id": f"{ID}:crystal_sprout"},
 })
 
+for gear_name in GEAR:
+    kind = gear_name.removeprefix("void_alloy_")
+    if kind in ("sword",):
+        pattern, key = ["A", "A", "S"], {"A": f"{ID}:void_alloy", "S": "minecraft:stick"}
+    elif kind in ("helmet",):
+        pattern, key = ["AAA", "A A"], {"A": f"{ID}:void_alloy"}
+    elif kind in ("chestplate", "boots"):
+        pattern, key = ["A A", "AAA", "AAA"], {"A": f"{ID}:void_alloy"}
+    elif kind in ("leggings",):
+        pattern, key = ["AAA", "A A", "A A"], {"A": f"{ID}:void_alloy"}
+    else:  # axe, hoe, shovel: head of two ingots on a stick, axe mirrored
+        pattern, key = ["AA", "AS", " S"], {"A": f"{ID}:void_alloy", "S": "minecraft:stick"}
+        if kind == "shovel":
+            pattern = ["A", "S", "S"]
+        elif kind == "hoe":
+            pattern = ["AA", " S", " S"]
+    write(MOD / f"data/{ID}/recipe/{gear_name}.json", {
+        "type": "minecraft:crafting_shaped",
+        "category": "equipment",
+        "group": gear_name,
+        "pattern": pattern,
+        "key": key,
+        "result": {"id": f"{ID}:{gear_name}"},
+    })
+write(MOD / f"data/{ID}/recipe/ember_shard.json", {
+    "type": "minecraft:smelting",
+    "category": "misc",
+    "ingredient": f"{ID}:emberstone",
+    "result": {"id": f"{ID}:ember_shard"},
+    "experience": 0.7,
+    "cookingtime": 200,
+})
+write(MOD / f"data/{ID}/recipe/frost_shard.json", {
+    "type": "minecraft:smelting",
+    "category": "misc",
+    "ingredient": f"{ID}:froststone",
+    "result": {"id": f"{ID}:frost_shard"},
+    "experience": 0.7,
+    "cookingtime": 200,
+})
+
 # --------------------------------------------------------------------------- tags
 write(MOD / "data/minecraft/tags/block/mineable/pickaxe.json", {
     "values": [
@@ -301,10 +434,13 @@ write(MOD / "data/minecraft/tags/block/mineable/pickaxe.json", {
         f"{ID}:void_crystal_ore",
         f"{ID}:void_crystal_block",
         f"{ID}:crystal_lamp",
+        f"{ID}:emberstone",
+        f"{ID}:scorched_stone",
+        f"{ID}:froststone",
     ]
 })
 write(MOD / "data/minecraft/tags/block/mineable/shovel.json", {
-    "values": [f"{ID}:void_gravel"]
+    "values": [f"{ID}:void_gravel", f"{ID}:frost_gravel"]
 })
 # Iron tools and better harvest the crystal's ore and block.
 write(MOD / "data/minecraft/tags/block/needs_iron_tool.json", {
@@ -312,87 +448,10 @@ write(MOD / "data/minecraft/tags/block/needs_iron_tool.json", {
 })
 
 # --------------------------------------------------------------------------- worldgen features
-def ore(targets, size, discard=0.0):
-    return {
-        "type": "minecraft:ore",
-        "config": {
-            "size": size,
-            "discard_chance_on_air_exposure": discard,
-            "targets": [{"target": t, "state": s} for t, s in targets],
-        },
-    }
-
-VOID = {"predicate_type": "minecraft:block_match", "block": f"{ID}:voidstone"}
-write(MOD / f"data/{ID}/worldgen/configured_feature/ore_void_crystal_voidstone.json",
-      ore([(VOID, f"{ID}:void_crystal_ore")], 8))
-write(MOD / f"data/{ID}/worldgen/configured_feature/ore_void_crystal_overworld.json", ore([
-    ({"predicate_type": "minecraft:tag_match", "tag": "minecraft:deepslate_ore_replaceables"}, f"{ID}:void_crystal_ore"),
-    ({"predicate_type": "minecraft:tag_match", "tag": "minecraft:stone_ore_replaceables"}, f"{ID}:void_crystal_ore"),
-], 5))
-write(MOD / f"data/{ID}/worldgen/configured_feature/ore_lamp_voidstone.json",
-      ore([(VOID, f"{ID}:crystal_lamp")], 3))
-write(MOD / f"data/{ID}/worldgen/configured_feature/ore_gravel_voidstone.json",
-      ore([(VOID, f"{ID}:void_gravel")], 20))
-write(MOD / f"data/{ID}/worldgen/configured_feature/ore_coal_voidstone.json",
-      ore([(VOID, "minecraft:coal_ore")], 12))
-write(MOD / f"data/{ID}/worldgen/configured_feature/ore_iron_voidstone.json",
-      ore([(VOID, "minecraft:iron_ore")], 8))
-write(MOD / f"data/{ID}/worldgen/configured_feature/ore_diamond_voidstone.json",
-      ore([(VOID, "minecraft:diamond_ore")], 6))
-
-
-def placed(feature, count, y_min, y_max, rarity=None):
-    modifiers = []
-    if rarity:
-        modifiers.append({"type": "minecraft:rarity_filter", "chance": rarity})
-    modifiers += [
-        {"type": "minecraft:count", "count": count},
-        {"type": "minecraft:in_square"},
-        {"type": "minecraft:height_range", "height": {
-            "type": "minecraft:uniform",
-            "min_inclusive": {"absolute": y_min},
-            "max_inclusive": {"absolute": y_max},
-        }},
-        {"type": "minecraft:biome"},
-    ]
-    return {"feature": f"{ID}:{feature}", "placement": modifiers}
-
-# The Abyss lives at -73..-564; these ranges sit inside its voidstone.
-write(MOD / f"data/{ID}/worldgen/placed_feature/ore_void_crystal_underbedrock.json",
-      placed("ore_void_crystal_voidstone", 14, -545, -85))
-write(MOD / f"data/{ID}/worldgen/placed_feature/ore_lamp_underbedrock.json",
-      placed("ore_lamp_voidstone", 8, -520, -90))
-write(MOD / f"data/{ID}/worldgen/placed_feature/ore_gravel_underbedrock.json",
-      placed("ore_gravel_voidstone", 10, -540, -85))
-write(MOD / f"data/{ID}/worldgen/placed_feature/ore_coal_underbedrock.json",
-      placed("ore_coal_voidstone", 12, -540, -90))
-write(MOD / f"data/{ID}/worldgen/placed_feature/ore_iron_underbedrock.json",
-      placed("ore_iron_voidstone", 8, -540, -100))
-write(MOD / f"data/{ID}/worldgen/placed_feature/ore_diamond_underbedrock.json",
-      placed("ore_diamond_voidstone", 4, -545, -120))
-# A few veins in the ordinary deepslate, so the first alloy needs no bedrock.
-write(MOD / f"data/{ID}/worldgen/placed_feature/ore_void_crystal_overworld.json",
-      placed("ore_void_crystal_overworld", 3, -60, -16, rarity=3))
-
-write(MOD / f"data/{ID}/neoforge/biome_modifier/underbedrock_ores.json", {
-    "type": "neoforge:add_features",
-    "biomes": "#minecraft:is_overworld",
-    "features": [
-        f"{ID}:ore_void_crystal_underbedrock",
-        f"{ID}:ore_lamp_underbedrock",
-        f"{ID}:ore_gravel_underbedrock",
-        f"{ID}:ore_coal_underbedrock",
-        f"{ID}:ore_iron_underbedrock",
-        f"{ID}:ore_diamond_underbedrock",
-    ],
-    "step": "underground_ores",
-})
-write(MOD / f"data/{ID}/neoforge/biome_modifier/overworld_void_crystal.json", {
-    "type": "neoforge:add_features",
-    "biomes": "#minecraft:is_overworld",
-    "features": f"{ID}:ore_void_crystal_overworld",
-    "step": "underground_ores",
-})
+# None here on purpose: Horizon logs "placed features cannot run and will be
+# skipped" for feature-based placement, so every pocket of the Abyss (ores,
+# gravel, lamps, bricks, sprouts, lava) is grown by the datapack's material
+# rule instead - see the surface.json section further down.
 
 # --------------------------------------------------------------------------- assets
 EN = {
@@ -408,6 +467,21 @@ EN = {
     f"item.{ID}.void_crystal": "Void Crystal",
     f"item.{ID}.void_alloy": "Void Alloy Ingot",
     f"item.{ID}.void_alloy_pickaxe": "Void Alloy Pickaxe",
+    f"item.{ID}.void_alloy_sword": "Void Alloy Sword",
+    f"item.{ID}.void_alloy_axe": "Void Alloy Axe",
+    f"item.{ID}.void_alloy_hoe": "Void Alloy Hoe",
+    f"item.{ID}.void_alloy_shovel": "Void Alloy Shovel",
+    f"item.{ID}.void_alloy_helmet": "Void Alloy Helmet",
+    f"item.{ID}.void_alloy_chestplate": "Void Alloy Chestplate",
+    f"item.{ID}.void_alloy_leggings": "Void Alloy Leggings",
+    f"item.{ID}.void_alloy_boots": "Void Alloy Boots",
+    f"item.{ID}.ember_shard": "Ember Shard",
+    f"item.{ID}.frost_shard": "Frost Shard",
+    f"item.{ID}.stalker_shard": "Stalker Shard",
+    f"block.{ID}.emberstone": "Emberstone",
+    f"block.{ID}.scorched_stone": "Scorched Stone",
+    f"block.{ID}.froststone": "Froststone",
+    f"block.{ID}.frost_gravel": "Frost Gravel",
     f"itemGroup.{ID}": "Underbedrock",
 }
 RU = {
@@ -423,6 +497,21 @@ RU = {
     f"item.{ID}.void_crystal": "Пустотный кристалл",
     f"item.{ID}.void_alloy": "Слиток пустотного сплава",
     f"item.{ID}.void_alloy_pickaxe": "Кирка из пустотного сплава",
+    f"item.{ID}.void_alloy_sword": "Меч из пустотного сплава",
+    f"item.{ID}.void_alloy_axe": "Топор из пустотного сплава",
+    f"item.{ID}.void_alloy_hoe": "Мотыга из пустотного сплава",
+    f"item.{ID}.void_alloy_shovel": "Лопата из пустотного сплава",
+    f"item.{ID}.void_alloy_helmet": "Шлем из пустотного сплава",
+    f"item.{ID}.void_alloy_chestplate": "Кираса из пустотного сплава",
+    f"item.{ID}.void_alloy_leggings": "Поножи из пустотного сплава",
+    f"item.{ID}.void_alloy_boots": "Ботинки из пустотного сплава",
+    f"item.{ID}.ember_shard": "Тлеющий осколок",
+    f"item.{ID}.frost_shard": "Морозный осколок",
+    f"item.{ID}.stalker_shard": "Осколок сталкера",
+    f"block.{ID}.emberstone": "Тлеющий камень",
+    f"block.{ID}.scorched_stone": "Выжженный камень",
+    f"block.{ID}.froststone": "Морозный камень",
+    f"block.{ID}.frost_gravel": "Морозный гравий",
     f"itemGroup.{ID}": "Под бедроком",
 }
 write(MOD / f"assets/{ID}/lang/en_us.json", EN)
@@ -446,10 +535,18 @@ for name, parent in (("void_crystal", "minecraft:item/generated"),
           {"parent": parent, "textures": {"layer0": f"{ID}:item/{name}"}})
     write(MOD / f"assets/{ID}/items/{name}.json",
           {"model": {"type": "minecraft:model", "model": f"{ID}:item/{name}"}})
-write(MOD / f"assets/{ID}/models/item/void_alloy_pickaxe.json",
-      {"parent": "minecraft:item/handheld", "textures": {"layer0": f"{ID}:item/void_alloy_pickaxe"}})
-write(MOD / f"assets/{ID}/items/void_alloy_pickaxe.json",
-      {"model": {"type": "minecraft:model", "model": f"{ID}:item/void_alloy_pickaxe"}})
+for name in ("void_alloy_pickaxe", "void_alloy_sword", "void_alloy_axe",
+             "void_alloy_hoe", "void_alloy_shovel"):
+    write(MOD / f"assets/{ID}/models/item/{name}.json",
+          {"parent": "minecraft:item/handheld", "textures": {"layer0": f"{ID}:item/{name}"}})
+    write(MOD / f"assets/{ID}/items/{name}.json",
+          {"model": {"type": "minecraft:model", "model": f"{ID}:item/{name}"}})
+for name in ("ember_shard", "frost_shard", "stalker_shard", "void_alloy_helmet",
+             "void_alloy_chestplate", "void_alloy_leggings", "void_alloy_boots"):
+    write(MOD / f"assets/{ID}/models/item/{name}.json",
+          {"parent": "minecraft:item/generated", "textures": {"layer0": f"{ID}:item/{name}"}})
+    write(MOD / f"assets/{ID}/items/{name}.json",
+          {"model": {"type": "minecraft:model", "model": f"{ID}:item/{name}"}})
 
 # =========================================================================== the data pack
 # The pack that gives the Overworld room under its bedrock floor and generates
@@ -463,7 +560,11 @@ write(PACK / "pack.mcmeta", {
 })
 
 DIMENSION_TYPE = {
-    "ambient_light": 0.0,
+    # A faint ambient floor: the Abyss's layers read without torches, while
+    # the surface night stays dark enough for monsters. (The sky glimpses in
+    # unloaded chunks are chunk streaming, not light - they close as chunks
+    # load; ambient light cannot hide them, so keep render distance up.)
+    "ambient_light": 0.05,
     "attributes": {
         "minecraft:audio/ambient_sounds": {
             "mood": {
@@ -574,41 +675,6 @@ write(DF / "final_density.json", {
     "when_in_range": 1.0,
     "when_out_of_range": "minecraft:overworld/final_density",
 })
-write(DF / "carve.json", {
-    # Positive where the Abyss is hollow: cheese blobs, or spaghetti tunnels
-    # where the tunnel noise crosses zero.
-    "type": "minecraft:max",
-    "left": {"type": "minecraft:sub", "left": f"{ID}:cheese", "right": 0.25},
-    "right": {
-        "type": "minecraft:sub",
-        "left": 0.09,
-        "right": {"type": "minecraft:abs", "input": f"{ID}:tunnels"},
-    },
-})
-write(DF / "carve_big.json", {
-    # The wide caverns of the middle depths.
-    "type": "minecraft:sub",
-    "left": f"{ID}:cheese_big",
-    "right": 0.35,
-})
-write(DF / "cheese.json", {
-    "type": "minecraft:noise",
-    "noise": f"{ID}:cheese",
-    "xz_scale": 1.0,
-    "y_scale": 1.6,
-})
-write(DF / "tunnels.json", {
-    "type": "minecraft:noise",
-    "noise": f"{ID}:tunnels",
-    "xz_scale": 0.9,
-    "y_scale": 0.9,
-})
-write(DF / "cheese_big.json", {
-    "type": "minecraft:noise",
-    "noise": f"{ID}:cheese_big",
-    "xz_scale": 0.6,
-    "y_scale": 0.8,
-})
 for name, octave, octaves in (("cheese", -6, 4), ("tunnels", -5, 3),
                               ("cheese_big", -8, 3), ("floodedness", -3, 1),
                               ("spread", -4, 1)):
@@ -618,147 +684,131 @@ for name, octave, octaves in (("cheese", -6, 4), ("tunnels", -5, 3),
         "base_amplitude": 1.0,
     })
 
+# Material conditions sample the NOISE registry, never density functions (a
+# density name in noise_threshold fails every chunk at the surface stage -
+# the void-world bug of 2026-11). So every pocket of the Abyss is a numeric
+# window on the raw cheese / cheese_big / tunnels noises, and the windows are
+# disjoint so a pocket is exactly one thing. Higher cheese = cave air in the
+# cool layer; the hot layer carves on cheese_big alone (wide open expanse).
 AIR = {"type": "minecraft:block", "result_state": "minecraft:air"}
+LAVA = {"type": "minecraft:block", "result_state": "minecraft:lava"}
 MR = PACK / f"data/{ID}/worldgen/material_rule"
-write(MR / "surface.json", {
-    "type": "minecraft:sequence",
-    "sequence": [
-        # The Overworld's bedrock floor, a thin jagged band at -64..-59: the
-        # gradient alone is true at every depth below it, so the y_above under
-        # it keeps the band where a transition belongs.
-        {
-            "type": "minecraft:condition",
-            "if_true": {
-                "type": "minecraft:vertical_gradient",
-                "random_name": f"{ID}:floor_bedrock",
-                "true_at_and_below": {"absolute": -64},
-                "false_at_and_above": {"absolute": -59},
-            },
-            "then_run": {
-                "type": "minecraft:condition",
-                "if_true": {
-                    "type": "minecraft:y_above",
-                    "anchor": {"absolute": -64},
-                    "surface_depth_multiplier": 0,
-                    "add_stone_depth": False,
-                },
-                "then_run": {"type": "minecraft:block", "result_state": "minecraft:bedrock"},
-            },
-        },
-        # Everything below y -55: the Abyss, depth by depth.
-        {
-            "type": "minecraft:condition",
-            "if_true": {
-                "type": "minecraft:not",
-                "invert": {
-                    "type": "minecraft:y_above",
-                    "anchor": {"absolute": -55},
-                    "surface_depth_multiplier": 0,
-                    "add_stone_depth": False,
-                },
-            },
-            "then_run": {
-                "type": "minecraft:sequence",
-                "sequence": [
-                    # The world's bottom: bedrock no pickaxe digs.
-                    {
-                        "type": "minecraft:condition",
-                        "if_true": {
-                            "type": "minecraft:not",
-                            "invert": {
-                                "type": "minecraft:y_above",
-                                "anchor": {"absolute": -564},
-                                "surface_depth_multiplier": 0,
-                                "add_stone_depth": False,
-                            },
-                        },
-                        "then_run": {"type": "minecraft:block", "result_state": f"{ID}:abyss_bedrock"},
-                    },
-                    # The carved world itself.
-                    {
-                        "type": "minecraft:condition",
-                        "if_true": {
-                            "type": "minecraft:not",
-                            "invert": {
-                                "type": "minecraft:y_above",
-                                "anchor": {"absolute": -72},
-                                "surface_depth_multiplier": 0,
-                                "add_stone_depth": False,
-                            },
-                        },
-                        "then_run": {
-                            "type": "minecraft:sequence",
-                            "sequence": [
-                                # Wide caverns in the middle depths.
-                                {
-                                    "type": "minecraft:condition",
-                                    "if_true": {
-                                        "type": "minecraft:not",
-                                        "invert": {
-                                            "type": "minecraft:y_above",
-                                            "anchor": {"absolute": -139},
-                                            "surface_depth_multiplier": 0,
-                                            "add_stone_depth": False,
-                                        },
-                                    },
-                                    "then_run": {
-                                        "type": "minecraft:condition",
-                                        "if_true": {
-                                            "type": "minecraft:y_above",
-                                            "anchor": {"absolute": -420},
-                                            "surface_depth_multiplier": 0,
-                                            "add_stone_depth": False,
-                                        },
-                                        "then_run": {
-                                            "type": "minecraft:condition",
-                                            "if_true": {
-                                                "type": "minecraft:noise_threshold",
-                                                "noise": f"{ID}:carve_big",
-                                                "min_threshold": 0.0,
-                                                "max_threshold": 1000000.0,
-                                                "is_3d": True,
-                                            },
-                                            "then_run": AIR,
-                                        },
-                                    },
-                                },
-                                # Cheese caves and spaghetti tunnels.
-                                {
-                                    "type": "minecraft:condition",
-                                    "if_true": {
-                                        "type": "minecraft:noise_threshold",
-                                        "noise": f"{ID}:carve",
-                                        "min_threshold": 0.0,
-                                        "max_threshold": 1000000.0,
-                                        "is_3d": True,
-                                    },
-                                    "then_run": AIR,
-                                },
-                                {"type": "minecraft:block", "result_state": f"{ID}:voidstone"},
-                            ],
-                        },
-                    },
-                    # The gate under the bedrock floor: voidshell, -65..-72.
-                    {
-                        "type": "minecraft:condition",
-                        "if_true": {
-                            "type": "minecraft:not",
-                            "invert": {
-                                "type": "minecraft:y_above",
-                                "anchor": {"absolute": -65},
-                                "surface_depth_multiplier": 0,
-                                "add_stone_depth": False,
-                            },
-                        },
-                        "then_run": {"type": "minecraft:block", "result_state": f"{ID}:voidshell"},
-                    },
-                ],
-            },
-        },
-        # Everything above: vanilla's rules, unchanged.
-        "minecraft:overworld",
-    ],
-})
+
+
+def blk(state):
+    return {"type": "minecraft:block", "result_state": state}
+
+
+def y_above(anchor):
+    return {"type": "minecraft:y_above", "anchor": {"absolute": anchor},
+            "surface_depth_multiplier": 0, "add_stone_depth": False}
+
+
+def at_least(y):
+    return y_above(y - 1)
+
+
+def at_most(y):
+    return {"type": "minecraft:not", "invert": y_above(y)}
+
+
+def when(cond, body):
+    return {"type": "minecraft:condition", "if_true": cond, "then_run": body}
+
+
+def yband(lo, hi, body):
+    return when(at_least(lo), when(at_most(hi), body))
+
+
+def noise_win(noise, lo, hi):
+    """True while the raw noise value sits in [lo, hi)."""
+    return {"type": "minecraft:noise_threshold", "noise": f"{ID}:{noise}",
+            "min_threshold": lo, "max_threshold": hi, "is_3d": True}
+
+
+def noise_at_least(noise, lo):
+    return noise_win(noise, lo, 1000000.0)
+
+
+def seq(*rules):
+    return {"type": "minecraft:sequence", "sequence": list(rules)}
+
+
+# The Abyss, layer by layer (the user's stack, 2026-11): hot and open under
+# the gate, colder and emptier with depth; the frozen wastes below -420 host
+# nothing but the stalker (the native half spawns and renders it).
+HOT = yband(-73, -168, seq(
+    # Wide open expanse: emberstone islands where cheese_big stays low, and
+    # lava lakes in the bellies of the open space.
+    when(noise_at_least("cheese_big", 0.10),
+         seq(when(noise_win("cheese", -1000000.0, -0.45), LAVA), AIR)),
+    # Thin lava veins where the tunnels noise crosses zero.
+    when(noise_win("tunnels", -0.03, 0.03), LAVA),
+    when(noise_win("cheese", 0.30, 0.36), blk(f"{ID}:scorched_stone")),
+    when(noise_win("cheese", 0.36, 0.42), blk(f"{ID}:void_crystal_ore")),
+    blk(f"{ID}:emberstone"),
+))
+INACTIVE = yband(-169, -280, seq(
+    # Cooling lava veins take the tunnel sheets before the air rules do.
+    when(noise_win("tunnels", -0.03, 0.03), LAVA),
+    when(noise_at_least("cheese", 0.25), AIR),
+    when(noise_win("tunnels", -0.09, 0.09), AIR),
+    when(noise_win("cheese", -0.50, -0.44), blk(f"{ID}:void_gravel")),
+    when(noise_win("cheese", 0.13, 0.16), blk(f"{ID}:void_crystal_ore")),
+    blk(f"{ID}:scorched_stone"),
+))
+COOL = yband(-281, -420, seq(
+    when(noise_at_least("cheese_big", 0.35), AIR),
+    when(noise_at_least("cheese", 0.25), AIR),
+    when(noise_win("tunnels", -0.09, 0.09), AIR),
+    # Decor grows on the cave walls: sprouts in the shell right under the
+    # cheese-air threshold, ruin bricks behind them, lamps on the wide
+    # cavern walls.
+    when(noise_win("cheese", 0.22, 0.25), blk(f"{ID}:crystal_sprout")),
+    when(noise_win("cheese", 0.19, 0.22), blk(f"{ID}:voidstone_bricks")),
+    when(noise_win("cheese_big", 0.30, 0.34), blk(f"{ID}:crystal_lamp")),
+    # Ores, each its own disjoint window of the fine cheese noise.
+    when(noise_win("cheese", 0.17, 0.19), blk("minecraft:deepslate_diamond_ore")),
+    when(noise_win("cheese", 0.13, 0.16), blk(f"{ID}:void_crystal_ore")),
+    when(noise_win("cheese", 0.09, 0.12), blk("minecraft:deepslate_iron_ore")),
+    when(noise_win("cheese", 0.05, 0.08), blk("minecraft:deepslate_coal_ore")),
+    when(noise_win("cheese", -0.50, -0.44), blk(f"{ID}:void_gravel")),
+    blk(f"{ID}:voidstone"),
+))
+FROZEN = yband(-421, -564, seq(
+    # Sparse caves only: the wastes are cold, empty and quiet.
+    when(noise_at_least("cheese", 0.40), AIR),
+    when(noise_win("cheese", -0.50, -0.44), blk(f"{ID}:frost_gravel")),
+    when(noise_win("cheese", 0.33, 0.37), blk(f"{ID}:void_crystal_ore")),
+    blk(f"{ID}:froststone"),
+))
+
+write(MR / "surface.json", seq(
+    # The Overworld's bedrock floor, a thin jagged band at -64..-59: the
+    # gradient alone is true at every depth below it, so the y_above under
+    # it keeps the band where a transition belongs.
+    when({"type": "minecraft:vertical_gradient",
+          "random_name": f"{ID}:floor_bedrock",
+          "true_at_and_below": {"absolute": -64},
+          "false_at_and_above": {"absolute": -59}},
+         when(at_least(-63), blk("minecraft:bedrock"))),
+    # Everything below y -55: the Abyss, depth by depth.
+    when(at_most(-55), seq(
+        # The world's bottom: bedrock no pickaxe digs.
+        when(at_most(-564), blk(f"{ID}:abyss_bedrock")),
+        # The layered world itself, -73..-564.
+        when(at_most(-72), seq(HOT, INACTIVE, COOL, FROZEN)),
+        # The gate under the bedrock floor: voidshell, -65..-72.
+        when(at_most(-65), blk(f"{ID}:voidshell")),
+    )),
+    # The Overworld's own deepslate gets sparse crystal pockets (y -60..-16),
+    # so the pickaxe is craftable in survival long before anyone touches
+    # bedrock. Everywhere else the sequence falls through to vanilla's rules.
+    when(at_least(-60), when(at_most(-16),
+         when(noise_win("cheese", 0.44, 0.47), blk(f"{ID}:void_crystal_ore")))),
+    # Everything above: vanilla's rules, unchanged.
+    "minecraft:overworld",
+))
 
 # The vanilla carvers would carve tunnels into the solid Abyss and the engine
 # would fill them with its deep lava sea, so the pack replaces the three

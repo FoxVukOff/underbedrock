@@ -3,8 +3,9 @@
 **A world below the bedrock floor, for Horizon (Minecraft 26.3).**
 The bedrock at the bottom of the Overworld is no longer the end of the world:
 a void-alloy pickaxe digs through it and through the voidshell gate under it,
-and half a kilometre of dark world waits underneath — voidstone caverns lit by
-blue crystals, ores, gravel, glowing sprouts, and creatures of their own.
+and half a kilometre of dark world waits underneath — four layers of it, from
+a glowing hot expanse down to frozen wastes where something hunts, with ores,
+ruins, glowing plants and creatures of their own.
 
 Under Bedrock ships as three parts that only work together: a content mod
 (`.hmod`), a native mod (`.hnmod`) and a world data pack. The prebuilt files
@@ -21,21 +22,32 @@ The surface, the oceans and the caves above y −54 are vanilla's own.
 **The way down, layer by layer.** Deepslate, then a thin jagged bedrock
 transition (y −64…−59), then **Voidshell** (y −72…−65): a black gate block the
 engine itself never breaks — only the void-alloy pickaxe digs it, exactly the
-way it digs bedrock. Under the gate lies **the Abyss**: voidstone with carved
-caves (air, never lava), from y −73 down to y −564. The world's bottom
-(y −565…−576) is **Abyss Bedrock**, a second bedrock kind that nothing breaks,
-pickaxe included: nobody falls out of the world.
+way it digs bedrock. Under the gate lies **the Abyss**, four layers of it,
+each colder and darker than the one above:
+
+| Layer | Depth | What it is |
+| --- | --- | --- |
+| **Hot expanse** | y −73…−168 | A wide open space of magma-like **emberstone** islands (faintly lit) over **small lava lakes**, with glowing lava veins and scorched patches in the rock |
+| **Inactive expanse** | y −169…−280 | Cooled **scorched stone** with ordinary caves, dying lava veins and gravel beds |
+| **Cool islands** | y −281…−420 | **Voidstone** with wide caverns and the mod's decor: ruin bricks on the cave walls, crystal lamps, glowing sprouts, gravel, and the ores — crystal, coal, iron, diamond |
+| **Frozen wastes** | y −421…−564 | Pale **froststone**, sparse silent caves, frost gravel — and nothing living but the stalker |
+
+The world's bottom (y −565…−576) is **Abyss Bedrock**, a second bedrock kind
+that nothing breaks, pickaxe included: nobody falls out of the world.
 
 **The Abyss's blocks.** Voidstone, Voidstone Bricks, Void Gravel, Void Crystal
 Ore, Block of Void Crystal, Crystal Lamp (full light), Crystal Sprout (a
-glowing cave plant), Voidshell, Abyss Bedrock — all with hand-drawn 16×16
-textures in a cold blue-on-black palette.
+glowing cave plant), Emberstone (light 4), Scorched Stone, Froststone, Frost
+Gravel, Voidshell, Abyss Bedrock — thirteen blocks, all with hand-drawn 16×16
+textures, hot layers in ember tones and cold ones in blue-on-black.
 
-**Void crystal.** The ore sits in two places: sparse veins in ordinary
-deepslate and stone (y −60…−16), so the pickaxe is craftable long before
-anyone touches bedrock — and rich veins down below, with crystal lamps and
-coal, iron and diamond ore in the voidstone besides. Smelting or blasting the
-ore gives crystals; a crystal and an iron ingot make a **Void Alloy Ingot**.
+**Void crystal.** The ore sits in two places: sparse pockets in the ordinary
+deepslate of the Overworld (y −60…−16), so the pickaxe is craftable long
+before anyone touches bedrock — and pockets in every Abyss layer, richest in
+the cool islands, where coal, iron and diamond ore keep them company.
+Smelting or blasting the ore gives crystals; a crystal and an iron ingot make
+a **Void Alloy Ingot**. Smelting a layer's own stone gives its shard: an
+**Ember Shard** from emberstone, a **Frost Shard** from froststone.
 
 **The Void Alloy Pickaxe.** 2800 durability, mining speed 14, enchantment
 glint, three alloy ingots and two sticks to craft. It is the only tool that
@@ -44,12 +56,29 @@ bar fills over the hotbar — three seconds by default — then the block goes
 and, if enabled, drops itself. Only the player who holds the pickaxe digs;
 everyone else, and every other tool, gets an unbreakable block.
 
+**The full void set.** The pickaxe is not alone: a void-alloy **sword, axe,
+hoe and shovel** and a **helmet, chestplate, leggings and boots** — netherite-
+tier stats, enchantment glint, repaired with void alloy ingots, eight shaped
+recipes. The **Stalker Shard** completes the tab as a trophy item (it is also
+what the stalker wears — see below).
+
 **Inhabitants.** The Abyss is populated by the mod's **own creatures** — no
-vanilla mob spawns down there. While a player is below y −80, the native mod
-summons drifting crystal **wisps** (its void-crystal item, glowing blue),
-hanging **lanterns** (its crystal-lamp block) and the odd **watcher** — a
-bigger crystal that closes in on a player who comes near, keeps its distance,
-and watches them. Up to ten per player, saved with the world.
+vanilla mob lives down there, and the native mod *enforces* it: every tick,
+any vanilla mob below y −55 that the mod does not track is removed from the
+world (no death, no loot, no sound). Each layer keeps its own company:
+**embers** (the ember shard, a fast flicker) in the hot expanse, drifting
+crystal **wisps**, hanging **lanterns** and the odd **watcher** — a bigger
+crystal that closes in and watches the player — in the cool islands, and
+**frostmotes** (the frost shard, slow and pale) at the cold rim. Up to ten
+per player, saved with the world.
+
+**The stalker.** The frozen wastes below y −420 keep no ambient company —
+they hunt. One **stalker** per player takes shape 14 blocks out: an invisible,
+silent, weightless vex of 60 HP that the engine's own flying melee drives
+(through stone, like the ghost it is), wearing an item display of the mod's
+stalker shard as its visible body, faced at the player every tick. Kill it and
+the wastes are quiet for 30 seconds, then send another; climb above y −420 and
+the hunt ends at once. Bring the void set.
 
 **The rest.** English and Russian languages, recipes (smelting, blasting,
 alloy, pickaxe, crystal block both ways, bricks, lamp, sprout), loot tables
@@ -104,8 +133,9 @@ A world without the pack is reported once, in chat, as `NOT tall`.
    `Bedrock [##########----------] 50%`. Letting go resets it.
 4. The bedrock disappears — and under it the voidshell gate waits for the same
    treatment (`Voidshell [#####---------------] 25%`). Behind the gate the
-   Abyss opens: dark voidstone caverns, blue crystal veins, glowing lamps.
-   The creatures down there are the engine's own kinds; bring a sword.
+   Abyss opens: the hot expanse glows under the gate, and every layer down
+   is colder and darker. The creatures are the mod's own; below y −420 the
+   stalker hunts — bring the void set.
 5. At the very bottom, Abyss Bedrock stops the world. It does not break, for
    anyone, with anything — that is the point of it.
 
@@ -131,22 +161,27 @@ A world without the pack is reported once, in chat, as `NOT tall`.
 
 **Why three parts.** Horizon reads dimension types, noise settings, density
 functions and material rules only from data packs, so the tall world lives in
-`underbedrock_world`: `dimension_type/overworld.json` (min_y −576, height 896),
-the Overworld's `noise_settings` with an `aquifers` configuration, three
-density functions and one material rule that builds every depth band.
-Everything a content mod may carry — blocks, items, recipes, loot, languages,
-the creative tab and the ore features (configured and placed features plus
-biome modifiers, both for the deepslate veins and the Abyss's) — lives in the
-`.hmod`. And bedrock is unbreakable by design (hardness −1), which is engine
+`underbedrock_world`: `dimension_type/overworld.json` (min_y −576, height 896, ambient light 0.05
+so the layers read without torches), the Overworld's `noise_settings` with an
+`aquifers` configuration, one density function, five noises and one material
+rule that builds every depth band.
+Everything a content mod may carry — blocks, items, recipes, loot, languages
+and the creative tab — lives in the `.hmod`. All ore and decor placement is
+the material rule's job: Horizon logs "placed features cannot run and will be
+skipped" for feature-based placement, so the Abyss grows its pockets as noise
+windows in the rule itself, and nothing in the `.hmod` needs a biome. And bedrock is unbreakable by design (hardness −1), which is engine
 territory: the native mod handles the dig.
 
-**No lava, and dry caves.** Horizon's global fluid picker fills every cave
-below y −54 with lava unless the noise settings carry an `aquifers` object;
-with one, its lava function decides — ours is a flat zero, and the density
-under y −54 is plain solid rock, so no fluid cell exists down there at all.
-The Abyss's caves are carved by the material rule (a cheese-and-tunnels noise
-threshold, plus wide caverns in the middle depths) out of that solid, after
-the fill. The pack also replaces the three Overworld carvers with ones that
+**Lava only where it belongs.** Horizon's global fluid picker fills every
+cave below y −54 with lava unless the noise settings carry an `aquifers`
+object; with one, its lava function decides — ours is a flat zero, and the
+density under y −54 is plain solid rock, so no fluid cell exists down there
+at all. The only lava in the Abyss is placed by the material rule itself, in
+the hot expanse alone: lake blobs in the bellies of the open space and thin
+veins where the tunnels noise crosses zero. The Abyss's caves are carved by
+the material rule (cheese-and-tunnels noise windows per layer — wide open
+islands in the heat, big caverns in the cool, sparse cuts in the frost) out
+of that solid, after the fill. The pack also replaces the three Overworld carvers with ones that
 never start: a carver tunnel below y −54 would be filled with the engine's
 deep lava sea. The surface keeps vanilla's density caves, oceans and rivers
 through the aquifer's floodedness noise.
@@ -173,14 +208,27 @@ itself (the engine's own documented recipe for a mod's moving models,
 every three seconds per player, below y −80, it counts the mod's displays
 within 40 blocks and, under the cap of ten, tries four deterministic spots in
 a ring around the player; a spot with air at the feet and head and a solid
-floor gets an `item_display` showing the mod's void crystal (a wisp, or the
-bigger watcher) or a `block_display` showing its crystal lamp (a lantern),
-through `native_summon`. Every deep tick the mod moves each creature along
-its path (`native_move_entity`) and resends its pose — scale and spin — every
-eight ticks (`native_set_display`; the clients ease between the poses); a
-creature whose player walks 96 blocks away is let go (`native_remove_entity`),
-and a display a reloaded world saved with its chunks is adopted and driven
-again.
+floor gets an `item_display` of the layer's shard or crystal (a wisp, an
+ember, a frostmote, the bigger watcher) or a `block_display` showing its
+crystal lamp (a lantern), through `native_summon`. Every deep tick the mod
+moves each creature along its path (`native_move_entity`) and resends its
+pose — scale and spin — every eight ticks (`native_set_display`; the clients
+ease between the poses); a creature whose player walks 96 blocks away is let
+go (`native_remove_entity`), and a display a reloaded world saved with its
+chunks is adopted and driven again.
+
+**The ban and the stalker.** The same tick reads the engine's mob list
+(`native_mobs`, API 37): every mob below y −55 whose id the mod does not track
+as a stalker is removed (`native_remove_mob` — no death, no loot), so the
+Abyss's "no vanilla mobs" is a server-side fact, not a spawning accident. The
+stalker itself is a vex the mod spawns per player below y −420
+(`native_spawn_mob` with the invisible, silent, no-gravity flags and 60 HP):
+the engine's own melee AI does the hunting and the damage, while the mod
+moves its shard-display body onto the mob every tick and faces it at the
+player. A mob the engine no longer lists (killed, gone) takes its body with it
+and leaves the wastes quiet for 600 ticks; a player who climbs out dismisses
+both at once; and any display the wastes do not know — a body a server
+restart orphaned — is cleaned up, since no ambient creature lives that deep.
 
 ---
 
@@ -203,14 +251,14 @@ when editing them.
 Rust enters only the checks, all of them runnable without a Horizon install:
 
 ```sh
-cd native-mod && cargo test                     # the dig and creature logic, 20 tests
+cd native-mod && cargo test                     # the dig, creature and hunt logic, 23 tests
 cd ../tools/stubcheck && cargo run -- on && cargo run -- off
                                                 # the mod's own sources compiled against
-                                                # Horizon's exact signatures, 41 scenarios twice
+                                                # Horizon's exact signatures, 48 scenarios twice
 cd ../.. && python tools/nativecheck.py release/underbedrock_core.hnmod
                                                 # the bundle read by the registry's own rules
-python tools/check_worldgen.py                  # worldgen JSONs vs Horizon's decoder,
-                                                # plus the no-lava / no-infinite-band invariants
+python tools/check_worldgen.py                  # worldgen JSONs vs Horizon's decoder, plus the
+                                                # lava-only-in-the-hot-expanse / no-infinite-band rules
 ```
 
 The full pipeline — textures, content, Horizon's own content parser and packer
@@ -255,13 +303,23 @@ verified against that revision's sources.
   no hook point for them.
 - Breaking bedrock or voidshell costs the pickaxe no durability (no hook point
   damages a held stack); ordinary mining wears it as usual.
-- The Abyss's creatures are display entities the native mod summons and
+- The ambient creatures are display entities the native mod summons and
   drives: Horizon has no custom living entity types for mods (a content mod's
-  entity types are thrown-item projectiles only), so the creatures are
-  ambience — they drift, hang and watch, but they neither attack nor drop
-  loot. They spawn only near a player in the Abyss, not as part of world
-  generation.
+  entity types are thrown-item projectiles only), so wisps, lanterns, embers
+  and frostmotes are ambience — they drift, hang and watch, but they neither
+  attack nor drop loot. The stalker is the exception that proves the rule: it
+  fights and hurts, because under the shard display it is a real (invisible)
+  vex the engine itself drives. They spawn only near a player in the Abyss,
+  not as part of world generation.
+- Vanilla structures are placed by biome, not by depth, so a mineshaft can
+  leak its wooden supports into the top of the Abyss (seen around y −256).
+  There is no cheap data-pack fix; the layers below are clean.
+- In chunks the engine has not generated yet, the sky can show through the
+  Abyss's rock (a glimpse of bright "unloaded" above the head). That is chunk
+  streaming, not light — it closes as the chunks load; a bigger render
+  distance shows less of it.
 - Worlds created before the data pack was installed keep their old height in
-  already-generated chunks.
+  already-generated chunks. A world re-generated with a new layer stack needs
+  a fresh world (or fresh chunks) to show the new layers.
 - The native mod reads one private engine field (the player's dig state); see
   “How it works” for why, and what happens if it ever moves.

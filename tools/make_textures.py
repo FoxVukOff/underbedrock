@@ -292,6 +292,131 @@ def void_alloy_pickaxe(seed=97):
     save(px, "item/void_alloy_pickaxe.png")
 
 
+def emberstone(seed=101):
+    """Hot expanse rock: dark iron-brown stone with glowing ember cracks."""
+    rng = random.Random(seed)
+    px = canvas()
+    base = [(38, 20, 16, 255), (52, 26, 18, 255), (30, 16, 14, 255), (60, 30, 20, 255)]
+    noise_fill(px, rng, base * 3)
+    for _ in range(6):
+        blob(px, rng, rng.randrange(3, 13), rng.randrange(3, 13), 2,
+             [(232, 108, 24, 255), (255, 158, 42, 255), (196, 66, 18, 255)])
+    save(px, "block/emberstone.png")
+
+
+def scorched_stone(seed=103):
+    """Inactive hot rock: cooled ash-grey stone with dark scorch patches."""
+    rng = random.Random(seed)
+    px = canvas()
+    base = [(44, 40, 38, 255), (56, 50, 46, 255), (36, 33, 31, 255), (66, 58, 52, 255)]
+    noise_fill(px, rng, base * 3)
+    for _ in range(5):
+        blob(px, rng, rng.randrange(3, 13), rng.randrange(3, 13), 3,
+             [(28, 25, 24, 255), (24, 21, 20, 255)])
+    save(px, "block/scorched_stone.png")
+
+
+def froststone(seed=107):
+    """Frozen wastes rock: pale blue-grey ice stone with frost veins."""
+    rng = random.Random(seed)
+    px = canvas()
+    base = [(122, 156, 178, 255), (146, 182, 202, 255), (98, 128, 150, 255), (168, 200, 216, 255)]
+    noise_fill(px, rng, base * 3)
+    for _ in range(6):
+        blob(px, rng, rng.randrange(3, 13), rng.randrange(3, 13), 2,
+             [(214, 236, 246, 255), (232, 246, 252, 255)])
+    save(px, "block/froststone.png")
+
+
+def frost_gravel(seed=109):
+    """Frozen gravel: pale blue-grey pebbles with bright frost specks."""
+    rng = random.Random(seed)
+    px = canvas()
+    base = [(110, 138, 158, 255), (88, 112, 132, 255), (140, 168, 186, 255), (70, 90, 108, 255)]
+    noise_fill(px, rng, base * 4)
+    for _ in range(10):
+        put(px, rng.randrange(S), rng.randrange(S), (206, 228, 240, 255))
+    save(px, "block/frost_gravel.png")
+
+
+def _shard(colors, seed):
+    """A crystal shard sprite: a rough diamond with a bright rim."""
+    rng = random.Random(seed)
+    px = canvas()
+    for y in range(S):
+        for x in range(S):
+            d = abs(x - 8) + abs(y - 9)
+            if d <= 6 - abs(y - 9) // 3 and rng.random() < 0.92:
+                put(px, x, y, colors[(x + y) % len(colors)])
+    return px
+
+
+def ember_shard(seed=113):
+    save(_shard([(255, 158, 42, 255), (232, 108, 24, 255), (255, 200, 90, 255), (196, 66, 18, 255)], seed),
+         "item/ember_shard.png")
+
+
+def frost_shard(seed=127):
+    save(_shard([(214, 236, 246, 255), (146, 182, 202, 255), (232, 246, 252, 255), (98, 128, 150, 255)], seed),
+         "item/frost_shard.png")
+
+
+def stalker_shard(seed=131):
+    """The stalker's shard: near-black with a red eye line, for its visible body."""
+    px = _shard([(24, 10, 14, 255), (48, 12, 18, 255), (12, 6, 8, 255), (70, 16, 22, 255)], seed)
+    for x in range(6, 11):
+        put(px, x, 9, (226, 40, 46, 255))
+    put(px, 8, 9, (255, 120, 110, 255))
+    save(px, "item/stalker_shard.png")
+
+
+TOOL_HEADS = {
+    "sword": [(8, 2), (9, 3), (10, 4), (11, 5), (11, 6), (10, 5), (9, 4), (8, 3),
+              (7, 2), (7, 3), (8, 4), (9, 5), (10, 6), (11, 7), (12, 6),
+              (6, 7), (5, 8), (7, 6), (6, 6)],
+    "axe": [(8, 2), (9, 2), (10, 3), (11, 4), (10, 5), (9, 6), (8, 3), (9, 4), (10, 4),
+            (9, 5), (8, 4), (7, 5), (8, 6)],
+    "hoe": [(9, 2), (10, 2), (11, 2), (11, 3), (10, 3), (9, 4), (8, 5)],
+    "shovel": [(9, 2), (10, 2), (9, 3), (10, 3), (9, 4), (10, 4), (8, 5), (9, 5)],
+}
+
+TOOL_METAL = [(88, 74, 128, 255), (112, 96, 158, 255), (70, 58, 104, 255), (134, 118, 182, 255)]
+
+
+def void_tool(kind, seed):
+    """A void-alloy tool head on a dark wood handle, silhouette per tool kind."""
+    rng = random.Random(seed)
+    px = canvas()
+    for (x, y) in TOOL_HEADS[kind]:
+        put(px, x, y, TOOL_METAL[(x + y + rng.randrange(0, 1)) % len(TOOL_METAL)])
+    for i in range(6):
+        put(px, 7 - i, 8 + i, (94, 66, 40, 255) if i % 2 else (72, 50, 30, 255))
+    put(px, 8, 7, TOOL_METAL[3])
+    save(px, f"item/void_alloy_{kind}.png")
+
+
+ARMOR_SHAPES = {
+    "helmet": [(x, y) for y in range(3, 9) for x in range(4, 12)
+               if not (y > 5 and 6 <= x <= 9)],
+    "chestplate": [(x, y) for y in range(3, 12) for x in range(4, 12)
+                   if not (4 <= x <= 5 and y > 8) and not (10 <= x <= 11 and y > 8)
+                   and not (7 <= x <= 8 and y > 5)],
+    "leggings": [(x, y) for y in range(3, 12) for x in range(5, 11)
+                 if not (7 <= x <= 8 and y > 6)],
+    "boots": [(x, y) for y in range(6, 12) for x in range(5, 11)
+              if not (7 <= x <= 8 and y < 10)],
+}
+
+
+def void_armor(piece, seed):
+    """Void-alloy armor sprite, shape per piece."""
+    rng = random.Random(seed)
+    px = canvas()
+    for (x, y) in ARMOR_SHAPES[piece]:
+        put(px, x, y, TOOL_METAL[(x * 3 + y) % len(TOOL_METAL)])
+    save(px, f"item/void_alloy_{piece}.png")
+
+
 def pack_icon():
     """The pack's icon: a blue crystal in the dark stone, 64x64."""
     rng = random.Random(101)
@@ -325,5 +450,20 @@ if __name__ == "__main__":
     void_crystal()
     void_alloy()
     void_alloy_pickaxe()
+    emberstone()
+    scorched_stone()
+    froststone()
+    frost_gravel()
+    ember_shard()
+    frost_shard()
+    stalker_shard()
+    void_tool("sword", 141)
+    void_tool("axe", 142)
+    void_tool("hoe", 143)
+    void_tool("shovel", 144)
+    void_armor("helmet", 151)
+    void_armor("chestplate", 152)
+    void_armor("leggings", 153)
+    void_armor("boots", 154)
     pack_icon()
     print("wrote the mod's textures")

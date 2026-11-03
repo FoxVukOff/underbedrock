@@ -1,0 +1,10 @@
+{
+  "template": "minecraft:calcite",
+  "properties": {
+    "hardness": 3.0,
+    "explosion_resistance": 6.0,
+    "requires_tool": true,
+    "sounds": "minecraft:calcite"
+  },
+  "item": true
+}

@@ -88,6 +88,43 @@ pub mod native_entities {
     }
 }
 
+/// Mobs for native server mods (`game/native_mobs.rs`, API 37): the shapes
+/// `native_spawn_mob` takes and `native_mobs` gives, with the real fields.
+pub mod native_mobs {
+    /// A mob as a native mod reads it.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct NativeMob {
+        pub id: u32,
+        pub dimension: String,
+        pub kind: String,
+        pub pos: [f64; 3],
+        pub yaw: f32,
+        pub health: f32,
+        pub max_health: f32,
+    }
+
+    /// What a mob starts with; the default is a plain mob.
+    #[derive(Clone, Debug, Default, PartialEq)]
+    pub struct NativeSpawn {
+        pub name: Option<String>,
+        pub health: Option<f32>,
+        pub no_ai: bool,
+        pub invisible: bool,
+        pub silent: bool,
+        pub invulnerable: bool,
+        pub no_gravity: bool,
+    }
+}
+
+/// A mob the stub world keeps, and what it was spawned with.
+pub struct StubMob {
+    pub id: u32,
+    pub kind: String,
+    pub pos: [f64; 3],
+    pub removed: bool,
+    pub spawn: native_mobs::NativeSpawn,
+}
+
 /// The hook points' types and the hooks the mod binds to
 /// (`game/native_hooks.rs`).
 pub mod native_hooks {
@@ -208,6 +245,12 @@ pub struct Game<'a> {
     pub moved: Vec<(u32, [f64; 3])>,
     pub posed: Vec<(u32, [f32; 3])>,
     pub removed_entities: Vec<u32>,
+    /// The mobs the stub world simulates, the id it hands out next, and the
+    /// record of what the mod did with them, for the harness to assert on.
+    pub mobs: Vec<StubMob>,
+    pub next_mob: u32,
+    pub spawned_mobs: Vec<(String, [f64; 3], native_mobs::NativeSpawn)>,
+    pub removed_mobs: Vec<u32>,
     pub marker: std::marker::PhantomData<&'a ()>,
 }
 
@@ -245,6 +288,10 @@ impl<'a> Game<'a> {
             moved: Vec::new(),
             posed: Vec::new(),
             removed_entities: Vec::new(),
+            mobs: Vec::new(),
+            next_mob: 500,
+            spawned_mobs: Vec::new(),
+            removed_mobs: Vec::new(),
             marker: std::marker::PhantomData,
         }
     }
@@ -403,6 +450,65 @@ impl Game<'_> {
             self.removed_entities.push(id);
         }
         gone
+    }
+
+    /// The living mobs in the level in place, `dimension` (API 37).
+    pub fn native_mobs(&self, dimension: &str) -> Vec<native_mobs::NativeMob> {
+        if !self.entity_level(dimension) {
+            return Vec::new();
+        }
+        self.mobs
+            .iter()
+            .filter(|m| !m.removed)
+            .map(|m| native_mobs::NativeMob {
+                id: m.id,
+                dimension: dimension.to_owned(),
+                kind: m.kind.clone(),
+                pos: m.pos,
+                yaw: 0.0,
+                health: m.spawn.health.unwrap_or(20.0),
+                max_health: 60.0,
+            })
+            .collect()
+    }
+
+    /// Spawns a mob of `kind` at `pos` with `options` (API 37): its id. The
+    /// stub spawns anywhere its level simulates (the real one also wants a
+    /// loaded chunk, and refuses a monster on peaceful).
+    pub fn native_spawn_mob(
+        &mut self,
+        dimension: &str,
+        kind: &str,
+        pos: [f64; 3],
+        options: &native_mobs::NativeSpawn,
+    ) -> Option<u32> {
+        if !self.entity_level(dimension) || !pos.iter().all(|v| v.is_finite()) {
+            return None;
+        }
+        let id = self.next_mob;
+        self.next_mob += 1;
+        self.mobs.push(StubMob {
+            id,
+            kind: kind.to_owned(),
+            pos,
+            removed: false,
+            spawn: options.clone(),
+        });
+        self.spawned_mobs.push((kind.to_owned(), pos, options.clone()));
+        Some(id)
+    }
+
+    /// Takes mob `id` out of the world with no death and no loot (API 37).
+    pub fn native_remove_mob(&mut self, dimension: &str, id: u32) -> bool {
+        if !self.entity_level(dimension) {
+            return false;
+        }
+        let Some(m) = self.mobs.iter_mut().find(|m| m.id == id && !m.removed) else {
+            return false;
+        };
+        m.removed = true;
+        self.removed_mobs.push(id);
+        true
     }
 
     /// The block a state is a state of.

@@ -318,7 +318,7 @@ fn main() {
     for _ in 0..60 {
         game.native_player_tick();
     }
-    let creature = m::pick_creature(seed);
+    let creature = m::pick_creature(seed, deep[1]).expect("the cool islands keep company");
     check!(
         fails,
         "a pocket in the Abyss gets one of the mod's own creatures",
@@ -380,6 +380,83 @@ fn main() {
         "a display a world saved is adopted and driven",
         game.moved.iter().any(|(id, _)| *id == 999)
     );
+    // The Abyss's law: no vanilla mob lives under the gate, and the frozen
+    // wastes send a stalker after a player who descends into them - an
+    // invisible, silent vex wearing the mod's shard display as its body.
+    let wastes: [f64; 3] = [0.5, -500.0, 0.5];
+    game.acting.as_mut().expect("a player").position = wastes;
+    // A zombie that wandered in under the gate goes, quietly.
+    game.mobs.push(game::StubMob {
+        id: 900,
+        kind: "minecraft:zombie".into(),
+        pos: [3.0, -100.0, 3.0],
+        removed: false,
+        spawn: Default::default(),
+    });
+    // A display a restart orphaned in the wastes goes too: nothing ambient
+    // lives below the stalker's depth.
+    game.others.push(game::OtherEntity {
+        id: 777,
+        kind: m::ITEM_DISPLAY.into(),
+        position: game::Vec3 { x: wastes[0] + 2.0, y: -501.0, z: wastes[2] },
+        yaw: 0.0,
+        pitch: 0.0,
+    });
+    let summoned = game.summoned.len();
+    game.native_player_tick();
+    check!(
+        fails,
+        "a vanilla mob under the gate is banned",
+        game.removed_mobs.contains(&900)
+    );
+    check!(
+        fails,
+        "an orphaned display in the wastes is cleaned up, not adopted",
+        game.removed_entities.contains(&777) && !game.moved.iter().any(|(id, _)| *id == 777)
+    );
+    check!(
+        fails,
+        "the wastes send their stalker: invisible, silent, weightless",
+        game.spawned_mobs.len() == 1
+            && game.spawned_mobs[0].0 == m::STALKER_KIND
+            && game.spawned_mobs[0].2.invisible
+            && game.spawned_mobs[0].2.silent
+            && game.spawned_mobs[0].2.no_gravity
+            && game.spawned_mobs[0].2.health == Some(m::STALKER_HEALTH)
+    );
+    check!(
+        fails,
+        "and the body it wears: the stalker shard display",
+        game.summoned.len() == summoned + 1
+            && game.summoned[summoned].0 == m::ITEM_DISPLAY
+            && game.summoned[summoned].2 == m::STALKER_ITEM
+    );
+    // The ban spares the stalker itself, and its body rides the mob, faced
+    // at the player, every tick of the hunt.
+    let stalker = game.spawned_mobs.first().map(|_| 500u32);
+    let body = game
+        .others
+        .iter()
+        .find(|other| other.kind == m::ITEM_DISPLAY)
+        .map(|other| other.id);
+    game.moved.clear();
+    game.native_player_tick();
+    check!(
+        fails,
+        "the hunt keeps its stalker (the ban spares it) and moves its body",
+        stalker.is_some_and(|id| !game.removed_mobs.contains(&id))
+            && body.is_some_and(|id| game.moved.iter().any(|(moved, _)| *moved == id))
+    );
+    // The player climbs out: both go at once.
+    game.acting.as_mut().expect("a player").position = [0.5, -300.0, 0.5];
+    game.native_player_tick();
+    check!(
+        fails,
+        "climbing out of the wastes ends the hunt",
+        stalker.is_some_and(|id| game.removed_mobs.contains(&id))
+            && body.is_some_and(|id| game.removed_entities.contains(&id))
+    );
+
     // Back at the surface: no summons, and the engine's own spawning is the
     // only one.
     game.acting.as_mut().expect("a player").position = [0.5, -60.0, 0.5];
