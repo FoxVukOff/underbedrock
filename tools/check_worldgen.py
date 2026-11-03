@@ -173,6 +173,14 @@ def structural_checks(fails):
                 name = node['noise']
                 if name.startswith('underbedrock:') and name not in have_noise:
                     fails.append(f'{where}: noise {name} has no file')
+            # Material conditions sample the NOISE registry, never density
+            # functions: a density name in noise_threshold fails every chunk
+            # at the surface stage ("unknown material noise", empty world).
+            if node.get('type') == 'minecraft:noise_threshold' and isinstance(node.get('noise'), str):
+                name = node['noise']
+                if name.startswith('underbedrock:') and name not in have_noise:
+                    fails.append(f'{where}: noise_threshold noise {name} is not a noise '
+                                 f'(conditions sample worldgen/noise, not density_function)')
             for key, value in node.items():
                 if key in ('noise', 'random_name') or key in STATE_KEYS or key in BLOCK_KEYS:
                     continue

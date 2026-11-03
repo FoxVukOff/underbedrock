@@ -1,6 +1,0 @@
-{
-  "type": "minecraft:noise",
-  "noise": "underbedrock:tunnels",
-  "xz_scale": 0.9,
-  "y_scale": 0.9
-}

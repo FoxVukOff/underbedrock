@@ -106,8 +106,8 @@
                       "type": "minecraft:condition",
                       "if_true": {
                         "type": "minecraft:noise_threshold",
-                        "noise": "underbedrock:carve_big",
-                        "min_threshold": 0.0,
+                        "noise": "underbedrock:cheese_big",
+                        "min_threshold": 0.35,
                         "max_threshold": 1000000.0,
                         "is_3d": true
                       },
@@ -122,8 +122,22 @@
                   "type": "minecraft:condition",
                   "if_true": {
                     "type": "minecraft:noise_threshold",
-                    "noise": "underbedrock:carve",
-                    "min_threshold": 0.0,
+                    "noise": "underbedrock:tunnels",
+                    "min_threshold": -0.09,
+                    "max_threshold": 0.09,
+                    "is_3d": true
+                  },
+                  "then_run": {
+                    "type": "minecraft:block",
+                    "result_state": "minecraft:air"
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "noise": "underbedrock:cheese",
+                    "min_threshold": 0.25,
                     "max_threshold": 1000000.0,
                     "is_3d": true
                   },
