@@ -302,9 +302,15 @@ tools/check_worldgen.py     the worldgen JSONs vs Horizon's decoder and the mod'
 tools/build_all.sh          everything above, in order
 ```
 
-Built and checked against Horizon nightly `f42ef42` (2026-11-03; game 26.3,
-native hook points v164 of `NATIVE_HOOKS_API` 359) and horizon-mixins
+Built and checked against Horizon `ea55997` (game 26.3) and horizon-mixins
 `ddd9700`; every file format was verified against that revision's sources.
+The sources pin that revision on purpose: the 2026-11-03 nightly's
+horizon-client `lib.rs` carries `#![recursion_limit = "256"]`, which the mixin
+compiler reads as an unexpanded attribute macro and refuses to patch under
+(`E_UNSUPPORTED_MACRO`), while every hook point this mod binds exists at the
+pin with the same signature. What the mod RUNS on is newer: it declares hook
+points v164, so the launcher loads it only on a Horizon at v164 or later -
+today, a nightly.
 
 ---
 

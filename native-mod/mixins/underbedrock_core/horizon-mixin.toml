@@ -3,13 +3,17 @@ id = "underbedrock_core"
 version = "0.0.1"
 priority = 100
 
-# The revision it was made and tested on. The mod hooks only Horizon's native
-# hook points (`hooks` 164 in horizon-native.json: the state block of API 164 is
-# the newest one it uses), so the launcher builds it on any Horizon whose hook
-# points are that version or a later one, and repins this to the revision it
-# builds on.
+# The revision its sources compile against, and why not the newest nightly:
+# the nightly's horizon-client lib.rs gained `#![recursion_limit = "256"]`, an
+# attribute the mixin compiler (horizon-mixins ddd9700) reads as an unexpanded
+# macro and refuses to patch anything under (E_UNSUPPORTED_MACRO) - every hook
+# point this mod binds exists here with the same signature, so this stays the
+# pin until the compiler learns the attribute. The game it RUNS on is another
+# matter: `hooks` 164 in horizon-native.json names the newest hook point it
+# uses, and the launcher builds and loads it only on a Horizon whose hook
+# points are that version or later - a recent nightly.
 [compatibility]
-horizon_revision = "f42ef42ef6ceccb3c6a20bea2481d87949a51c81"
+horizon_revision = "ea5599757087a6f2ee0702dd469b79aa21bfb199"
 
 # The mod's own logic and state, added to the game as `crate::game::underbedrock_core`.
 [[module]]
